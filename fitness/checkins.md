@@ -6,3 +6,7 @@
 - Ziel: **105.0 kg bis 2026-05-15**
 - Phase: **Cut mit Fokus auf Muskelerhalt**
 - Zielverlust: **-6.8 kg**
+- Alter: **27**
+- Aktivität: **Bürojob + ~10.000 Schritte/Tag**
+- Training: **4 Einheiten/Woche**
+- Start-Targets (Cut): **~2.950 kcal | 220g Protein | 80g Fett | 335g Carbs**
