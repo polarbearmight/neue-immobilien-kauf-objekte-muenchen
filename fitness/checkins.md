@@ -15,3 +15,4 @@
 - Gesamt: **2637 kcal | 293g Protein | 85g Fett | 165g Carbs**
 - Abweichung zu Target: **-313 kcal | +73g Protein | +5g Fett | -170g Carbs**
 - Quelle: Screenshot-Import (Rohdaten gespeichert)
+- Tagesstatus: **Rest Day** (kein Training)
