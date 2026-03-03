@@ -11,8 +11,8 @@ Aktueller Zielrahmen:
 
 ## Erfasste Daten (pro Tag)
 - Gewicht (kg)
-- FDDB: Kalorien, Protein, Kohlenhydrate, Fett
-- Training: Übungen, Sätze, Gewichte, Dauer, RPE (optional)
+- FDDB: **Rohdaten vollständig** (inkl. Kalorien, Protein, Kohlenhydrate, Fett)
+- Training: **Rohdaten vollständig** (Übungen, Sätze, Gewichte, Dauer, RPE optional)
 - Optional: Schritte, Schlaf, Befinden
 
 ## Dateiübersicht
