@@ -2,12 +2,13 @@ from fastapi import FastAPI, Query, Depends
 from sqlalchemy import select, func, desc
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
-from app.db import SessionLocal, engine, Base
+from app.db import SessionLocal, engine, Base, ensure_schema
 from app.models import Listing
 from app.schemas import ListingOut
 
 app = FastAPI(title="Neue Kauf Objekte München API")
 Base.metadata.create_all(bind=engine)
+ensure_schema()
 
 
 def get_db():
@@ -27,7 +28,7 @@ def health():
 def listings(
     bucket: str = Query("all", pattern="^(9000|12000|all|unknown)$"),
     sort: str = Query("newest", pattern="^(newest|oldest)$"),
-    limit: int = Query(200, ge=1, le=1000),
+    limit: int = Query(20, ge=1, le=1000),
     db: Session = Depends(get_db),
 ):
     q = select(Listing)
