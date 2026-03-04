@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Query, Depends
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import select, func, desc
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
@@ -9,6 +10,13 @@ from app.schemas import ListingOut
 from collectors.image_tools import hash_distance
 
 app = FastAPI(title="Neue Kauf Objekte München API")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 Base.metadata.create_all(bind=engine)
 ensure_schema()
 
