@@ -10,6 +10,8 @@ from collectors.sz import collect_sz_listings
 from collectors.is24 import collect_is24_listings
 from collectors.immowelt import collect_immowelt_listings
 from collectors.source_validator import validate_source
+from app.scoring import recompute_scores
+from app.ai_deal_analyzer import analyze_listing, serialize_flags
 
 COLLECTOR_MAP = {
     "sz": (collect_sz_listings, "https://immobilienmarkt.sueddeutsche.de"),
@@ -169,9 +171,18 @@ def main():
                 continue
             summary.append(run_one_source(db, name, dry_run=args.dry_run))
 
+        # scoring + ai flags refresh after collection
+        scored = recompute_scores(db)
+        rows = db.execute(select(Listing).where(Listing.deal_score != None)).scalars().all()
+        for r in rows:
+            flags, _explain = analyze_listing(r)
+            r.ai_flags = serialize_flags(flags)
+        db.commit()
+
         print("collector_summary")
         for row in summary:
             print(row)
+        print({"scored": scored, "ai_flagged": len(rows)})
     finally:
         db.close()
 

@@ -683,11 +683,11 @@ Quality gates:
 ---
 
 # ACP BUILDER AGENT — Deliverables Checklist
-- [ ] `collectors/source_discovery.py` + source cards generation
-- [ ] `collectors/source_validator.py`
-- [ ] `collectors/adapter_generator.py`
-- [ ] `collectors/run_collect.py` hardened
-- [ ] `app/scoring.py`, `app/ai_deal_analyzer.py`, `app/dedup.py`, `app/source_reliability.py`
+- [DONE] `collectors/source_discovery.py` + source cards generation
+- [DONE] `collectors/source_validator.py`
+- [DONE] `collectors/adapter_generator.py`
+- [DONE] `collectors/run_collect.py` hardened
+- [PARTIAL DONE] `app/scoring.py`, `app/ai_deal_analyzer.py`, `app/dedup.py`, `app/source_reliability.py` (scoring + ai_deal_analyzer fertig; dedup + source_reliability offen)
 - [ ] FastAPI endpoints `/api/*`
 - [ ] UI Next.js app with pages/components per spec
 - [ ] tests + fixtures tooling

@@ -31,6 +31,10 @@ class ListingOut(BaseModel):
     area_sqm: float | None = None
     price_eur: float | None = None
     price_per_sqm: float | None = None
+    deal_score: float | None = None
+    badges: str | None = None
+    score_explain: str | None = None
+    ai_flags: str | None = None
     rooms: float | None = None
     posted_at: datetime | None = None
     first_seen_at: datetime

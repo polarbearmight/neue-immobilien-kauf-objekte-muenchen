@@ -24,3 +24,11 @@ def ensure_schema():
             conn.execute(text("ALTER TABLE listings ADD COLUMN image_url VARCHAR(1024)"))
         if "image_hash" not in cols:
             conn.execute(text("ALTER TABLE listings ADD COLUMN image_hash VARCHAR(64)"))
+        if "deal_score" not in cols:
+            conn.execute(text("ALTER TABLE listings ADD COLUMN deal_score FLOAT"))
+        if "badges" not in cols:
+            conn.execute(text("ALTER TABLE listings ADD COLUMN badges VARCHAR(1024)"))
+        if "score_explain" not in cols:
+            conn.execute(text("ALTER TABLE listings ADD COLUMN score_explain VARCHAR(2048)"))
+        if "ai_flags" not in cols:
+            conn.execute(text("ALTER TABLE listings ADD COLUMN ai_flags VARCHAR(1024)"))

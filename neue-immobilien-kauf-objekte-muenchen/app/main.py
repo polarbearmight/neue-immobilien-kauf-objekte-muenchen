@@ -53,8 +53,12 @@ def health():
 @app.get("/api/listings", response_model=list[ListingOut])
 def listings(
     bucket: str = Query("all", pattern="^(9000|12000|all|unknown)$"),
-    sort: str = Query("newest", pattern="^(newest|oldest)$"),
+    sort: str = Query("newest", pattern="^(newest|oldest|score|ppsm|price)$"),
     limit: int = Query(20, ge=1, le=1000),
+    offset: int = Query(0, ge=0),
+    min_score: float = Query(0, ge=0, le=100),
+    brand_new: bool = False,
+    just_listed: bool = False,
     db: Session = Depends(get_db),
 ):
     q = select(Listing)
@@ -66,11 +70,26 @@ def listings(
     elif bucket == "unknown":
         q = q.where(Listing.price_per_sqm == None)
 
-    order = desc(Listing.posted_at.is_(None)), desc(Listing.posted_at), desc(Listing.first_seen_at)
+    if min_score > 0:
+        q = q.where(Listing.deal_score != None, Listing.deal_score >= min_score)
+
+    now = datetime.utcnow()
+    if just_listed:
+        q = q.where(Listing.first_seen_at >= now - timedelta(hours=2))
+    elif brand_new:
+        q = q.where(Listing.first_seen_at >= now - timedelta(hours=6))
+
+    order = (desc(Listing.posted_at.is_(None)), desc(Listing.posted_at), desc(Listing.first_seen_at))
     if sort == "oldest":
         order = (Listing.posted_at.asc().nulls_last(), Listing.first_seen_at.asc())
+    elif sort == "score":
+        order = (Listing.deal_score.desc().nulls_last(), desc(Listing.first_seen_at))
+    elif sort == "ppsm":
+        order = (Listing.price_per_sqm.asc().nulls_last(), desc(Listing.first_seen_at))
+    elif sort == "price":
+        order = (Listing.price_eur.asc().nulls_last(), desc(Listing.first_seen_at))
 
-    q = q.order_by(*order).limit(limit)
+    q = q.order_by(*order).offset(offset).limit(limit)
     return db.execute(q).scalars().all()
 
 
