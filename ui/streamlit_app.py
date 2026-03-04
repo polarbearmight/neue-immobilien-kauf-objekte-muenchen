@@ -1,8 +1,15 @@
+import os
 import streamlit as st
 import pandas as pd
 import requests
 
-API = st.secrets.get("api_url", "http://localhost:8000")
+API = os.getenv("API_URL", "http://localhost:8000")
+try:
+    if "api_url" in st.secrets:
+        API = st.secrets["api_url"]
+except Exception:
+    # No secrets.toml configured -> keep env/default fallback
+    pass
 
 st.title("Neue Kauf Objekte München")
 
