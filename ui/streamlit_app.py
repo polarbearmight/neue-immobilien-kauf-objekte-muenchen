@@ -46,7 +46,7 @@ with side_col:
         index=0,
     )
     bucket = st.selectbox("Preis/m² Bucket", ["all", "9000", "12000", "unknown"], index=0)
-    limit = st.slider("Anzahl", 20, 500, 120)
+    limit = st.slider("Anzahl", 20, 200, 20)
 
 stats = requests.get(f"{API}/stats", params={"days": 7}, timeout=10).json()
 
