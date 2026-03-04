@@ -136,10 +136,8 @@ with main_col:
         with c2:
             st.markdown(f"### [{title}]({item.get('url')})")
             st.caption(f"Quelle: {str(item.get('source', '-')).upper()} · Online seit: {posted} · Score: {item.get('score', 0)}/100")
-            m1, m2, m3, m4 = st.columns(4)
-            m1.metric("Kaufpreis", fmt_eur(item.get("price_eur")))
-            m2.metric("€/m²", fmt_eur(item.get("price_per_sqm")))
-            m3.metric("Fläche", fmt_num(item.get("area_sqm"), " m²"))
-            m4.metric("Zimmer", fmt_num(item.get("rooms")))
+            st.markdown(
+                f"**Kaufpreis:** {fmt_eur(item.get('price_eur'))}  \\n**€/m²:** {fmt_eur(item.get('price_per_sqm'))}  \\n**Fläche:** {fmt_num(item.get('area_sqm'), ' m²')}  \\n**Zimmer:** {fmt_num(item.get('rooms'))}"
+            )
             st.write(desc)
         st.divider()
