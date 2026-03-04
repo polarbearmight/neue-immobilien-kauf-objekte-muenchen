@@ -15,6 +15,7 @@ class Listing(Base):
     title: Mapped[str | None] = mapped_column(String(512), nullable=True)
     description: Mapped[str | None] = mapped_column(String(2048), nullable=True)
     image_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    image_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     address: Mapped[str | None] = mapped_column(String(512), nullable=True)
     district: Mapped[str | None] = mapped_column(String(128), nullable=True)
     price_eur: Mapped[float | None] = mapped_column(Float, nullable=True)
