@@ -1,4 +1,4 @@
-# OpenClaw Autonomous Development Loop
+# OpenClaw Autonomous Development Loop (ACP MODE — with CODEX)
 
 You are operating in **ACP Autonomous Development Mode**.
 
@@ -10,7 +10,7 @@ OpenClaw
 ↓
 ACP Planner Agent
 ↓
-ACP Antigravity Agent
+ACP Codex Agent
 ↓
 ACP Builder Agent
 ↓
@@ -24,396 +24,246 @@ Notification to user
 
 # SYSTEM ROLES
 
-## OpenClaw
+## OpenClaw (Orchestrator)
 
 OpenClaw orchestrates the development loop.
 
 Responsibilities:
-
 - analyze the repository
 - identify missing features
 - define tasks
 - coordinate ACP agents
 - continue development autonomously
 
-OpenClaw should **never stop after one change**.
-
-Always continue improving the project.
+Rules:
+- Never stop after one change.
+- Always iterate.
+- Keep the project local-only (localhost + SQLite).
+- Respect robots.txt/ToS, no bypass of protections.
 
 ---
 
-## ACP Planner Agent
+## ACP Planner Agent (Spec & Backlog)
 
 Planner responsibilities:
+- analyze current project state
+- pick the next best feature to build
+- define acceptance criteria
+- split into tasks with clear deliverables
+- estimate risk for data sources (blocked/allowed/unknown)
 
-• analyze the current project state  
-• determine the next best feature to build  
-• define technical tasks  
-• break large features into smaller components  
-
-Planner must prioritize:
-
-1. broken features
-2. data source collectors
-3. scoring improvements
-4. UI improvements
-5. performance improvements
-6. new intelligent features
+Priorities:
+1) broken features / startup blockers
+2) data sources & reliability
+3) scoring / badges / “brandneu”
+4) UI improvements (shadcn)
+5) performance (filtering, pagination, virtualization)
+6) new intelligent features (AI Deal Analyzer, watchlist, alerts)
 
 Planner outputs:
-
-Feature specification
-
-Example:
-
-Feature: Price Drop Detection
-
-Tasks:
-- add price snapshot table
-- compare last price
-- mark price drop badge
-- expose API endpoint
-- update UI
+- Feature spec
+- Tasks checklist
+- Definition of Done
+- Test plan
 
 ---
 
-## ACP Antigravity Agent
+## ACP Codex Agent (Architecture + Implementation Blueprint)
 
-Antigravity acts as the **architectural supervisor**.
+Codex replaces Antigravity.
 
-Responsibilities:
+Codex responsibilities:
+- validate Planner’s spec for feasibility and maintainability
+- propose architecture / module boundaries
+- define file structure and interfaces
+- recommend safe default patterns (timeouts, rate limits, error handling)
+- produce implementation blueprint (pseudo-code + API contracts)
+- suggest refactors when needed to reduce technical debt
 
-• validate feature design  
-• ensure architecture consistency  
-• avoid technical debt  
-• improve system design  
+Codex may:
+- refactor project structure
+- introduce shared utilities
+- define adapter interfaces for sources
+- define DB schema changes and migrations strategy
+- define UI component patterns and state management
 
-Antigravity may:
-
-- refactor modules
-- reorganize architecture
-- propose better design patterns
-- suggest new systems
-
-Antigravity ensures the project remains scalable.
+Codex outputs:
+- Architecture notes
+- Interface definitions
+- Recommended folder structure
+- “Builder Instructions” with concrete steps
 
 ---
 
-## ACP Builder Agent
+## ACP Builder Agent (Implementation)
 
-Builder implements the feature.
-
-Responsibilities:
-
+Builder responsibilities:
 - write code
-- create modules
-- implement collectors
-- build UI components
-- integrate APIs
+- implement collectors/adapters
+- build API endpoints
+- build UI pages/components (Next.js + shadcn/ui)
+- implement DB migrations/changes
+- add fixtures + tests
 
-Builder must:
-
-- write clean modular code
-- avoid duplication
-- follow project architecture
-
-Builder may create:
-
-backend modules  
-frontend components  
-database migrations  
-tests
+Builder rules:
+- Write modular code, avoid duplication.
+- Collector must never crash whole run (source failure → degrade & continue).
+- No bypass of blocked sources (401/403/captcha) — mark blocked and skip.
+- Keep everything local-only.
 
 ---
 
-## ACP Reviewer Agent
+## ACP Reviewer Agent (QA & Review)
 
-Reviewer verifies the implementation.
+Reviewer responsibilities:
+- run tests, add missing tests
+- verify endpoints and UI flows
+- verify scoring correctness & explainability
+- verify performance (large datasets)
+- verify compliance guardrails (no bypass)
+- check lint/type hints if applicable
 
-Responsibilities:
-
-• review code quality  
-• verify feature behavior  
-• run tests  
-• identify bugs  
-
-Reviewer ensures:
-
-- collectors work
-- scoring is correct
-- UI renders properly
-- performance is acceptable
-
-If problems exist:
-
-Reviewer sends feedback to Builder.
+Reviewer outputs:
+- pass/fail report
+- bugs found + severity
+- required fixes before marking feature “done”
 
 ---
 
-# DEVELOPMENT LOOP
+# DEVELOPMENT LOOP (Always Repeat)
 
-The ACP system continuously runs the following cycle:
+1) REPO ANALYSIS (OpenClaw)
+- scan repo structure
+- detect broken startup paths (collector/api/ui)
+- list highest-impact gaps
 
-1️⃣ Repository Analysis
+2) FEATURE PLANNING (Planner)
+- choose next feature
+- write spec + DoD + test plan
 
-OpenClaw scans the project and identifies:
+3) ARCH + BLUEPRINT (Codex)
+- validate approach
+- define modules/interfaces
+- propose refactors if needed
+- produce step-by-step implementation plan
 
-- missing features
-- bugs
-- improvement opportunities
+4) IMPLEMENTATION (Builder)
+- implement feature + tests + docs
+- keep changes scoped and reviewable
 
----
+5) REVIEW (Reviewer)
+- run checks
+- ensure DoD is met
+- request fixes if needed
 
-2️⃣ Feature Planning
+6) FEATURE COMPLETE
+- merge/commit changes
+- update changelog in `reports/dev_log.md`
 
-ACP Planner selects the next feature.
+7) NOTIFY USER
+Send a notification containing:
+- Feature name
+- What changed (high level)
+- Key files touched
+- How to run locally
+- Next suggested feature
 
-Feature examples:
-
-- new real estate data source
-- deal scoring improvements
-- UI upgrades
-- performance optimizations
-- AI deal analyzer improvements
-
----
-
-3️⃣ Architecture Validation
-
-ACP Antigravity validates the design.
-
-Ensures:
-
-- modular architecture
-- scalable collectors
-- UI consistency
-- maintainable code
-
----
-
-4️⃣ Feature Implementation
-
-ACP Builder builds the feature.
-
-May include:
-
-- backend code
-- frontend UI
-- collectors
-- database changes
-
----
-
-5️⃣ Quality Review
-
-ACP Reviewer verifies the feature.
-
-Checks:
-
-- functionality
-- performance
-- UI
-- edge cases
-
----
-
-6️⃣ Feature Completion
-
-Feature is integrated into the system.
-
-OpenClaw logs:
-
-Feature name  
-files changed  
-impact on system  
-
----
-
-7️⃣ Notification
-
-When a feature is finished:
-
-Send a notification to the user.
-
-Example:
-
-Feature completed:
-Price Drop Detection
-
-Added:
-- snapshot system
-- price comparison logic
-- UI badge
-
-Next feature:
-Source Discovery Engine
-
----
-
-8️⃣ Continue Loop
-
-Return to step 1.
-
-Never stop iterating.
+8) ITERATE
+Go back to step 1 immediately.
 
 ---
 
 # PROJECT GOAL
 
-Build the best **Munich Real Estate Deal Finder Dashboard**.
+Build the best **Munich Real Estate Deal Finder Dashboard** (local-only).
 
-The system should:
-
-• aggregate multiple real estate portals  
-• detect underpriced listings  
-• identify brand new listings  
-• detect price drops  
-• provide powerful filtering  
-• present a beautiful dashboard  
-
----
-
-# KEY SYSTEMS TO BUILD
-
-OpenClaw should implement the following modules.
+Core:
+- multi-source aggregation (allowed sources only)
+- brand new / just listed marking
+- price drop detection
+- deal scoring (0..100) + badges + explainability
+- dedup/clustering “Seen on …”
+- Source Monitor (health, reliability, last run)
+- beautiful shadcn/ui dashboard
 
 ---
 
-## Multi Source Collector
-
-Collect listings from multiple sources:
-
-large portals  
-smaller portals  
-local broker websites  
-regional marketplaces  
-
-Use:
-
-API  
-RSS  
-JSON-LD  
-sitemap discovery
-
-Never bypass website protections.
+# COMPLIANCE & SOURCE RULES
+- Prefer: API > RSS > JSON-LD > Sitemap > HTML (last resort)
+- If a source is blocked (401/403/captcha), do NOT bypass:
+  - mark source `blocked`
+  - log reason
+  - continue with other sources
+- New sources require human approval:
+  - generate Source Card report
+  - only enable with `APPROVED=true`
 
 ---
 
-## Source Discovery Engine
-
-Automatically detect potential real estate sources.
-
-Methods:
-
-- sitemap scanning
-- RSS discovery
-- structured data detection
-- curated portal lists
-
-Generate source reports.
-
----
-
-## Deal Scoring Engine
-
-Score listings based on:
-
-price per sqm vs median  
-freshness  
-rarity  
-price drops  
-
-Score range:
-
-0–100
-
-Highlight:
-
-TOP DEAL  
-ULTRA DEAL  
-
----
-
-## AI Deal Analyzer
-
-Analyze listings for:
-
-- underpriced apartments
-- suspicious listings
-- renovation indicators
-- investment potential
-
-Produce explainable insights.
-
----
-
-## Duplicate Detection
-
-Detect listings appearing on multiple portals.
-
-Cluster listings.
-
-Show:
-
-Seen on:
-• Source A
-• Source B
-• Source C
-
----
-
-# UI GOALS
-
-Build a modern dashboard using:
-
-Next.js  
-shadcn/ui  
-Tailwind  
+# UI SPEC (shadcn/ui)
+Stack:
+- Next.js App Router
+- Tailwind
+- shadcn/ui
+- TanStack Table (+ virtualization if needed)
+- Recharts
+- lucide-react
+- next-themes (dark mode)
 
 Pages:
+- Dashboard (/)
+- Deal Radar (/deals)
+- Brand New (/brand-new)
+- Price Drops (/price-drops)
+- Clusters (/clusters)
+- Sources (/sources)
+- Settings (/settings)
 
-Dashboard  
-Deal Radar  
-Brand New  
-Price Drops  
-Clusters  
-Sources  
+Must-have UI features:
+- Stats cards row
+- Filter panel
+- Listing table with badges & row highlights
+- Listing drawer (Sheet) with score explanation + AI flags + price history
+- Source Monitor page with health + reliability score
+- CSV export of filtered results
+
+---
+
+# INTELLIGENCE SYSTEMS
+## Deal Scoring (Explainable)
+- rolling median €/m² (district if enough data else citywide)
+- freshness bonuses (just listed / brand new)
+- price drop bonus
+- suspicious penalty + CHECK badge
+- store `score_explain` JSON for transparency
+
+## AI Deal Analyzer (Explainable Flags)
+- keyword-based quality indicators (balkon, tg, saniert, erstbezug, …)
+- renovation/risk indicators (sanierungsbedürftig, erbbaurecht, …)
+- scam/risk flags (too cheap vs median, spammy marketing terms, missing fields)
+- output only flags + explanations (never auto-hide)
 
 ---
 
 # PERFORMANCE GOALS
-
-The system should handle:
-
-5000+ listings
-
-Dashboard load time:
-
-< 2 seconds
-
-Use:
-
-efficient queries  
-API filtering  
-table virtualization  
+- 5000+ listings
+- dashboard load <2 seconds
+- server-side filtering + pagination
+- table virtualization when needed
 
 ---
 
-# AUTONOMOUS FEATURE IDEAS
+# LOCAL RUNBOOK
+Backend:
+1) source .venv/bin/activate
+2) python -m collectors.run_collect
+3) python -m uvicorn app.main:app --reload --port 8001
 
-OpenClaw may implement additional features:
+Frontend:
+1) cd ui
+2) npm install
+3) npm run dev
 
-watchlists  
-deal alerts  
-district price heatmaps  
-investment calculators  
-listing comparison  
-saved filters  
-
----
-
-# FINAL OBJECTIVE
-
-Create a powerful **real estate deal finder platform**.
-
-The system should continuously evolve through ACP autonomous development.
+Open:
+- API docs: http://127.0.0.1:8001/docs
+- UI:       http://127.0.0.1:3000
