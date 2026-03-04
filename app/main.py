@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from app.db import SessionLocal, engine, Base, ensure_schema
 from app.models import Listing
 from app.schemas import ListingOut
+from collectors.image_tools import hash_distance
 
 app = FastAPI(title="Neue Kauf Objekte München API")
 Base.metadata.create_all(bind=engine)
@@ -25,7 +26,7 @@ def root():
     return {
         "name": "Neue Kauf Objekte München API",
         "ok": True,
-        "endpoints": ["/health", "/docs", "/listings", "/stats"],
+        "endpoints": ["/health", "/docs", "/listings", "/duplicates", "/stats"],
     }
 
 
@@ -61,6 +62,30 @@ def listings(
 
     q = q.order_by(*order).limit(limit)
     return db.execute(q).scalars().all()
+
+
+@app.get("/duplicates")
+def duplicates(limit: int = Query(100, ge=10, le=500), max_distance: int = Query(8, ge=0, le=32), db: Session = Depends(get_db)):
+    rows = db.execute(select(Listing).where(Listing.image_hash != None).order_by(desc(Listing.first_seen_at)).limit(limit)).scalars().all()
+    out = []
+    for i in range(len(rows)):
+        a = rows[i]
+        for j in range(i + 1, len(rows)):
+            b = rows[j]
+            if a.source == b.source:
+                continue
+            d = hash_distance(a.image_hash, b.image_hash)
+            if d is None or d > max_distance:
+                continue
+            out.append(
+                {
+                    "distance": d,
+                    "a": {"id": a.id, "source": a.source, "title": a.title, "url": a.url, "price_eur": a.price_eur, "area_sqm": a.area_sqm},
+                    "b": {"id": b.id, "source": b.source, "title": b.title, "url": b.url, "price_eur": b.price_eur, "area_sqm": b.area_sqm},
+                }
+            )
+    out.sort(key=lambda x: x["distance"])
+    return out[:200]
 
 
 @app.get("/stats")

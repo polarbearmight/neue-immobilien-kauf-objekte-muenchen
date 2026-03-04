@@ -79,6 +79,15 @@ k1, k2 = st.columns(2)
 k1.metric("Neue 7 Tage", stats.get("new_listings", 0))
 k2.metric("Ø €/m² (7 Tage)", stats.get("avg_price_per_sqm") or "-")
 
+with st.expander("Duplikat-Check (Bild-Hash)", expanded=False):
+    try:
+        dup = requests.get(f"{API}/duplicates", params={"limit": 120, "max_distance": 8}, timeout=15).json()
+        st.write(f"Gefundene potenzielle Cross-Portal Duplikate: **{len(dup)}**")
+        if dup:
+            st.dataframe(pd.DataFrame(dup)[:15], use_container_width=True)
+    except Exception as e:
+        st.caption(f"Duplikat-Check nicht verfügbar: {e}")
+
 try:
     items = requests.get(
         f"{API}/listings", params={"bucket": bucket, "limit": 300, "sort": "newest"}, timeout=20
