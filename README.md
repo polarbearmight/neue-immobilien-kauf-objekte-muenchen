@@ -7,6 +7,7 @@ MVP Dashboard für neue Kaufwohnungen in München.
 - SQLAlchemy Datenmodell (`listings`)
 - Collector-Runner für SZ + IS24 + Immowelt (IS24 block-tolerant bei 401/403/429)
 - Streamlit Dashboard
+- Next.js + shadcn/ui Frontend (`frontend/`)
 - Bucket-Filter: `<=9000`, `<=12000`, `all`, `unknown`
 - Sortierung: neueste oben
 
@@ -32,6 +33,15 @@ python -m collectors.run_collect
 uvicorn app.main:app --reload
 streamlit run ui/streamlit_app.py
 ```
+
+## Neues Frontend (shadcn/ui)
+```bash
+cd frontend
+npm install
+# optional: export NEXT_PUBLIC_API_URL=http://127.0.0.1:8001
+npm run dev
+```
+Dann öffnen: `http://localhost:3000`
 
 ## API
 - `GET /listings?bucket=9000&sort=newest&limit=200`
