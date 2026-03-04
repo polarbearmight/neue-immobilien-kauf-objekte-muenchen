@@ -4,6 +4,7 @@ from app.db import SessionLocal, Base, engine, ensure_schema
 from app.models import Listing
 from collectors.sz import collect_sz_listings
 from collectors.is24 import collect_is24_listings
+from collectors.immowelt import collect_immowelt_listings
 from datetime import datetime
 
 
@@ -69,6 +70,11 @@ if __name__ == "__main__":
         rows.extend(collect_is24_listings())
     except Exception as e:
         print(f"WARN is24 collector failed: {e}")
+
+    try:
+        rows.extend(collect_immowelt_listings())
+    except Exception as e:
+        print(f"WARN immowelt collector failed: {e}")
 
     rows = ensure_seed_row(rows)
     upsert(rows)
