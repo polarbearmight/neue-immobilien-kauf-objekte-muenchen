@@ -3,8 +3,8 @@
 MVP Dashboard für neue Kaufwohnungen in München.
 
 ## Enthalten
-- FastAPI Backend (`/listings`, `/stats`)
-- SQLAlchemy Datenmodell (`listings`)
+- FastAPI Backend (`/api/listings`, `/api/stats`, `/api/sources`, `/api/discovery/run`)
+- SQLAlchemy Datenmodell (`listings`, `sources`, `source_runs`)
 - Collector-Runner für SZ + IS24 + Immowelt (IS24 block-tolerant bei 401/403/429)
 - Streamlit Dashboard
 - Next.js + shadcn/ui Frontend (`frontend/`)
@@ -44,8 +44,10 @@ npm run dev
 Dann öffnen: `http://localhost:3000`
 
 ## API
-- `GET /listings?bucket=9000&sort=newest&limit=200`
-- `GET /stats?days=7`
+- `GET /api/listings?bucket=9000&sort=newest&limit=200`
+- `GET /api/stats?days=7`
+- `GET /api/sources`
+- `POST /api/discovery/run` (erzeugt Source Cards in `reports/source_cards/*.md`)
 
 ## Nächste Features
 1. IS24 Detailparser + Feldextraktion (preis, m², zimmer, posted_at)

@@ -2,6 +2,22 @@ from pydantic import BaseModel
 from datetime import datetime
 
 
+class SourceOut(BaseModel):
+    id: int
+    name: str
+    base_url: str
+    kind: str
+    discovery_method: str
+    robots_status: str
+    approved: bool
+    enabled: bool
+    health_status: str
+    last_error: str | None = None
+
+    class Config:
+        from_attributes = True
+
+
 class ListingOut(BaseModel):
     source: str
     source_listing_id: str
