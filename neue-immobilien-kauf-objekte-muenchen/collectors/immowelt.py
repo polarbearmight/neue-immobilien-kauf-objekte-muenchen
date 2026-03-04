@@ -1,5 +1,6 @@
 import re
 from datetime import datetime
+from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 from collectors.base import SafeCollector, AccessBlockedError
 
@@ -25,6 +26,37 @@ def _extract_numbers(text: str):
     rooms = _to_num(_rooms_re.search(text).group(1) if _rooms_re.search(text) else None)
     ppsqm = round(price / area, 2) if price and area else None
     return price, area, rooms, ppsqm
+
+
+def _candidate_from_img_tag(img_tag):
+    src = img_tag.get("src") or img_tag.get("data-src")
+    srcset = img_tag.get("srcset") or img_tag.get("data-srcset")
+    if srcset and not src:
+        first = srcset.split(",")[0].strip().split(" ")[0]
+        src = first
+    if not src:
+        return None
+    src = urljoin("https://www.immowelt.de", src)
+    bad_tokens = ["logo", "makler", "agentur", "avatar", "profile", "icon", "badge", "energy"]
+    low = src.lower()
+    if any(t in low for t in bad_tokens):
+        return None
+    return src
+
+
+def _extract_best_image(a_tag):
+    # Prefer image candidates from the card container, avoid broker/company logos
+    card = a_tag.find_parent(attrs={"data-testid": "serp-core-classified-card-testid"})
+    scopes = [card, a_tag.parent, a_tag]
+    candidates = []
+    for scope in scopes:
+        if not scope:
+            continue
+        for img in scope.select("img"):
+            cand = _candidate_from_img_tag(img)
+            if cand:
+                candidates.append(cand)
+    return candidates[0] if candidates else None
 
 
 def collect_immowelt_listings() -> list[dict]:
@@ -70,13 +102,7 @@ def collect_immowelt_listings() -> list[dict]:
         if not desc and parent:
             desc = parent.get_text(" ", strip=True)[:500] or None
 
-        img = None
-        if parent:
-            img_tag = parent.find("img")
-            if img_tag:
-                img = img_tag.get("src") or img_tag.get("data-src")
-                if img and img.startswith("/"):
-                    img = f"https://www.immowelt.de{img}"
+        img = _extract_best_image(a)
 
         price, area, rooms, price_per_sqm = _extract_numbers(title_attr or desc or "")
 
