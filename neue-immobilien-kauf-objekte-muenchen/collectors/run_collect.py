@@ -30,7 +30,16 @@ def upsert(rows: list[dict]):
 if __name__ == "__main__":
     Base.metadata.create_all(bind=engine)
     rows = []
-    rows.extend(collect_sz_listings())
-    rows.extend(collect_is24_listings())
+
+    try:
+        rows.extend(collect_sz_listings())
+    except Exception as e:
+        print(f"WARN sz collector failed: {e}")
+
+    try:
+        rows.extend(collect_is24_listings())
+    except Exception as e:
+        print(f"WARN is24 collector failed: {e}")
+
     upsert(rows)
     print(f"upserted_rows={len(rows)}")

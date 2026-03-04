@@ -5,7 +5,7 @@ MVP Dashboard für neue Kaufwohnungen in München.
 ## Enthalten
 - FastAPI Backend (`/listings`, `/stats`)
 - SQLAlchemy Datenmodell (`listings`)
-- Collector-Runner für SZ + IS24 (IS24 aktuell als compliant Skeleton)
+- Collector-Runner für SZ + IS24 (IS24 aktuell als compliant Skeleton, block-tolerant bei 401/403/429)
 - Streamlit Dashboard
 - Bucket-Filter: `<=9000`, `<=12000`, `all`, `unknown`
 - Sortierung: neueste oben
