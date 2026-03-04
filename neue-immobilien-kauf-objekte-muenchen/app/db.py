@@ -22,3 +22,5 @@ def ensure_schema():
             conn.execute(text("ALTER TABLE listings ADD COLUMN description VARCHAR(2048)"))
         if "image_url" not in cols:
             conn.execute(text("ALTER TABLE listings ADD COLUMN image_url VARCHAR(1024)"))
+        if "image_hash" not in cols:
+            conn.execute(text("ALTER TABLE listings ADD COLUMN image_hash VARCHAR(64)"))

@@ -9,3 +9,5 @@ python-dateutil==2.9.0.post0
 streamlit==1.39.0
 pandas==2.2.3
 pytest==8.3.3
+Pillow==10.4.0
+ImageHash==4.3.1

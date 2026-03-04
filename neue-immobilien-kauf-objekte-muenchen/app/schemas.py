@@ -9,6 +9,7 @@ class ListingOut(BaseModel):
     title: str | None = None
     description: str | None = None
     image_url: str | None = None
+    image_hash: str | None = None
     district: str | None = None
     address: str | None = None
     area_sqm: float | None = None

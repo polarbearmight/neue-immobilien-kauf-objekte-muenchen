@@ -5,6 +5,7 @@ from app.models import Listing
 from collectors.sz import collect_sz_listings
 from collectors.is24 import collect_is24_listings
 from collectors.immowelt import collect_immowelt_listings
+from collectors.image_tools import compute_phash_from_url
 from datetime import datetime
 
 
@@ -37,6 +38,9 @@ def upsert(rows: list[dict]):
     db = SessionLocal()
     try:
         for row in rows:
+            if row.get("image_url") and not row.get("image_hash"):
+                row["image_hash"] = compute_phash_from_url(row.get("image_url"))
+
             existing = db.execute(
                 select(Listing).where(
                     Listing.source == row["source"],
@@ -48,6 +52,7 @@ def upsert(rows: list[dict]):
                 existing.title = row.get("title") or existing.title
                 existing.description = row.get("description") or existing.description
                 existing.image_url = row.get("image_url") or existing.image_url
+                existing.image_hash = row.get("image_hash") or existing.image_hash
                 existing.address = row.get("address") or existing.address
                 existing.district = row.get("district") or existing.district
                 existing.price_eur = row.get("price_eur") if row.get("price_eur") is not None else existing.price_eur
