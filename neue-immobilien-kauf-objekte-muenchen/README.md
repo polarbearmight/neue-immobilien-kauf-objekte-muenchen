@@ -5,7 +5,9 @@ MVP Dashboard für neue Kaufwohnungen in München.
 ## Enthalten
 - FastAPI Backend (`/api/listings`, `/api/stats`, `/api/sources`, `/api/discovery/run`)
 - SQLAlchemy Datenmodell (`listings`, `sources`, `source_runs`)
-- Collector-Runner für SZ + IS24 + Immowelt (IS24 block-tolerant bei 401/403/429)
+- Collector-Runner für SZ + IS24 + Immowelt (mit Source-Validation + SourceRun-Logging)
+- Source Validator (`collectors/source_validator.py`)
+- Adapter Generator Skeleton (`collectors/adapter_generator.py`)
 - Streamlit Dashboard
 - Next.js + shadcn/ui Frontend (`frontend/`)
 - Bucket-Filter: `<=9000`, `<=12000`, `all`, `unknown`
@@ -30,6 +32,8 @@ export REQUEST_DELAY_SECONDS=8
 export ENABLE_FALLBACK_SEED=true
 
 python -m collectors.run_collect
+# optional:
+python -m collectors.run_collect --source immowelt --dry-run
 uvicorn app.main:app --reload
 streamlit run ui/streamlit_app.py
 ```
