@@ -48,6 +48,13 @@ def upsert(rows: list[dict]):
                 existing.title = row.get("title") or existing.title
                 existing.description = row.get("description") or existing.description
                 existing.image_url = row.get("image_url") or existing.image_url
+                existing.address = row.get("address") or existing.address
+                existing.district = row.get("district") or existing.district
+                existing.price_eur = row.get("price_eur") if row.get("price_eur") is not None else existing.price_eur
+                existing.area_sqm = row.get("area_sqm") if row.get("area_sqm") is not None else existing.area_sqm
+                existing.rooms = row.get("rooms") if row.get("rooms") is not None else existing.rooms
+                existing.price_per_sqm = row.get("price_per_sqm") if row.get("price_per_sqm") is not None else existing.price_per_sqm
+                existing.posted_at = row.get("posted_at") or existing.posted_at
                 existing.url = row.get("url") or existing.url
             else:
                 db.add(Listing(**row))
