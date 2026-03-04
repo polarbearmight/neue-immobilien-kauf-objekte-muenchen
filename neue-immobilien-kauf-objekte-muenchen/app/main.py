@@ -9,6 +9,7 @@ from app.models import Listing, Source
 from app.schemas import ListingOut, SourceOut
 from collectors.image_tools import hash_distance
 from collectors.source_discovery import SEED_SOURCES, discover_source_card, write_source_report
+from app.source_reliability import attach_reliability
 
 app = FastAPI(title="Neue Kauf Objekte München API")
 app.add_middleware(
@@ -121,7 +122,31 @@ def duplicates(limit: int = Query(100, ge=10, le=500), max_distance: int = Query
 @app.get("/api/sources", response_model=list[SourceOut])
 def api_sources(db: Session = Depends(get_db)):
     q = select(Source).order_by(Source.name.asc())
-    return db.execute(q).scalars().all()
+    rows = db.execute(q).scalars().all()
+    return attach_reliability(db, rows)
+
+
+@app.get("/api/clusters")
+def api_clusters(limit: int = Query(200, ge=1, le=2000), db: Session = Depends(get_db)):
+    rows = db.execute(
+        select(Listing)
+        .where(Listing.cluster_id != None)
+        .order_by(desc(Listing.first_seen_at))
+        .limit(limit)
+    ).scalars().all()
+    clusters = {}
+    for r in rows:
+        clusters.setdefault(r.cluster_id, []).append(
+            {
+                "id": r.id,
+                "source": r.source,
+                "title": r.title,
+                "url": r.url,
+                "price_eur": r.price_eur,
+                "area_sqm": r.area_sqm,
+            }
+        )
+    return [{"cluster_id": cid, "members": members, "members_count": len(members)} for cid, members in clusters.items()]
 
 
 @app.post("/api/discovery/run")

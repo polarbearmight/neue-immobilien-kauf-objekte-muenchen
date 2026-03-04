@@ -13,6 +13,7 @@ class SourceOut(BaseModel):
     enabled: bool
     health_status: str
     last_error: str | None = None
+    reliability_score: int | None = None
 
     class Config:
         from_attributes = True
@@ -35,6 +36,7 @@ class ListingOut(BaseModel):
     badges: str | None = None
     score_explain: str | None = None
     ai_flags: str | None = None
+    cluster_id: str | None = None
     rooms: float | None = None
     posted_at: datetime | None = None
     first_seen_at: datetime

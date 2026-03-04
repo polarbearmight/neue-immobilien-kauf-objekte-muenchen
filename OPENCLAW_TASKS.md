@@ -646,23 +646,23 @@ Quality gates:
 
 # ACP PLANNER AGENT — Backlog (stundenlang, geordnet)
 ## Phase 1: Stabilität + Daten
-1) DB migrations + new tables/columns
-2) collector robust (no crash), source_runs logging
-3) snapshots + price drops
-4) scoring + badges + explainability
-5) sources endpoint + health logic
+1) [DONE] DB migrations + new tables/columns
+2) [DONE] collector robust (no crash), source_runs logging
+3) [OPEN] snapshots + price drops
+4) [DONE] scoring + badges + explainability
+5) [DONE] sources endpoint + health logic
 
 ## Phase 2: Multi-source + Discovery
-6) source discovery engine + source cards reports
-7) validator + approval/enabling flow
-8) adapter generator skeleton
-9) 3–5 erste approved sources integrieren (API/RSS/JSON-LD bevorzugt)
+6) [DONE] source discovery engine + source cards reports
+7) [PARTIAL DONE] validator + approval/enabling flow
+8) [DONE] adapter generator skeleton
+9) [OPEN] 3–5 erste approved sources integrieren (API/RSS/JSON-LD bevorzugt)
 
 ## Phase 3: Dedup + Intelligence
-10) clustering + “Seen on …”
-11) source reliability scoring
-12) AI Deal Analyzer + explain panel
-13) watchlist + alert rules
+10) [DONE] clustering + “Seen on …”
+11) [DONE] source reliability scoring
+12) [DONE] AI Deal Analyzer + explain panel
+13) [OPEN] watchlist + alert rules
 
 ## Phase 4: shadcn UI polish
 14) Next.js app structure + global layout
@@ -687,7 +687,7 @@ Quality gates:
 - [DONE] `collectors/source_validator.py`
 - [DONE] `collectors/adapter_generator.py`
 - [DONE] `collectors/run_collect.py` hardened
-- [PARTIAL DONE] `app/scoring.py`, `app/ai_deal_analyzer.py`, `app/dedup.py`, `app/source_reliability.py` (scoring + ai_deal_analyzer fertig; dedup + source_reliability offen)
+- [DONE] `app/scoring.py`, `app/ai_deal_analyzer.py`, `app/dedup.py`, `app/source_reliability.py`
 - [ ] FastAPI endpoints `/api/*`
 - [ ] UI Next.js app with pages/components per spec
 - [ ] tests + fixtures tooling

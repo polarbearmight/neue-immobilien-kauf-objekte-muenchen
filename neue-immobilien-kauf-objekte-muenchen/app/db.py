@@ -32,3 +32,5 @@ def ensure_schema():
             conn.execute(text("ALTER TABLE listings ADD COLUMN score_explain VARCHAR(2048)"))
         if "ai_flags" not in cols:
             conn.execute(text("ALTER TABLE listings ADD COLUMN ai_flags VARCHAR(1024)"))
+        if "cluster_id" not in cols:
+            conn.execute(text("ALTER TABLE listings ADD COLUMN cluster_id VARCHAR(64)"))

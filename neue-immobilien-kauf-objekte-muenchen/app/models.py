@@ -58,6 +58,7 @@ class Listing(Base):
     badges: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     score_explain: Mapped[str | None] = mapped_column(String(2048), nullable=True)
     ai_flags: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    cluster_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     posted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
     last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)

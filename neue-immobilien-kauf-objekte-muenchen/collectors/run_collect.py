@@ -12,6 +12,7 @@ from collectors.immowelt import collect_immowelt_listings
 from collectors.source_validator import validate_source
 from app.scoring import recompute_scores
 from app.ai_deal_analyzer import analyze_listing, serialize_flags
+from app.dedup import assign_clusters
 
 COLLECTOR_MAP = {
     "sz": (collect_sz_listings, "https://immobilienmarkt.sueddeutsche.de"),
@@ -177,12 +178,13 @@ def main():
         for r in rows:
             flags, _explain = analyze_listing(r)
             r.ai_flags = serialize_flags(flags)
+        clustered = assign_clusters(rows)
         db.commit()
 
         print("collector_summary")
         for row in summary:
             print(row)
-        print({"scored": scored, "ai_flagged": len(rows)})
+        print({"scored": scored, "ai_flagged": len(rows), "clustered": clustered})
     finally:
         db.close()
 
