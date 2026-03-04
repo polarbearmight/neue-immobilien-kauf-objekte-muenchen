@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Query, Depends
+from fastapi.responses import JSONResponse
 from sqlalchemy import select, func, desc
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
@@ -17,6 +18,20 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+@app.get("/")
+def root():
+    return {
+        "name": "Neue Kauf Objekte München API",
+        "ok": True,
+        "endpoints": ["/health", "/docs", "/listings", "/stats"],
+    }
+
+
+@app.get("/favicon.ico")
+def favicon():
+    return JSONResponse(status_code=204, content=None)
 
 
 @app.get("/health")
