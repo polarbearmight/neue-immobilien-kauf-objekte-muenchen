@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+import math
 import pandas as pd
 import requests
 import streamlit as st
@@ -33,6 +34,25 @@ def parse_dt(v):
         return None
 
 
+def calc_score(item, median_ppsqm):
+    score = 50
+    ppsqm = item.get("price_per_sqm")
+    rooms = item.get("rooms")
+    area = item.get("area_sqm")
+    if median_ppsqm and ppsqm:
+        if ppsqm <= median_ppsqm * 0.9:
+            score += 20
+        elif ppsqm <= median_ppsqm:
+            score += 10
+        elif ppsqm > median_ppsqm * 1.2:
+            score -= 15
+    if rooms and rooms >= 3:
+        score += 10
+    if area and area >= 70:
+        score += 10
+    return max(0, min(100, int(score)))
+
+
 st.set_page_config(page_title="Neue Kauf Objekte München", layout="wide")
 st.title("🏙️ Neue Kauf Objekte München")
 
@@ -42,11 +62,12 @@ with side_col:
     st.subheader("Sortierung")
     sort_mode = st.selectbox(
         "Sortieren nach",
-        ["Neueste", "Älteste", "Preis ↑", "Preis ↓", "€/m² ↑", "€/m² ↓"],
+        ["Neueste", "Älteste", "Score ↓", "Preis ↑", "Preis ↓", "€/m² ↑", "€/m² ↓"],
         index=0,
     )
     bucket = st.selectbox("Preis/m² Bucket", ["all", "9000", "12000", "unknown"], index=0)
     limit = st.selectbox("Pro Seite", [20, 40, 60], index=0)
+    min_score = st.slider("Min. Score", 0, 100, 0)
 
 try:
     stats = requests.get(f"{API}/stats", params={"days": 7}, timeout=10).json()
@@ -60,7 +81,7 @@ k2.metric("Ø €/m² (7 Tage)", stats.get("avg_price_per_sqm") or "-")
 
 try:
     items = requests.get(
-        f"{API}/listings", params={"bucket": bucket, "limit": limit, "sort": "newest"}, timeout=15
+        f"{API}/listings", params={"bucket": bucket, "limit": 300, "sort": "newest"}, timeout=20
     ).json()
 except Exception as e:
     st.error(f"API /listings Fehler: {e}")
@@ -70,11 +91,17 @@ if not items:
     st.info("Noch keine Daten vorhanden.")
     st.stop()
 
+median_ppsqm = stats.get("avg_price_per_sqm")
 for x in items:
     x["posted_dt"] = parse_dt(x.get("posted_at")) or parse_dt(x.get("first_seen_at"))
+    x["score"] = calc_score(x, median_ppsqm)
+
+items = [x for x in items if x.get("score", 0) >= min_score]
 
 if sort_mode == "Älteste":
     items.sort(key=lambda x: x.get("posted_dt") or datetime.min)
+elif sort_mode == "Score ↓":
+    items.sort(key=lambda x: x.get("score", 0), reverse=True)
 elif sort_mode == "Preis ↑":
     items.sort(key=lambda x: (x.get("price_eur") is None, x.get("price_eur") or 0))
 elif sort_mode == "Preis ↓":
@@ -83,11 +110,20 @@ elif sort_mode == "€/m² ↑":
     items.sort(key=lambda x: (x.get("price_per_sqm") is None, x.get("price_per_sqm") or 0))
 elif sort_mode == "€/m² ↓":
     items.sort(key=lambda x: (x.get("price_per_sqm") is None, -(x.get("price_per_sqm") or 0)))
-else:  # Neueste
+else:
     items.sort(key=lambda x: x.get("posted_dt") or datetime.min, reverse=True)
 
+pages = max(1, math.ceil(len(items) / limit))
+with side_col:
+    page = st.number_input("Seite", min_value=1, max_value=pages, value=1, step=1)
+
+start = (page - 1) * limit
+end = start + limit
+page_items = items[start:end]
+
 with main_col:
-    for item in items:
+    st.caption(f"Zeige {len(page_items)} von {len(items)} Treffern · Seite {page}/{pages}")
+    for item in page_items:
         img = item.get("image_url") or "https://placehold.co/420x260?text=Kein+Bild"
         title = item.get("title") or "Ohne Titel"
         district = item.get("district") or item.get("address") or "München"
@@ -99,10 +135,11 @@ with main_col:
             st.image(img, use_column_width=True)
         with c2:
             st.markdown(f"### [{title}]({item.get('url')})")
-            st.caption(f"Quelle: {str(item.get('source', '-')).upper()} · Online seit: {posted}")
-            m1, m2, m3 = st.columns(3)
+            st.caption(f"Quelle: {str(item.get('source', '-')).upper()} · Online seit: {posted} · Score: {item.get('score', 0)}/100")
+            m1, m2, m3, m4 = st.columns(4)
             m1.metric("Kaufpreis", fmt_eur(item.get("price_eur")))
             m2.metric("€/m²", fmt_eur(item.get("price_per_sqm")))
             m3.metric("Fläche", fmt_num(item.get("area_sqm"), " m²"))
+            m4.metric("Zimmer", fmt_num(item.get("rooms")))
             st.write(desc)
         st.divider()
