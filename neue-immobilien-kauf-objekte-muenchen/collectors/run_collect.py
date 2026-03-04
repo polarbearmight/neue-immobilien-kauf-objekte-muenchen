@@ -1,6 +1,6 @@
 import os
 from sqlalchemy import select
-from app.db import SessionLocal, Base, engine
+from app.db import SessionLocal, Base, engine, ensure_schema
 from app.models import Listing
 from collectors.sz import collect_sz_listings
 from collectors.is24 import collect_is24_listings
@@ -18,6 +18,8 @@ def ensure_seed_row(rows: list[dict]) -> list[dict]:
         "source_listing_id": f"seed-{now.strftime('%Y%m%d')}",
         "url": "https://example.com/seed-listing",
         "title": "Seed-Datensatz (Collector lieferte aktuell keine Treffer)",
+        "description": "Beispielobjekt zur UI-Demo, bis Live-Daten geladen sind.",
+        "image_url": "https://placehold.co/420x260?text=Objektbild",
         "district": "München",
         "area_sqm": 65.0,
         "price_eur": 650000.0,
@@ -43,6 +45,8 @@ def upsert(rows: list[dict]):
             if existing:
                 existing.last_seen_at = datetime.utcnow()
                 existing.title = row.get("title") or existing.title
+                existing.description = row.get("description") or existing.description
+                existing.image_url = row.get("image_url") or existing.image_url
                 existing.url = row.get("url") or existing.url
             else:
                 db.add(Listing(**row))
@@ -53,6 +57,7 @@ def upsert(rows: list[dict]):
 
 if __name__ == "__main__":
     Base.metadata.create_all(bind=engine)
+    ensure_schema()
     rows = []
 
     try:

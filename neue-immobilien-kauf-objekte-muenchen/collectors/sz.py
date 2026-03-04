@@ -55,11 +55,21 @@ def collect_sz_listings() -> list[dict]:
         seen_ids.add(source_id)
 
         card_text = a.get_text(" ", strip=True)
-        parent_text = a.parent.get_text(" ", strip=True) if a.parent else card_text
-        full_text = f"{card_text} {parent_text}"[:2000]
+        parent = a.parent
+        parent_text = parent.get_text(" ", strip=True) if parent else card_text
+        full_text = f"{card_text} {parent_text}"[:3000]
 
         title = (card_text or parent_text)[:300] or None
+        desc = parent_text[:500] if parent_text else None
         price, area, rooms, price_per_sqm = _extract_numbers(full_text)
+
+        img = None
+        if parent:
+            img_tag = parent.find("img")
+            if img_tag:
+                img = img_tag.get("src") or img_tag.get("data-src")
+                if img and img.startswith("/"):
+                    img = f"https://immobilienmarkt.sueddeutsche.de{img}"
 
         rows.append(
             {
@@ -67,6 +77,8 @@ def collect_sz_listings() -> list[dict]:
                 "source_listing_id": source_id,
                 "url": url,
                 "title": title,
+                "description": desc,
+                "image_url": img,
                 "price_eur": price,
                 "area_sqm": area,
                 "rooms": rooms,

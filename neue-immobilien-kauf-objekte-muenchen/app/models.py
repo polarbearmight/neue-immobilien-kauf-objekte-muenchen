@@ -13,6 +13,8 @@ class Listing(Base):
     source_listing_id: Mapped[str] = mapped_column(String(128), index=True)
     url: Mapped[str] = mapped_column(String(1024), unique=True)
     title: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    description: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    image_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     address: Mapped[str | None] = mapped_column(String(512), nullable=True)
     district: Mapped[str | None] = mapped_column(String(128), nullable=True)
     price_eur: Mapped[float | None] = mapped_column(Float, nullable=True)
