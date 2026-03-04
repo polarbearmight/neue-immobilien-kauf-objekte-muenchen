@@ -25,6 +25,8 @@ pip install -r requirements.txt
 # optional
 export DB_URL='sqlite:///./local.db'  # oder postgres+psycopg://...
 export REQUEST_DELAY_SECONDS=8
+# optional (default true): falls keine Live-Treffer, Demo-Seed-Datensatz anlegen
+export ENABLE_FALLBACK_SEED=true
 
 python -m collectors.run_collect
 uvicorn app.main:app --reload

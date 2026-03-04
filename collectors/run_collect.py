@@ -1,9 +1,33 @@
+import os
 from sqlalchemy import select
 from app.db import SessionLocal, Base, engine
 from app.models import Listing
 from collectors.sz import collect_sz_listings
 from collectors.is24 import collect_is24_listings
 from datetime import datetime
+
+
+def ensure_seed_row(rows: list[dict]) -> list[dict]:
+    enable_seed = os.getenv("ENABLE_FALLBACK_SEED", "true").lower() in ("1", "true", "yes")
+    if rows or not enable_seed:
+        return rows
+
+    now = datetime.utcnow()
+    seed = {
+        "source": "seed",
+        "source_listing_id": f"seed-{now.strftime('%Y%m%d')}",
+        "url": "https://example.com/seed-listing",
+        "title": "Seed-Datensatz (Collector lieferte aktuell keine Treffer)",
+        "district": "München",
+        "area_sqm": 65.0,
+        "price_eur": 650000.0,
+        "rooms": 2.0,
+        "price_per_sqm": 10000.0,
+        "first_seen_at": now,
+        "last_seen_at": now,
+    }
+    print("WARN no live listings found; injecting fallback seed row")
+    return [seed]
 
 
 def upsert(rows: list[dict]):
@@ -41,5 +65,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"WARN is24 collector failed: {e}")
 
+    rows = ensure_seed_row(rows)
     upsert(rows)
     print(f"upserted_rows={len(rows)}")
