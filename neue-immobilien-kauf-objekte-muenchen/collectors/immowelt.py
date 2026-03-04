@@ -59,6 +59,32 @@ def _extract_best_image(a_tag):
     return candidates[0] if candidates else None
 
 
+def _extract_detail_image(collector: SafeCollector, url: str) -> str | None:
+    try:
+        html = collector.get(url)
+    except Exception:
+        return None
+
+    soup = BeautifulSoup(html, "html.parser")
+
+    # 1) OpenGraph image (often hero object image)
+    og = soup.select_one("meta[property='og:image']")
+    if og and og.get("content"):
+        cand = urljoin(url, og.get("content"))
+        if "mms.immowelt.de" in cand.lower():
+            return cand
+
+    # 2) First gallery-like image hosted on immowelt media CDN
+    for img in soup.select("img"):
+        cand = _candidate_from_img_tag(img)
+        if not cand:
+            continue
+        if "mms.immowelt.de" in cand.lower():
+            return cand
+
+    return None
+
+
 def collect_immowelt_listings() -> list[dict]:
     c = SafeCollector()
     c.assert_allowed("https://www.immowelt.de/robots.txt", "/suche/muenchen/wohnungen/kaufen")
@@ -77,7 +103,7 @@ def collect_immowelt_listings() -> list[dict]:
     if not anchors:
         anchors = soup.select("a[href*='/expose/'], a[href*='/immobilie/']")
 
-    for a in anchors[:120]:
+    for idx, a in enumerate(anchors[:120]):
         href = a.get("href")
         if not href:
             continue
@@ -103,6 +129,11 @@ def collect_immowelt_listings() -> list[dict]:
             desc = parent.get_text(" ", strip=True)[:500] or None
 
         img = _extract_best_image(a)
+        # If card image is missing/suspicious, enrich from expose detail page
+        if (not img or "logo" in img.lower() or "makler" in img.lower() or "mms.immowelt.de" not in img.lower()) and idx < 40:
+            detail_img = _extract_detail_image(c, url)
+            if detail_img:
+                img = detail_img
 
         price, area, rooms, price_per_sqm = _extract_numbers(title_attr or desc or "")
 
