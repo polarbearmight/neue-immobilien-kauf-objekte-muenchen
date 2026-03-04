@@ -5,8 +5,8 @@ from sqlalchemy import select, func, desc
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from app.db import SessionLocal, engine, Base, ensure_schema
-from app.models import Listing, Source
-from app.schemas import ListingOut, SourceOut
+from app.models import Listing, Source, Watchlist, AlertRule
+from app.schemas import ListingOut, SourceOut, AlertRuleIn
 from collectors.image_tools import hash_distance
 from collectors.source_discovery import SEED_SOURCES, discover_source_card, write_source_report
 from app.source_reliability import attach_reliability
@@ -36,7 +36,7 @@ def root():
     return {
         "name": "Neue Kauf Objekte München API",
         "ok": True,
-        "endpoints": ["/health", "/docs", "/listings", "/duplicates", "/stats", "/api/sources", "/api/discovery/run", "/api/price-drops"],
+        "endpoints": ["/health", "/docs", "/listings", "/duplicates", "/stats", "/api/sources", "/api/discovery/run", "/api/price-drops", "/api/watchlist", "/api/alert-rules"],
     }
 
 
@@ -139,6 +139,69 @@ def api_price_drops(limit: int = Query(200, ge=1, le=2000), db: Session = Depend
         if r.badges and "PRICE_DROP" in r.badges:
             out.append(r)
     return out
+
+
+@app.post("/api/watchlist/{listing_id}")
+def api_watchlist_add(listing_id: int, notes: str | None = None, db: Session = Depends(get_db)):
+    listing = db.execute(select(Listing).where(Listing.id == listing_id)).scalar_one_or_none()
+    if not listing:
+        return JSONResponse(status_code=404, content={"ok": False, "error": "listing_not_found"})
+
+    row = db.execute(select(Watchlist).where(Watchlist.listing_id == listing_id)).scalar_one_or_none()
+    if row:
+        if notes is not None:
+            row.notes = notes
+            db.commit()
+        return {"ok": True, "id": row.id, "listing_id": listing_id, "updated": True}
+
+    row = Watchlist(listing_id=listing_id, notes=notes)
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return {"ok": True, "id": row.id, "listing_id": listing_id, "updated": False}
+
+
+@app.get("/api/watchlist")
+def api_watchlist(db: Session = Depends(get_db)):
+    rows = db.execute(select(Watchlist).order_by(Watchlist.created_at.desc())).scalars().all()
+    out = []
+    for w in rows:
+        l = db.execute(select(Listing).where(Listing.id == w.listing_id)).scalar_one_or_none()
+        if not l:
+            continue
+        out.append(
+            {
+                "id": w.id,
+                "created_at": w.created_at,
+                "notes": w.notes,
+                "listing": {
+                    "id": l.id,
+                    "source": l.source,
+                    "title": l.title,
+                    "url": l.url,
+                    "price_eur": l.price_eur,
+                    "price_per_sqm": l.price_per_sqm,
+                    "deal_score": l.deal_score,
+                    "district": l.district,
+                },
+            }
+        )
+    return out
+
+
+@app.post("/api/alert-rules")
+def api_alert_rule_create(payload: AlertRuleIn, db: Session = Depends(get_db)):
+    row = AlertRule(**payload.model_dump())
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return {"ok": True, "id": row.id}
+
+
+@app.get("/api/alert-rules")
+def api_alert_rule_list(db: Session = Depends(get_db)):
+    rows = db.execute(select(AlertRule).order_by(AlertRule.created_at.desc())).scalars().all()
+    return rows
 
 
 @app.get("/api/clusters")

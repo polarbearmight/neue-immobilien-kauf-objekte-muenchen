@@ -19,6 +19,16 @@ class SourceOut(BaseModel):
         from_attributes = True
 
 
+class AlertRuleIn(BaseModel):
+    name: str
+    district: str | None = None
+    max_price: float | None = None
+    min_sqm: float | None = None
+    min_score: float | None = None
+    bucket: str | None = None
+    enabled: bool = True
+
+
 class ListingOut(BaseModel):
     source: str
     source_listing_id: str

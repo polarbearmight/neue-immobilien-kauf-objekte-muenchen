@@ -48,6 +48,29 @@ class ListingSnapshot(Base):
     raw_excerpt: Mapped[str | None] = mapped_column(String(512), nullable=True)
 
 
+class Watchlist(Base):
+    __tablename__ = "watchlist"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    listing_id: Mapped[int] = mapped_column(ForeignKey("listings.id"), unique=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    notes: Mapped[str | None] = mapped_column(String(512), nullable=True)
+
+
+class AlertRule(Base):
+    __tablename__ = "alert_rules"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(128), index=True)
+    district: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    max_price: Mapped[float | None] = mapped_column(Float, nullable=True)
+    min_sqm: Mapped[float | None] = mapped_column(Float, nullable=True)
+    min_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    bucket: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+
+
 class Listing(Base):
     __tablename__ = "listings"
     __table_args__ = (UniqueConstraint("source", "source_listing_id", name="uq_source_listing_id"),)

@@ -662,7 +662,7 @@ Quality gates:
 10) [DONE] clustering + “Seen on …”
 11) [DONE] source reliability scoring
 12) [DONE] AI Deal Analyzer + explain panel
-13) [OPEN] watchlist + alert rules
+13) [DONE] watchlist + alert rules
 
 ## Phase 4: shadcn UI polish
 14) Next.js app structure + global layout
