@@ -46,17 +46,25 @@ with side_col:
         index=0,
     )
     bucket = st.selectbox("Preis/m² Bucket", ["all", "9000", "12000", "unknown"], index=0)
-    limit = st.slider("Anzahl", 20, 200, 20)
+    limit = st.selectbox("Pro Seite", [20, 40, 60], index=0)
 
-stats = requests.get(f"{API}/stats", params={"days": 7}, timeout=10).json()
+try:
+    stats = requests.get(f"{API}/stats", params={"days": 7}, timeout=10).json()
+except Exception as e:
+    st.error(f"API /stats Fehler: {e}")
+    stats = {"new_listings": 0, "avg_price_per_sqm": None}
 
 k1, k2 = st.columns(2)
 k1.metric("Neue 7 Tage", stats.get("new_listings", 0))
 k2.metric("Ø €/m² (7 Tage)", stats.get("avg_price_per_sqm") or "-")
 
-items = requests.get(
-    f"{API}/listings", params={"bucket": bucket, "limit": limit, "sort": "newest"}, timeout=15
-).json()
+try:
+    items = requests.get(
+        f"{API}/listings", params={"bucket": bucket, "limit": limit, "sort": "newest"}, timeout=15
+    ).json()
+except Exception as e:
+    st.error(f"API /listings Fehler: {e}")
+    items = []
 
 if not items:
     st.info("Noch keine Daten vorhanden.")
@@ -88,7 +96,7 @@ with main_col:
 
         c1, c2 = st.columns([1.2, 2.8])
         with c1:
-            st.image(img, use_container_width=True)
+            st.image(img, use_column_width=True)
         with c2:
             st.markdown(f"### [{title}]({item.get('url')})")
             st.caption(f"Quelle: {str(item.get('source', '-')).upper()} · Online seit: {posted}")
