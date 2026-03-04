@@ -4,10 +4,10 @@ import json
 from datetime import datetime, timedelta
 from sqlalchemy import select, func
 
-from app.models import Listing
+from app.models import Listing, ListingSnapshot
 
 
-def compute_score(listing: Listing, city_median: float | None) -> tuple[float | None, list[str], dict]:
+def compute_score(listing: Listing, city_median: float | None, has_price_drop: bool = False) -> tuple[float | None, list[str], dict]:
     if not listing.price_per_sqm or not city_median or city_median <= 0:
         return None, [], {"reason": "missing_median_or_ppsqm"}
 
@@ -34,6 +34,10 @@ def compute_score(listing: Listing, city_median: float | None) -> tuple[float | 
         badges.append("UNDER_9000")
     elif listing.price_per_sqm <= 12000:
         badges.append("UNDER_12000")
+
+    if has_price_drop:
+        bonuses.append(("price_drop", 8))
+        badges.append("PRICE_DROP")
 
     if (listing.area_sqm or 0) < 20 or (listing.price_per_sqm or 0) < 2000:
         penalties.append(("suspicious", 20))
@@ -64,7 +68,18 @@ def recompute_scores(db, window_days: int = 14) -> int:
     rows = db.execute(select(Listing).where(Listing.price_per_sqm != None)).scalars().all()
     count = 0
     for row in rows:
-        score, badges, explain = compute_score(row, city_median)
+        snaps = db.execute(
+            select(ListingSnapshot)
+            .where(ListingSnapshot.listing_id == row.id, ListingSnapshot.price_eur != None)
+            .order_by(ListingSnapshot.captured_at.desc())
+            .limit(2)
+        ).scalars().all()
+        has_price_drop = False
+        if len(snaps) >= 2 and snaps[0].price_eur and snaps[1].price_eur and snaps[1].price_eur > 0:
+            drop_ratio = (snaps[1].price_eur - snaps[0].price_eur) / snaps[1].price_eur
+            has_price_drop = drop_ratio >= 0.05
+
+        score, badges, explain = compute_score(row, city_median, has_price_drop=has_price_drop)
         row.deal_score = score
         row.badges = json.dumps(badges, ensure_ascii=False)
         row.score_explain = json.dumps(explain, ensure_ascii=False)

@@ -648,7 +648,7 @@ Quality gates:
 ## Phase 1: Stabilität + Daten
 1) [DONE] DB migrations + new tables/columns
 2) [DONE] collector robust (no crash), source_runs logging
-3) [OPEN] snapshots + price drops
+3) [DONE] snapshots + price drops
 4) [DONE] scoring + badges + explainability
 5) [DONE] sources endpoint + health logic
 

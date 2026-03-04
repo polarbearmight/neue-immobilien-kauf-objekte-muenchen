@@ -36,7 +36,7 @@ def root():
     return {
         "name": "Neue Kauf Objekte München API",
         "ok": True,
-        "endpoints": ["/health", "/docs", "/listings", "/duplicates", "/stats", "/api/sources", "/api/discovery/run"],
+        "endpoints": ["/health", "/docs", "/listings", "/duplicates", "/stats", "/api/sources", "/api/discovery/run", "/api/price-drops"],
     }
 
 
@@ -124,6 +124,21 @@ def api_sources(db: Session = Depends(get_db)):
     q = select(Source).order_by(Source.name.asc())
     rows = db.execute(q).scalars().all()
     return attach_reliability(db, rows)
+
+
+@app.get("/api/price-drops")
+def api_price_drops(limit: int = Query(200, ge=1, le=2000), db: Session = Depends(get_db)):
+    rows = db.execute(
+        select(Listing)
+        .where(Listing.badges != None)
+        .order_by(desc(Listing.first_seen_at))
+        .limit(limit)
+    ).scalars().all()
+    out = []
+    for r in rows:
+        if r.badges and "PRICE_DROP" in r.badges:
+            out.append(r)
+    return out
 
 
 @app.get("/api/clusters")

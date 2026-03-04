@@ -4,7 +4,7 @@ from datetime import datetime
 from sqlalchemy import select
 
 from app.db import SessionLocal, Base, engine, ensure_schema
-from app.models import Listing, Source, SourceRun
+from app.models import Listing, Source, SourceRun, ListingSnapshot
 from collectors.image_tools import compute_phash_from_url
 from collectors.sz import collect_sz_listings
 from collectors.is24 import collect_is24_listings
@@ -97,9 +97,25 @@ def upsert_rows(db, rows: list[dict]) -> tuple[int, int]:
             existing.price_per_sqm = row.get("price_per_sqm") if row.get("price_per_sqm") is not None else existing.price_per_sqm
             existing.posted_at = row.get("posted_at") or existing.posted_at
             existing.url = row.get("url") or existing.url
+            db.add(ListingSnapshot(
+                listing_id=existing.id,
+                price_eur=existing.price_eur,
+                price_per_sqm=existing.price_per_sqm,
+                is_active=True,
+                raw_excerpt=(existing.title or "")[:200],
+            ))
             updated_count += 1
         else:
-            db.add(Listing(**row))
+            new_row = Listing(**row)
+            db.add(new_row)
+            db.flush()
+            db.add(ListingSnapshot(
+                listing_id=new_row.id,
+                price_eur=new_row.price_eur,
+                price_per_sqm=new_row.price_per_sqm,
+                is_active=True,
+                raw_excerpt=(new_row.title or "")[:200],
+            ))
             new_count += 1
     db.commit()
     return new_count, updated_count

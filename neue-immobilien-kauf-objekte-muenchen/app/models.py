@@ -36,6 +36,18 @@ class SourceRun(Base):
     notes: Mapped[str | None] = mapped_column(String(512), nullable=True)
 
 
+class ListingSnapshot(Base):
+    __tablename__ = "listing_snapshots"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    listing_id: Mapped[int] = mapped_column(ForeignKey("listings.id"), index=True)
+    captured_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, index=True)
+    price_eur: Mapped[float | None] = mapped_column(Float, nullable=True)
+    price_per_sqm: Mapped[float | None] = mapped_column(Float, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    raw_excerpt: Mapped[str | None] = mapped_column(String(512), nullable=True)
+
+
 class Listing(Base):
     __tablename__ = "listings"
     __table_args__ = (UniqueConstraint("source", "source_listing_id", name="uq_source_listing_id"),)
