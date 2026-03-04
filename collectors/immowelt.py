@@ -3,6 +3,7 @@ from datetime import datetime
 from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 from collectors.base import SafeCollector, AccessBlockedError
+from collectors.image_tools import is_probable_property_photo
 
 SEARCH_URL = "https://www.immowelt.de/suche/muenchen/wohnungen/kaufen"
 
@@ -130,10 +131,18 @@ def collect_immowelt_listings() -> list[dict]:
 
         img = _extract_best_image(a)
         # If card image is missing/suspicious, enrich from expose detail page
-        if (not img or "logo" in img.lower() or "makler" in img.lower() or "mms.immowelt.de" not in img.lower()) and idx < 40:
+        if (not img or "mms.immowelt.de" not in img.lower()) and idx < 40:
             detail_img = _extract_detail_image(c, url)
             if detail_img:
                 img = detail_img
+
+        # Final content-based check: skip broker logos, keep probable property photo
+        if img and not is_probable_property_photo(img):
+            detail_img = _extract_detail_image(c, url)
+            if detail_img and is_probable_property_photo(detail_img):
+                img = detail_img
+            else:
+                img = None
 
         price, area, rooms, price_per_sqm = _extract_numbers(title_attr or desc or "")
 
