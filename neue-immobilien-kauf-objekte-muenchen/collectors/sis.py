@@ -10,6 +10,7 @@ SEARCH_URL = "https://www.sis.de/immobilienangebote/?mt=buy"
 _price_re = re.compile(r"([\d\.,]{3,})\s*€")
 _area_re = re.compile(r"([\d\.,]{1,6})\s*m²")
 _rooms_re = re.compile(r"(\d+[\.,]?\d*)\s*(?:Zimmer|Zi)")
+_detail_link_re = re.compile(r"https://www\.sis\.de/immobilie/[^\"'\s<]+")
 
 
 def _to_num(val: str | None) -> float | None:
@@ -29,6 +30,17 @@ def _extract_numbers(text: str):
     return price, area, rooms, ppsqm
 
 
+def _collect_detail_links(html: str) -> list[str]:
+    links = []
+    seen = set()
+    for m in _detail_link_re.finditer(html):
+        url = m.group(0)
+        if url not in seen:
+            seen.add(url)
+            links.append(url)
+    return links
+
+
 def collect_sis_listings() -> list[dict]:
     c = SafeCollector()
     c.assert_allowed("https://www.sis.de/robots.txt", "/immobilienangebote/")
@@ -38,38 +50,40 @@ def collect_sis_listings() -> list[dict]:
         print(f"WARN sis blocked: {e}")
         return []
 
-    soup = BeautifulSoup(html, "html.parser")
+    detail_links = _collect_detail_links(html)
+
     rows = []
     seen = set()
-
-    # SIS page contains many navigation links. Restrict to concrete expose/detail URLs only.
-    anchors = soup.select("a[href]")
-    for a in anchors[:300]:
-        href = a.get("href")
-        if not href:
-            continue
-        url = href if href.startswith("http") else f"https://www.sis.de{href}"
-        low = url.lower()
-        if not any(k in low for k in ["/immobilie/", "/objekt/", "/expose/"]):
-            continue
+    for url in detail_links[:80]:
         sid = url.rstrip("/").split("/")[-1]
         if not sid or sid in seen:
             continue
         seen.add(sid)
 
-        parent = a.parent
-        text = (parent.get_text(" ", strip=True) if parent else a.get_text(" ", strip=True))[:3000]
-        title = a.get_text(" ", strip=True)[:300] or None
+        try:
+            detail_html = c.get(url)
+        except Exception:
+            continue
 
-        price, area, rooms, ppsqm = _extract_numbers(text)
+        soup = BeautifulSoup(detail_html, "html.parser")
+        full_text = soup.get_text(" ", strip=True)[:20000]
+
+        title = None
+        h1 = soup.find("h1")
+        if h1:
+            title = h1.get_text(" ", strip=True)[:300] or None
+
+        price, area, rooms, ppsqm = _extract_numbers(full_text)
+
+        district = None
+        loc = soup.select_one("[class*='location'], [class*='city'], [itemprop='addressLocality']")
+        if loc:
+            district = loc.get_text(" ", strip=True)[:120] or None
 
         img = None
-        if parent:
-            img_tag = parent.find("img")
-            if img_tag:
-                img = img_tag.get("src") or img_tag.get("data-src")
-                if img and img.startswith("/"):
-                    img = f"https://www.sis.de{img}"
+        og = soup.select_one("meta[property='og:image']")
+        if og and og.get("content"):
+            img = og.get("content")
 
         rows.append(
             {
@@ -77,8 +91,9 @@ def collect_sis_listings() -> list[dict]:
                 "source_listing_id": sid,
                 "url": url,
                 "title": title,
-                "description": text[:500],
+                "description": full_text[:500],
                 "image_url": img,
+                "district": district,
                 "price_eur": price,
                 "area_sqm": area,
                 "rooms": rooms,
@@ -88,5 +103,5 @@ def collect_sis_listings() -> list[dict]:
             }
         )
 
-    print(f"INFO sis parser: anchors={len(anchors)} rows={len(rows)}")
+    print(f"INFO sis parser(detail-pages): links={len(detail_links)} rows={len(rows)}")
     return rows
