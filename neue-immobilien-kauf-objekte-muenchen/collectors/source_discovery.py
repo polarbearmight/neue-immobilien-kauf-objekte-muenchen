@@ -13,6 +13,7 @@ SEED_SOURCES = [
     {"name": "Kleinanzeigen Immobilien", "base_url": "https://www.kleinanzeigen.de", "kind": "html"},
     {"name": "Ohne Makler", "base_url": "https://www.ohne-makler.net", "kind": "html"},
     {"name": "Wohnungsboerse", "base_url": "https://www.wohnungsboerse.net", "kind": "html"},
+    {"name": "SIS Immobilien", "base_url": "https://www.sis.de", "kind": "html"},
     {"name": "SZ Immobilien", "base_url": "https://immobilienmarkt.sueddeutsche.de", "kind": "html"},
 ]
 

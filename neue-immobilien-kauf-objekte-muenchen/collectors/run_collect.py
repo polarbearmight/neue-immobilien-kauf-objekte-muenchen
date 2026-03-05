@@ -13,6 +13,7 @@ from collectors.is24 import collect_is24_listings
 from collectors.immowelt import collect_immowelt_listings
 from collectors.ohne_makler import collect_ohne_makler_listings
 from collectors.wohnungsboerse import collect_wohnungsboerse_listings
+from collectors.sis import collect_sis_listings
 from collectors.source_validator import validate_source
 from app.scoring import recompute_scores
 from app.ai_deal_analyzer import analyze_listing, serialize_flags
@@ -24,6 +25,7 @@ COLLECTOR_MAP = {
     "immowelt": (collect_immowelt_listings, "https://www.immowelt.de"),
     "ohne_makler": (collect_ohne_makler_listings, "https://www.ohne-makler.net"),
     "wohnungsboerse": (collect_wohnungsboerse_listings, "https://www.wohnungsboerse.net"),
+    "sis": (collect_sis_listings, "https://www.sis.de"),
 }
 
 

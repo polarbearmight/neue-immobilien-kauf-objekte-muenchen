@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 
 from collectors.base import AccessBlockedError, SafeCollector
 
-SEARCH_URL = "https://www.ohne-makler.net/immobilien/wohnung-kaufen/bayern/munchen/"
+SEARCH_URL = "https://www.sis.de/immobilienangebote/?mt=buy"
 
 _price_re = re.compile(r"([\d\.,]{3,})\s*€")
 _area_re = re.compile(r"([\d\.,]{1,6})\s*m²")
@@ -29,32 +29,32 @@ def _extract_numbers(text: str):
     return price, area, rooms, ppsqm
 
 
-def collect_ohne_makler_listings() -> list[dict]:
+def collect_sis_listings() -> list[dict]:
     c = SafeCollector()
-    c.assert_allowed("https://www.ohne-makler.net/robots.txt", "/immobilien/wohnung-kaufen/bayern/munchen/")
+    c.assert_allowed("https://www.sis.de/robots.txt", "/immobilienangebote/")
     try:
         html = c.get(SEARCH_URL)
     except AccessBlockedError as e:
-        print(f"WARN ohne_makler blocked: {e}")
+        print(f"WARN sis blocked: {e}")
         return []
 
     soup = BeautifulSoup(html, "html.parser")
     rows = []
     seen = set()
 
-    anchors = soup.select("a[href*='/immobilie/']")
-    for a in anchors[:120]:
+    anchors = soup.select("a[href*='immobilien'], a[href*='angebot'], a[href*='objekt']")
+    for a in anchors[:150]:
         href = a.get("href")
         if not href:
             continue
-        url = href if href.startswith("http") else f"https://www.ohne-makler.net{href}"
+        url = href if href.startswith("http") else f"https://www.sis.de{href}"
         sid = url.rstrip("/").split("/")[-1]
         if not sid or sid in seen:
             continue
         seen.add(sid)
 
         parent = a.parent
-        text = (parent.get_text(" ", strip=True) if parent else a.get_text(" ", strip=True))[:2000]
+        text = (parent.get_text(" ", strip=True) if parent else a.get_text(" ", strip=True))[:3000]
         title = a.get_text(" ", strip=True)[:300] or None
 
         price, area, rooms, ppsqm = _extract_numbers(text)
@@ -65,11 +65,11 @@ def collect_ohne_makler_listings() -> list[dict]:
             if img_tag:
                 img = img_tag.get("src") or img_tag.get("data-src")
                 if img and img.startswith("/"):
-                    img = f"https://www.ohne-makler.net{img}"
+                    img = f"https://www.sis.de{img}"
 
         rows.append(
             {
-                "source": "ohne_makler",
+                "source": "sis",
                 "source_listing_id": sid,
                 "url": url,
                 "title": title,
@@ -84,5 +84,5 @@ def collect_ohne_makler_listings() -> list[dict]:
             }
         )
 
-    print(f"INFO ohne_makler parser: anchors={len(anchors)} rows={len(rows)}")
+    print(f"INFO sis parser: anchors={len(anchors)} rows={len(rows)}")
     return rows
