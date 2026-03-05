@@ -6,12 +6,24 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { Listing } from "@/lib/api";
 
 const eur = (v?: number | null) => (v == null ? "-" : new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(v));
-
 const columnHelper = createColumnHelper<Listing>();
+
+function badges(l: Listing) {
+  const out: string[] = [];
+  const ageHours = (Date.now() - new Date(l.first_seen_at).getTime()) / 3600000;
+  if (ageHours <= 2) out.push("🔥");
+  else if (ageHours <= 6) out.push("🟢");
+  if ((l.deal_score || 0) >= 92) out.push("💎");
+  else if ((l.deal_score || 0) >= 85) out.push("⭐");
+  if (l.badges?.includes("PRICE_DROP")) out.push("⬇");
+  if (l.badges?.includes("CHECK")) out.push("⚠");
+  return out.join(" ");
+}
 
 export function ListingTable({ rows, onDetails }: { rows: Listing[]; onDetails: (l: Listing) => void }) {
   const columns = useMemo(
     () => [
+      columnHelper.display({ id: "badges", header: "Badges", cell: (info) => badges(info.row.original) || "-" }),
       columnHelper.accessor("title", { header: "Title", cell: (info) => info.getValue() || "Ohne Titel" }),
       columnHelper.accessor("district", { header: "District", cell: (info) => info.getValue() || "-" }),
       columnHelper.accessor("rooms", { header: "Rooms", cell: (info) => info.getValue() ?? "-" }),
@@ -22,51 +34,31 @@ export function ListingTable({ rows, onDetails }: { rows: Listing[]; onDetails: 
       columnHelper.display({
         id: "actions",
         header: "",
-        cell: (info) => (
-          <button className="rounded border px-2 py-1 text-xs" onClick={() => onDetails(info.row.original)}>
-            Details
-          </button>
-        ),
+        cell: (info) => <button className="rounded border px-2 py-1 text-xs" onClick={() => onDetails(info.row.original)}>Details</button>,
       }),
     ],
     [onDetails]
   );
 
   const table = useReactTable({ data: rows, columns, getCoreRowModel: getCoreRowModel() });
-
   const parentRef = useRef<HTMLDivElement>(null);
-  const rowVirtualizer = useVirtualizer({
-    count: table.getRowModel().rows.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 46,
-    overscan: 10,
-  });
-
+  const rowVirtualizer = useVirtualizer({ count: table.getRowModel().rows.length, getScrollElement: () => parentRef.current, estimateSize: () => 48, overscan: 10 });
   const virtualRows = rowVirtualizer.getVirtualItems();
-  const totalSize = rowVirtualizer.getTotalSize();
 
   return (
     <div>
-      <div className="grid grid-cols-8 gap-2 border-b pb-2 text-xs font-medium text-muted-foreground">
-        {table.getHeaderGroups()[0].headers.map((header) => (
-          <div key={header.id}>{flexRender(header.column.columnDef.header, header.getContext())}</div>
-        ))}
+      <div className="grid grid-cols-9 gap-2 border-b pb-2 text-xs font-medium text-muted-foreground">
+        {table.getHeaderGroups()[0].headers.map((header) => <div key={header.id}>{flexRender(header.column.columnDef.header, header.getContext())}</div>)}
       </div>
       <div ref={parentRef} className="max-h-[65vh] overflow-auto">
-        <div style={{ height: `${totalSize}px`, position: "relative" }}>
+        <div style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: "relative" }}>
           {virtualRows.map((vr) => {
             const row = table.getRowModel().rows[vr.index];
+            const s = row.original.deal_score || 0;
+            const rowClass = s >= 92 ? "bg-muted/60 border-l-4" : s >= 85 ? "bg-muted/30" : row.original.badges?.includes("CHECK") ? "bg-destructive/5" : "";
             return (
-              <div
-                key={row.id}
-                className="grid grid-cols-8 gap-2 border-b py-2 text-sm"
-                style={{ position: "absolute", top: 0, left: 0, width: "100%", transform: `translateY(${vr.start}px)` }}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <div key={cell.id} className="truncate">
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </div>
-                ))}
+              <div key={row.id} className={`grid grid-cols-9 gap-2 border-b py-2 text-sm ${rowClass}`} style={{ position: "absolute", top: 0, left: 0, width: "100%", transform: `translateY(${vr.start}px)` }}>
+                {row.getVisibleCells().map((cell) => <div key={cell.id} className="truncate">{flexRender(cell.column.columnDef.cell, cell.getContext())}</div>)}
               </div>
             );
           })}
