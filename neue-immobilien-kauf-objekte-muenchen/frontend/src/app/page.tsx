@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { API_URL, Listing } from "@/lib/api";
+import { ListingDrawer } from "@/components/listing-drawer";
 
 const eur = (v?: number | null) => (v == null ? "-" : new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(v));
 
@@ -25,6 +26,8 @@ export default function Page() {
   const [sort, setSort] = useState("newest");
   const [minScore, setMinScore] = useState(0);
   const [query, setQuery] = useState("");
+  const [selected, setSelected] = useState<Listing | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<string>("-");
 
   useEffect(() => {
     const load = async () => {
@@ -33,6 +36,7 @@ export default function Page() {
       const res = await fetch(`${API_URL}/api/listings?${params.toString()}`, { cache: "no-store" });
       const data = await res.json();
       setItems(Array.isArray(data) ? data : []);
+      setLastUpdated(new Date().toLocaleTimeString("de-DE"));
       setLoading(false);
     };
     load();
@@ -46,9 +50,12 @@ export default function Page() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">Deal Finder · neueste zuerst · lokale Datenbank</p>
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+          <p className="text-sm text-muted-foreground">Deal Finder · neueste zuerst · lokale Datenbank</p>
+        </div>
+        <p className="text-xs text-muted-foreground">Last updated: {lastUpdated}</p>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[280px_1fr]">
@@ -93,7 +100,7 @@ export default function Page() {
                   const score = l.deal_score || 0;
                   const rowClass = score >= 92 ? "border-l-4 bg-muted/60" : score >= 85 ? "bg-muted/30" : "";
                   return (
-                    <a key={`${l.source}-${l.source_listing_id}`} href={l.url} target="_blank" rel="noreferrer" className={`block rounded-lg border p-3 text-sm hover:bg-muted/40 ${rowClass}`}>
+                    <div key={`${l.source}-${l.source_listing_id}`} className={`rounded-lg border p-3 text-sm hover:bg-muted/40 ${rowClass}`}>
                       <div className="mb-1 flex flex-wrap gap-2 text-xs">
                         {badgesFor(l).map((b) => <span key={b} className="rounded-full border px-2 py-0.5">{b}</span>)}
                       </div>
@@ -107,7 +114,11 @@ export default function Page() {
                           <p className="text-muted-foreground">{eur(l.price_per_sqm)}/m² · Score {Math.round(score)}</p>
                         </div>
                       </div>
-                    </a>
+                      <div className="mt-2 flex gap-2">
+                        <button className="rounded border px-2 py-1 text-xs" onClick={() => setSelected(l)}>Details</button>
+                        <a href={l.url} target="_blank" rel="noreferrer" className="rounded border px-2 py-1 text-xs">Open</a>
+                      </div>
+                    </div>
                   );
                 })}
               </div>
@@ -115,6 +126,7 @@ export default function Page() {
           </CardContent>
         </Card>
       </div>
+      <ListingDrawer listing={selected} onClose={() => setSelected(null)} />
     </div>
   );
 }

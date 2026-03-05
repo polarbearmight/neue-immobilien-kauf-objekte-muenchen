@@ -6,6 +6,7 @@ export type Listing = {
   source_listing_id: string;
   url: string;
   title?: string;
+  description?: string;
   district?: string;
   area_sqm?: number;
   rooms?: number;
@@ -13,6 +14,9 @@ export type Listing = {
   price_per_sqm?: number;
   deal_score?: number;
   badges?: string;
+  score_explain?: string;
+  ai_flags?: string;
+  cluster_id?: string;
   first_seen_at: string;
 };
 
