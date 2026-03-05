@@ -34,6 +34,11 @@ export REQUEST_DELAY_SECONDS=8
 export ENABLE_FALLBACK_SEED=true
 
 python -m collectors.run_collect
+# optional: fixture capture for tests
+python -m collectors.run_collect --source immowelt --dry-run --capture-fixture
+# optional: force (bypasses approval gate for local debugging only)
+python -m collectors.run_collect --source immowelt --force
+
 uvicorn app.main:app --reload --port 8001
 ```
 

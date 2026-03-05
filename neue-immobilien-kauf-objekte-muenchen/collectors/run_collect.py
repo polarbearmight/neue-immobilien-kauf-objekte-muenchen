@@ -1,6 +1,8 @@
 import argparse
+import json
 import os
 from datetime import datetime
+from pathlib import Path
 from sqlalchemy import select
 
 from app.db import SessionLocal, Base, engine, ensure_schema
@@ -43,6 +45,13 @@ def ensure_seed_row(rows: list[dict]) -> list[dict]:
     }]
 
 
+def _capture_fixture(source_name: str, rows: list[dict]):
+    d = Path("tests/fixtures") / source_name
+    d.mkdir(parents=True, exist_ok=True)
+    p = d / f"search-{datetime.utcnow().strftime('%Y%m%d-%H%M%S')}.json"
+    p.write_text(json.dumps(rows[:30], ensure_ascii=False, default=str, indent=2), encoding="utf-8")
+
+
 def get_or_create_source(db, name: str, base_url: str) -> Source:
     src = db.execute(select(Source).where(Source.name == name)).scalar_one_or_none()
     if not src:
@@ -53,15 +62,17 @@ def get_or_create_source(db, name: str, base_url: str) -> Source:
             src.updated_at = datetime.utcnow()
             db.commit()
         return src
+
+    approval_required = os.getenv("APPROVAL_REQUIRED", "true").lower() in ("1", "true", "yes")
     src = Source(
         name=name,
         base_url=base_url,
         kind="html",
         discovery_method="seed",
         robots_status="unknown",
-        approved=True,
-        enabled=True,
-        health_status="healthy",
+        approved=(not approval_required),
+        enabled=(not approval_required),
+        health_status="disabled" if approval_required else "healthy",
         rate_limit_seconds=8,
     )
     db.add(src)
@@ -121,9 +132,12 @@ def upsert_rows(db, rows: list[dict]) -> tuple[int, int]:
     return new_count, updated_count
 
 
-def run_one_source(db, source_name: str, dry_run: bool = False) -> dict:
+def run_one_source(db, source_name: str, dry_run: bool = False, force: bool = False, capture_fixture: bool = False) -> dict:
     collector, base_url = COLLECTOR_MAP[source_name]
     src = get_or_create_source(db, source_name, base_url)
+
+    if not force and (not src.approved or not src.enabled):
+        return {"source": source_name, "status": "skipped", "reason": "not_approved_or_disabled", "new": 0, "updated": 0}
 
     started = datetime.utcnow()
     run = SourceRun(source_id=src.id, started_at=started, status="ok", new_count=0, updated_count=0)
@@ -152,6 +166,9 @@ def run_one_source(db, source_name: str, dry_run: bool = False) -> dict:
     if source_name == "sz" and not rows:
         rows = ensure_seed_row(rows)
 
+    if capture_fixture:
+        _capture_fixture(source_name, rows)
+
     if not dry_run:
         new_count, updated_count = upsert_rows(db, rows)
     else:
@@ -173,6 +190,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--source", default="all", help="one source or all")
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--capture-fixture", action="store_true")
+    parser.add_argument("--force", action="store_true", help="collect even if source not approved/enabled")
     args = parser.parse_args()
 
     Base.metadata.create_all(bind=engine)
@@ -186,7 +205,7 @@ def main():
             if name not in COLLECTOR_MAP:
                 print(f"WARN unknown source: {name}")
                 continue
-            summary.append(run_one_source(db, name, dry_run=args.dry_run))
+            summary.append(run_one_source(db, name, dry_run=args.dry_run, force=args.force, capture_fixture=args.capture_fixture))
 
         # scoring + ai flags refresh after collection
         scored = recompute_scores(db)
