@@ -195,6 +195,11 @@ def run_one_source(db, source_name: str, dry_run: bool = False, force: bool = Fa
     return {"source": source_name, "status": run.status, "new": new_count, "updated": updated_count}
 
 
+def _disabled_sources() -> set[str]:
+    raw = os.getenv("DISABLED_SOURCES", "")
+    return {x.strip().lower() for x in raw.split(",") if x.strip()}
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--source", default="all", help="one source or all")
@@ -209,10 +214,14 @@ def main():
     db = SessionLocal()
     try:
         targets = [args.source] if args.source != "all" else list(COLLECTOR_MAP.keys())
+        disabled = _disabled_sources()
         summary = []
         for name in targets:
             if name not in COLLECTOR_MAP:
                 print(f"WARN unknown source: {name}")
+                continue
+            if name.lower() in disabled:
+                summary.append({"source": name, "status": "skipped", "reason": "disabled_by_env", "new": 0, "updated": 0})
                 continue
             summary.append(run_one_source(db, name, dry_run=args.dry_run, force=args.force, capture_fixture=args.capture_fixture))
 

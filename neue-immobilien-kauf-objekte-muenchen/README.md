@@ -40,6 +40,8 @@ python -m collectors.run_collect --source immowelt --dry-run --capture-fixture
 python -m collectors.run_collect --source immowelt --force
 # default behavior can bypass approval gate globally (recommended for local-only setup)
 export ALLOW_UNAPPROVED_SOURCES=true
+# optional hard skip list, comma-separated (e.g. block unstable sources)
+export DISABLED_SOURCES=is24
 
 uvicorn app.main:app --reload --port 8001
 ```
