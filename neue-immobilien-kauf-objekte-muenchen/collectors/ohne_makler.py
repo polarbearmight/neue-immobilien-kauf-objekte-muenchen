@@ -48,6 +48,9 @@ def collect_ohne_makler_listings() -> list[dict]:
         if not href:
             continue
         url = href if href.startswith("http") else f"https://www.ohne-makler.net{href}"
+        # keep only concrete listing detail pages (exclude list/search/navigation links)
+        if not re.search(r"/immobilie/\d+/?$", url):
+            continue
         sid = url.rstrip("/").split("/")[-1]
         if not sid or sid in seen:
             continue

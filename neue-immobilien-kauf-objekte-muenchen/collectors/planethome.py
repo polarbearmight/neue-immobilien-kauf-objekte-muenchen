@@ -42,12 +42,16 @@ def collect_planethome_listings() -> list[dict]:
     rows = []
     seen = set()
 
-    anchors = soup.select("a[href*='immobilien'], a[href*='objekt'], a[href*='angebot']")
-    for a in anchors[:150]:
+    # landing pages contain mostly navigation links; keep only concrete listing detail links
+    anchors = soup.select("a[href]")
+    for a in anchors[:300]:
         href = a.get("href")
         if not href:
             continue
         url = href if href.startswith("http") else f"https://planethome.de{href}"
+        low = url.lower()
+        if not any(k in low for k in ["/immobilie/", "/objekt/", "/expose/"]):
+            continue
         sid = url.rstrip("/").split("/")[-1]
         if not sid or sid in seen:
             continue

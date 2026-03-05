@@ -42,12 +42,16 @@ def collect_sis_listings() -> list[dict]:
     rows = []
     seen = set()
 
-    anchors = soup.select("a[href*='immobilien'], a[href*='angebot'], a[href*='objekt']")
-    for a in anchors[:150]:
+    # SIS page contains many navigation links. Restrict to concrete expose/detail URLs only.
+    anchors = soup.select("a[href]")
+    for a in anchors[:300]:
         href = a.get("href")
         if not href:
             continue
         url = href if href.startswith("http") else f"https://www.sis.de{href}"
+        low = url.lower()
+        if not any(k in low for k in ["/immobilie/", "/objekt/", "/expose/"]):
+            continue
         sid = url.rstrip("/").split("/")[-1]
         if not sid or sid in seen:
             continue
