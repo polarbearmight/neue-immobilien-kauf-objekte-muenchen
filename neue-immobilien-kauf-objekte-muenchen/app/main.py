@@ -13,6 +13,7 @@ from app.source_reliability import attach_reliability
 from collectors.image_tools import hash_distance
 from collectors.run_collect import COLLECTOR_MAP, run_one_source
 from collectors.source_discovery import SEED_SOURCES, discover_source_card, write_source_report
+from collectors.source_validator import validate_source
 
 app = FastAPI(title="Neue Kauf Objekte München API")
 app.add_middleware(
@@ -190,6 +191,42 @@ def api_sources(db: Session = Depends(get_db)):
 def api_price_drops(limit: int = Query(200, ge=1, le=2000), db: Session = Depends(get_db)):
     rows = db.execute(select(Listing).where(Listing.badges.is_not(None)).order_by(desc(Listing.first_seen_at)).limit(limit)).scalars().all()
     return [r for r in rows if r.badges and "PRICE_DROP" in r.badges]
+
+
+@app.post("/api/sources/{source_id}/enable")
+def api_source_enable(source_id: int, enabled: bool = True, db: Session = Depends(get_db)):
+    row = db.execute(select(Source).where(Source.id == source_id)).scalar_one_or_none()
+    if not row:
+        return JSONResponse(status_code=404, content={"ok": False, "error": "source_not_found"})
+    if enabled and not row.approved:
+        return JSONResponse(status_code=400, content={"ok": False, "error": "source_not_approved"})
+    row.enabled = enabled
+    if not enabled:
+        row.health_status = "disabled"
+    row.updated_at = datetime.utcnow()
+    db.commit()
+    return {"ok": True, "id": row.id, "enabled": row.enabled, "health_status": row.health_status}
+
+
+@app.post("/api/sources/{source_id}/self-test")
+def api_source_self_test(source_id: int, db: Session = Depends(get_db)):
+    row = db.execute(select(Source).where(Source.id == source_id)).scalar_one_or_none()
+    if not row:
+        return JSONResponse(status_code=404, content={"ok": False, "error": "source_not_found"})
+
+    result = validate_source(row.base_url)
+    row.health_status = result.status if row.enabled else "disabled"
+    row.last_error = None if result.status == "healthy" else result.notes
+    row.updated_at = datetime.utcnow()
+    db.commit()
+    return {
+        "ok": True,
+        "source": row.name,
+        "status": row.health_status,
+        "robots": result.robots,
+        "http_status": result.http_status,
+        "notes": result.notes,
+    }
 
 
 @app.post("/api/watchlist/{listing_id}")

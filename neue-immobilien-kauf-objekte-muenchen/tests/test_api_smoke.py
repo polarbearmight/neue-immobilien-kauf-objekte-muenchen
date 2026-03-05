@@ -27,3 +27,9 @@ def test_stats_endpoint_works():
     assert r.status_code == 200
     payload = r.json()
     assert "new_listings" in payload
+
+
+def test_sources_endpoint_works():
+    r = client.get("/api/sources")
+    assert r.status_code == 200
+    assert isinstance(r.json(), list)
