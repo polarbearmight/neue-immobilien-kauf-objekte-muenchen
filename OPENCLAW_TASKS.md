@@ -654,9 +654,9 @@ Quality gates:
 
 ## Phase 2: Multi-source + Discovery
 6) [DONE] source discovery engine + source cards reports
-7) [PARTIAL DONE] validator + approval/enabling flow
+7) [DONE] validator + approval/enabling flow
 8) [DONE] adapter generator skeleton
-9) [OPEN] 3–5 erste approved sources integrieren (API/RSS/JSON-LD bevorzugt)
+9) [PARTIAL DONE] 3–5 erste approved sources integrieren (API/RSS/JSON-LD bevorzugt) — seed collectors vorhanden, produktive Aktivierung bleibt manuell (approval-gated)
 
 ## Phase 3: Dedup + Intelligence
 10) [DONE] clustering + “Seen on …”
@@ -665,11 +665,11 @@ Quality gates:
 13) [DONE] watchlist + alert rules
 
 ## Phase 4: shadcn UI polish
-14) Next.js app structure + global layout
-15) dashboard page + filters + table + drawer
-16) pages: deals, brand-new, price-drops, clusters, sources, settings
-17) charts + exports + virtualization
-18) final UX passes (spacing, typography, dark mode)
+14) [DONE] Next.js app structure + global layout
+15) [DONE] dashboard page + filters + table + drawer
+16) [DONE] pages: deals, brand-new, price-drops, clusters, sources, settings
+17) [DONE] charts + exports + virtualization
+18) [DONE] final UX passes (spacing, typography, dark mode)
 
 ---
 
@@ -688,10 +688,10 @@ Quality gates:
 - [DONE] `collectors/adapter_generator.py`
 - [DONE] `collectors/run_collect.py` hardened
 - [DONE] `app/scoring.py`, `app/ai_deal_analyzer.py`, `app/dedup.py`, `app/source_reliability.py`
-- [ ] FastAPI endpoints `/api/*`
-- [ ] UI Next.js app with pages/components per spec
-- [ ] tests + fixtures tooling
-- [ ] README local run + troubleshooting
+- [DONE] FastAPI endpoints `/api/*`
+- [DONE] UI Next.js app with pages/components per spec
+- [DONE] tests + fixtures tooling
+- [DONE] README local run + troubleshooting
 
 ---
 
