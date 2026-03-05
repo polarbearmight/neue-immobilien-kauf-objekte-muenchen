@@ -1,0 +1,29 @@
+from pathlib import Path
+import sys
+
+from fastapi.testclient import TestClient
+
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+from app.main import app
+
+
+client = TestClient(app)
+
+
+def test_health_ok():
+    r = client.get("/health")
+    assert r.status_code == 200
+    assert r.json().get("ok") is True
+
+
+def test_listings_endpoint_works():
+    r = client.get("/api/listings?limit=5")
+    assert r.status_code == 200
+    assert isinstance(r.json(), list)
+
+
+def test_stats_endpoint_works():
+    r = client.get("/api/stats?days=7")
+    assert r.status_code == 200
+    payload = r.json()
+    assert "new_listings" in payload

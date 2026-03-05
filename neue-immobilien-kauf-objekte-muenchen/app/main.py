@@ -1,15 +1,18 @@
-from fastapi import FastAPI, Query, Depends
-from fastapi.responses import JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import select, func, desc
-from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
-from app.db import SessionLocal, engine, Base, ensure_schema
-from app.models import Listing, Source, Watchlist, AlertRule
-from app.schemas import ListingOut, SourceOut, AlertRuleIn
-from collectors.image_tools import hash_distance
-from collectors.source_discovery import SEED_SOURCES, discover_source_card, write_source_report
+
+from fastapi import Depends, FastAPI, Query
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from sqlalchemy import desc, func, select
+from sqlalchemy.orm import Session
+
+from app.db import Base, SessionLocal, engine, ensure_schema
+from app.models import AlertRule, Listing, ListingSnapshot, Source, Watchlist
+from app.schemas import AlertRuleIn, ListingOut, SourceOut
 from app.source_reliability import attach_reliability
+from collectors.image_tools import hash_distance
+from collectors.run_collect import COLLECTOR_MAP, run_one_source
+from collectors.source_discovery import SEED_SOURCES, discover_source_card, write_source_report
 
 app = FastAPI(title="Neue Kauf Objekte München API")
 app.add_middleware(
@@ -36,7 +39,20 @@ def root():
     return {
         "name": "Neue Kauf Objekte München API",
         "ok": True,
-        "endpoints": ["/health", "/docs", "/listings", "/duplicates", "/stats", "/api/sources", "/api/discovery/run", "/api/price-drops", "/api/watchlist", "/api/alert-rules"],
+        "endpoints": [
+            "/health",
+            "/docs",
+            "/api/listings",
+            "/api/listings/{id}",
+            "/api/stats",
+            "/api/sources",
+            "/api/clusters",
+            "/api/collect/run",
+            "/api/discovery/run",
+            "/api/price-drops",
+            "/api/watchlist",
+            "/api/alert-rules",
+        ],
     }
 
 
@@ -55,24 +71,49 @@ def health():
 def listings(
     bucket: str = Query("all", pattern="^(9000|12000|all|unknown)$"),
     sort: str = Query("newest", pattern="^(newest|oldest|score|ppsm|price)$"),
-    limit: int = Query(20, ge=1, le=1000),
+    limit: int = Query(20, ge=1, le=2000),
     offset: int = Query(0, ge=0),
     min_score: float = Query(0, ge=0, le=100),
+    district: str | None = None,
+    source: str | None = None,
     brand_new: bool = False,
     just_listed: bool = False,
+    price_min: float | None = Query(None, ge=0),
+    price_max: float | None = Query(None, ge=0),
+    sqm_min: float | None = Query(None, ge=0),
+    sqm_max: float | None = Query(None, ge=0),
+    rooms_min: float | None = Query(None, ge=0),
+    rooms_max: float | None = Query(None, ge=0),
     db: Session = Depends(get_db),
 ):
     q = select(Listing)
 
     if bucket == "9000":
-        q = q.where(Listing.price_per_sqm != None, Listing.price_per_sqm <= 9000)
+        q = q.where(Listing.price_per_sqm.is_not(None), Listing.price_per_sqm <= 9000)
     elif bucket == "12000":
-        q = q.where(Listing.price_per_sqm != None, Listing.price_per_sqm <= 12000)
+        q = q.where(Listing.price_per_sqm.is_not(None), Listing.price_per_sqm <= 12000)
     elif bucket == "unknown":
-        q = q.where(Listing.price_per_sqm == None)
+        q = q.where(Listing.price_per_sqm.is_(None))
 
     if min_score > 0:
-        q = q.where(Listing.deal_score != None, Listing.deal_score >= min_score)
+        q = q.where(Listing.deal_score.is_not(None), Listing.deal_score >= min_score)
+    if district:
+        q = q.where(Listing.district.ilike(f"%{district.strip()}%"))
+    if source:
+        q = q.where(Listing.source == source.strip().lower())
+
+    if price_min is not None:
+        q = q.where(Listing.price_eur.is_not(None), Listing.price_eur >= price_min)
+    if price_max is not None:
+        q = q.where(Listing.price_eur.is_not(None), Listing.price_eur <= price_max)
+    if sqm_min is not None:
+        q = q.where(Listing.area_sqm.is_not(None), Listing.area_sqm >= sqm_min)
+    if sqm_max is not None:
+        q = q.where(Listing.area_sqm.is_not(None), Listing.area_sqm <= sqm_max)
+    if rooms_min is not None:
+        q = q.where(Listing.rooms.is_not(None), Listing.rooms >= rooms_min)
+    if rooms_max is not None:
+        q = q.where(Listing.rooms.is_not(None), Listing.rooms <= rooms_max)
 
     now = datetime.utcnow()
     if just_listed:
@@ -90,14 +131,33 @@ def listings(
     elif sort == "price":
         order = (Listing.price_eur.asc().nulls_last(), desc(Listing.first_seen_at))
 
-    q = q.order_by(*order).offset(offset).limit(limit)
-    return db.execute(q).scalars().all()
+    return db.execute(q.order_by(*order).offset(offset).limit(limit)).scalars().all()
+
+
+@app.get("/api/listings/{listing_id}", response_model=ListingOut)
+def listing_detail(listing_id: int, db: Session = Depends(get_db)):
+    row = db.execute(select(Listing).where(Listing.id == listing_id)).scalar_one_or_none()
+    if not row:
+        return JSONResponse(status_code=404, content={"ok": False, "error": "listing_not_found"})
+    return row
+
+
+@app.post("/api/collect/run")
+def api_collect_run(source: str = Query("all"), dry_run: bool = Query(False), db: Session = Depends(get_db)):
+    targets = [source] if source != "all" else list(COLLECTOR_MAP.keys())
+    summary = []
+    for name in targets:
+        if name not in COLLECTOR_MAP:
+            summary.append({"source": name, "status": "unknown_source"})
+            continue
+        summary.append(run_one_source(db, name, dry_run=dry_run))
+    return {"ok": True, "dry_run": dry_run, "summary": summary}
 
 
 @app.get("/duplicates")
 @app.get("/api/duplicates")
 def duplicates(limit: int = Query(100, ge=10, le=500), max_distance: int = Query(8, ge=0, le=32), db: Session = Depends(get_db)):
-    rows = db.execute(select(Listing).where(Listing.image_hash != None).order_by(desc(Listing.first_seen_at)).limit(limit)).scalars().all()
+    rows = db.execute(select(Listing).where(Listing.image_hash.is_not(None)).order_by(desc(Listing.first_seen_at)).limit(limit)).scalars().all()
     out = []
     for i in range(len(rows)):
         a = rows[i]
@@ -128,17 +188,8 @@ def api_sources(db: Session = Depends(get_db)):
 
 @app.get("/api/price-drops")
 def api_price_drops(limit: int = Query(200, ge=1, le=2000), db: Session = Depends(get_db)):
-    rows = db.execute(
-        select(Listing)
-        .where(Listing.badges != None)
-        .order_by(desc(Listing.first_seen_at))
-        .limit(limit)
-    ).scalars().all()
-    out = []
-    for r in rows:
-        if r.badges and "PRICE_DROP" in r.badges:
-            out.append(r)
-    return out
+    rows = db.execute(select(Listing).where(Listing.badges.is_not(None)).order_by(desc(Listing.first_seen_at)).limit(limit)).scalars().all()
+    return [r for r in rows if r.badges and "PRICE_DROP" in r.badges]
 
 
 @app.post("/api/watchlist/{listing_id}")
@@ -200,18 +251,12 @@ def api_alert_rule_create(payload: AlertRuleIn, db: Session = Depends(get_db)):
 
 @app.get("/api/alert-rules")
 def api_alert_rule_list(db: Session = Depends(get_db)):
-    rows = db.execute(select(AlertRule).order_by(AlertRule.created_at.desc())).scalars().all()
-    return rows
+    return db.execute(select(AlertRule).order_by(AlertRule.created_at.desc())).scalars().all()
 
 
 @app.get("/api/clusters")
 def api_clusters(limit: int = Query(200, ge=1, le=2000), db: Session = Depends(get_db)):
-    rows = db.execute(
-        select(Listing)
-        .where(Listing.cluster_id != None)
-        .order_by(desc(Listing.first_seen_at))
-        .limit(limit)
-    ).scalars().all()
+    rows = db.execute(select(Listing).where(Listing.cluster_id.is_not(None)).order_by(desc(Listing.first_seen_at)).limit(limit)).scalars().all()
     clusters = {}
     for r in rows:
         clusters.setdefault(r.cluster_id, []).append(
@@ -265,9 +310,31 @@ def api_discovery_run(db: Session = Depends(get_db)):
 def stats(days: int = Query(7, ge=1, le=90), db: Session = Depends(get_db)):
     since = datetime.utcnow() - timedelta(days=days)
     new_count = db.scalar(select(func.count()).select_from(Listing).where(Listing.first_seen_at >= since))
-    median_proxy = db.scalar(select(func.avg(Listing.price_per_sqm)).where(Listing.first_seen_at >= since, Listing.price_per_sqm != None))
+    avg_ppsqm = db.scalar(select(func.avg(Listing.price_per_sqm)).where(Listing.first_seen_at >= since, Listing.price_per_sqm.is_not(None)))
+    top_deals = db.scalar(select(func.count()).select_from(Listing).where(Listing.first_seen_at >= since, Listing.deal_score.is_not(None), Listing.deal_score >= 85))
     return {
         "days": days,
         "new_listings": int(new_count or 0),
-        "avg_price_per_sqm": round(float(median_proxy), 2) if median_proxy else None,
+        "avg_price_per_sqm": round(float(avg_ppsqm), 2) if avg_ppsqm else None,
+        "top_deals": int(top_deals or 0),
     }
+
+
+@app.get("/api/listings/{listing_id}/snapshots")
+def listing_snapshots(listing_id: int, limit: int = Query(50, ge=1, le=500), db: Session = Depends(get_db)):
+    rows = db.execute(
+        select(ListingSnapshot)
+        .where(ListingSnapshot.listing_id == listing_id)
+        .order_by(desc(ListingSnapshot.captured_at))
+        .limit(limit)
+    ).scalars().all()
+    return [
+        {
+            "id": r.id,
+            "captured_at": r.captured_at,
+            "price_eur": r.price_eur,
+            "price_per_sqm": r.price_per_sqm,
+            "is_active": r.is_active,
+        }
+        for r in rows
+    ]
