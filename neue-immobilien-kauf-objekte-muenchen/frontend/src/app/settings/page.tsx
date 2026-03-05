@@ -10,6 +10,11 @@ export default function SettingsPage() {
   const [rules, setRules] = useState<Rule[]>([]);
   const [watchlist, setWatchlist] = useState<Watch[]>([]);
   const [name, setName] = useState("");
+  const [aiModifier, setAiModifier] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    const raw = localStorage.getItem("deal-ui-settings");
+    return raw ? (JSON.parse(raw).aiModifier ?? true) : true;
+  });
 
   const [brandNewHours, setBrandNewHours] = useState<number>(() => {
     if (typeof window === "undefined") return 6;
@@ -40,7 +45,7 @@ export default function SettingsPage() {
   useEffect(() => { load(); }, []);
 
   const savePrefs = () => {
-    localStorage.setItem("deal-ui-settings", JSON.stringify({ brandNewHours, justListedHours, priceDrop }));
+    localStorage.setItem("deal-ui-settings", JSON.stringify({ brandNewHours, justListedHours, priceDrop, aiModifier }));
   };
 
   const createRule = async () => {
@@ -63,6 +68,10 @@ export default function SettingsPage() {
         <label className="block">BRAND_NEW_HOURS: {brandNewHours}<input className="w-full" type="range" min={1} max={24} value={brandNewHours} onChange={(e) => setBrandNewHours(Number(e.target.value))} /></label>
         <label className="block">JUST_LISTED_HOURS: {justListedHours}<input className="w-full" type="range" min={1} max={12} value={justListedHours} onChange={(e) => setJustListedHours(Number(e.target.value))} /></label>
         <label className="block">PRICE_DROP_THRESHOLD: {priceDrop}%<input className="w-full" type="range" min={1} max={20} value={priceDrop} onChange={(e) => setPriceDrop(Number(e.target.value))} /></label>
+        <label className="flex items-center gap-2">
+          <input type="checkbox" checked={aiModifier} onChange={(e) => setAiModifier(e.target.checked)} />
+          AI Deal Analyzer modifier on/off
+        </label>
         <button className="rounded border px-3 py-1" onClick={savePrefs}>Save UI preferences</button>
       </div>
 
