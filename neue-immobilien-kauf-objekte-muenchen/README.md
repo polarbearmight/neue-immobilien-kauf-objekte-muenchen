@@ -12,7 +12,7 @@ Lokales System für neue Kaufwohnungen in München.
   - `POST /api/discovery/run`
   - Watchlist + Alert Rules Endpoints
 - SQLAlchemy Datenmodell inkl. snapshots/source_runs/watchlist/alert_rules
-- Collector-Runner (SZ + IS24 + Immowelt + Ohne-Makler + Wohnungsboerse + SIS), source validation, scoring, ai-flags, dedup/clustering
+- Collector-Runner (SZ + IS24 + Immowelt + Ohne-Makler + Wohnungsboerse + SIS + PlanetHome), source validation, scoring, ai-flags, dedup/clustering
 - Next.js + shadcn UI mit Seiten:
   - Dashboard, Deal Radar, Brand New, Price Drops, Clusters, Sources, Settings
 
