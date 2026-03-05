@@ -29,7 +29,10 @@ export function ListingDrawer({ listing, onClose }: { listing: Listing | null; o
       <button className="flex-1 bg-black/30" onClick={onClose} aria-label="Close" />
       <aside className="h-full w-full max-w-xl overflow-y-auto border-l bg-background p-6">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Listing Details</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-semibold">Listing Details</h2>
+            <a href={listing.url} target="_blank" rel="noreferrer" className="inline-block rounded border px-2 py-1 text-xs hover:bg-muted">Open listing</a>
+          </div>
           <Button variant="outline" size="sm" onClick={onClose}>Schließen</Button>
         </div>
 
