@@ -656,7 +656,7 @@ Quality gates:
 6) [DONE] source discovery engine + source cards reports
 7) [DONE] validator + approval/enabling flow
 8) [DONE] adapter generator skeleton
-9) [PARTIAL DONE] 3–5 erste approved sources integrieren (API/RSS/JSON-LD bevorzugt) — seed collectors vorhanden, produktive Aktivierung bleibt manuell (approval-gated)
+9) [DONE] 3–5 erste approved-source Integrationen im Code umgesetzt (sz/is24/immowelt/ohne_makler/wohnungsboerse); produktive Aktivierung bleibt manuell (approval-gated)
 
 ## Phase 3: Dedup + Intelligence
 10) [DONE] clustering + “Seen on …”
