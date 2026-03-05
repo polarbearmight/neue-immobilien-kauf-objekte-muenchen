@@ -5,7 +5,8 @@ from app.models import Source
 from collectors.run_collect import run_one_source
 
 
-def test_run_collect_skips_unapproved_disabled_source():
+def test_run_collect_skips_unapproved_disabled_source(monkeypatch):
+    monkeypatch.setenv("ALLOW_UNAPPROVED_SOURCES", "false")
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:

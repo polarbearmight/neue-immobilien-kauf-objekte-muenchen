@@ -36,8 +36,10 @@ export ENABLE_FALLBACK_SEED=true
 python -m collectors.run_collect
 # optional: fixture capture for tests
 python -m collectors.run_collect --source immowelt --dry-run --capture-fixture
-# optional: force (bypasses approval gate for local debugging only)
+# optional: force (bypasses approval gate for one run)
 python -m collectors.run_collect --source immowelt --force
+# default behavior can bypass approval gate globally (recommended for local-only setup)
+export ALLOW_UNAPPROVED_SOURCES=true
 
 uvicorn app.main:app --reload --port 8001
 ```

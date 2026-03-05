@@ -144,7 +144,10 @@ def run_one_source(db, source_name: str, dry_run: bool = False, force: bool = Fa
     collector, base_url = COLLECTOR_MAP[source_name]
     src = get_or_create_source(db, source_name, base_url)
 
-    if not force and (not src.approved or not src.enabled):
+    allow_unapproved = os.getenv("ALLOW_UNAPPROVED_SOURCES", "true").lower() in ("1", "true", "yes")
+    effective_force = force or allow_unapproved
+
+    if not effective_force and (not src.approved or not src.enabled):
         return {"source": source_name, "status": "skipped", "reason": "not_approved_or_disabled", "new": 0, "updated": 0}
 
     started = datetime.utcnow()
@@ -154,7 +157,7 @@ def run_one_source(db, source_name: str, dry_run: bool = False, force: bool = Fa
     db.refresh(run)
 
     validation = validate_source(base_url)
-    src.health_status = validation.status if src.enabled else "disabled"
+    src.health_status = validation.status if (src.enabled or effective_force) else "disabled"
     src.last_error = validation.notes if validation.status != "healthy" else None
 
     if validation.status == "blocked":
