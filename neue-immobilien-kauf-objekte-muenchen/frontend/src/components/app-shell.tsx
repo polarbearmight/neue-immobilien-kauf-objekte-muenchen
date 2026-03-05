@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 
 const nav = [
   ["Dashboard", "/"],
@@ -15,6 +16,17 @@ const nav = [
 
 export function AppShell({ children }: { children: JSX.Element | JSX.Element[] }) {
   const pathname = usePathname();
+  const [dark, setDark] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return document.documentElement.classList.contains("dark");
+  });
+
+  const toggleTheme = () => {
+    const next = !dark;
+    setDark(next);
+    document.documentElement.classList.toggle("dark", next);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto flex max-w-[1400px]">
@@ -28,7 +40,14 @@ export function AppShell({ children }: { children: JSX.Element | JSX.Element[] }
             ))}
           </nav>
         </aside>
-        <main className="flex-1 px-4 py-4 md:px-6 md:py-6">{children}</main>
+        <main className="flex-1 px-4 py-4 md:px-6 md:py-6">
+          <div className="mb-4 flex items-center justify-between rounded-xl border px-3 py-2 text-sm">
+            <input placeholder="Search (page-local)" className="w-full max-w-xs rounded border px-2 py-1 text-xs" disabled />
+            <button className="rounded border px-2 py-1 text-xs" onClick={() => location.reload()}>Refresh</button>
+            <button className="rounded border px-2 py-1 text-xs" onClick={toggleTheme}>{dark ? "Light" : "Dark"}</button>
+          </div>
+          {children}
+        </main>
       </div>
     </div>
   );

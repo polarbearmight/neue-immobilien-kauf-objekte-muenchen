@@ -33,3 +33,8 @@ def test_sources_endpoint_works():
     r = client.get("/api/sources")
     assert r.status_code == 200
     assert isinstance(r.json(), list)
+
+
+def test_source_approve_not_found():
+    r = client.post("/api/sources/999999/approve?approved=true")
+    assert r.status_code == 404
