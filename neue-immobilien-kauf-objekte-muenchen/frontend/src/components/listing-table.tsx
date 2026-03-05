@@ -34,7 +34,21 @@ export function ListingTable({ rows, onDetails }: { rows: Listing[]; onDetails: 
       columnHelper.display({
         id: "actions",
         header: "",
-        cell: (info) => <button className="rounded border px-2 py-1 text-xs" onClick={() => onDetails(info.row.original)}>Details</button>,
+        cell: (info) => (
+          <div className="flex items-center gap-2">
+            <a
+              className="rounded border px-2 py-1 text-xs"
+              href={info.row.original.url}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Link
+            </a>
+            <button className="rounded border px-2 py-1 text-xs" onClick={() => onDetails(info.row.original)}>
+              Details
+            </button>
+          </div>
+        ),
       }),
     ],
     [onDetails]
