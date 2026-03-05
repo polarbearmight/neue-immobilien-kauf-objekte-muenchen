@@ -29,16 +29,14 @@ export function ListingDrawer({ listing, onClose }: { listing: Listing | null; o
       <button className="flex-1 bg-black/30" onClick={onClose} aria-label="Close" />
       <aside className="h-full w-full max-w-xl overflow-y-auto border-l bg-background p-6">
         <div className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg font-semibold">Listing Details</h2>
-            <a href={listing.url} target="_blank" rel="noreferrer" className="inline-block rounded border px-2 py-1 text-xs hover:bg-muted">Open listing</a>
-          </div>
+          <h2 className="text-lg font-semibold">Listing Details</h2>
           <Button variant="outline" size="sm" onClick={onClose}>Schließen</Button>
         </div>
 
         <div className="space-y-3 text-sm">
           <p className="text-base font-semibold">{listing.title || "Ohne Titel"}</p>
           <p className="text-muted-foreground">{listing.district || "-"} · {listing.source}</p>
+          <a href={listing.url} target="_blank" rel="noreferrer" className="block truncate text-xs text-blue-600 underline underline-offset-2">{listing.url}</a>
           <div className="flex flex-wrap gap-1">
             {badgeList.length ? badgeList.map((b) => <span key={b} className="rounded-full border px-2 py-0.5 text-xs">{b}</span>) : <span className="text-xs text-muted-foreground">No badges</span>}
           </div>
@@ -69,8 +67,27 @@ export function ListingDrawer({ listing, onClose }: { listing: Listing | null; o
             </div>
           </details>
 
-          <div className="flex gap-2">
-            <a href={listing.url} target="_blank" rel="noreferrer" className="inline-block rounded border px-3 py-2 text-sm hover:bg-muted">Open listing</a>
+          <div className="sticky bottom-0 flex flex-wrap gap-2 border-t bg-background pt-3">
+            <a
+              href={listing.url}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-block rounded bg-black px-3 py-2 text-sm text-white hover:opacity-90"
+            >
+              Open listing ↗
+            </a>
+            <button
+              className="inline-block rounded border px-3 py-2 text-sm hover:bg-muted"
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(listing.url);
+                } catch {
+                  // ignore clipboard errors silently
+                }
+              }}
+            >
+              Copy link
+            </button>
             <button
               className="inline-block rounded border px-3 py-2 text-sm hover:bg-muted"
               onClick={async () => {
