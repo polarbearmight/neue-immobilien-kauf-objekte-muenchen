@@ -4,13 +4,29 @@ import { useEffect, useState } from "react";
 import { API_URL } from "@/lib/api";
 
 type Source = { id: number; name: string; health_status: string; reliability_score?: number; approved: boolean; enabled: boolean; last_error?: string };
+type SourceRun = { id: number; started_at: string; status: string; new_count: number; updated_count: number; notes?: string };
 
 export default function SourcesPage() {
   const [sources, setSources] = useState<Source[]>([]);
+  const [runsBySource, setRunsBySource] = useState<Record<number, SourceRun[]>>({});
 
   const load = async () => {
     const r = await fetch(`${API_URL}/api/sources`, { cache: "no-store" });
-    setSources(await r.json());
+    const srcRows: Source[] = await r.json();
+    setSources(srcRows);
+
+    const entries = await Promise.all(
+      srcRows.map(async (s) => {
+        try {
+          const rr = await fetch(`${API_URL}/api/sources/${s.id}/runs?limit=3`, { cache: "no-store" });
+          const rows = await rr.json();
+          return [s.id, Array.isArray(rows) ? rows : []] as const;
+        } catch {
+          return [s.id, []] as const;
+        }
+      })
+    );
+    setRunsBySource(Object.fromEntries(entries));
   };
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -40,6 +56,11 @@ export default function SourcesPage() {
                   Reliability {s.reliability_score ?? "-"} · approved={String(s.approved)} · enabled={String(s.enabled)}
                 </p>
                 {s.last_error ? <p className="text-xs text-destructive">{s.last_error}</p> : null}
+                <div className="mt-2 space-y-1 text-xs text-muted-foreground">
+                  {(runsBySource[s.id] || []).map((r) => (
+                    <p key={r.id}>{new Date(r.started_at).toLocaleString("de-DE")} · {r.status} · +{r.new_count}/~{r.updated_count}</p>
+                  ))}
+                </div>
               </div>
               <div className="flex gap-2">
                 <button className="rounded border px-2 py-1" onClick={() => selfTest(s.id)}>Self-test</button>

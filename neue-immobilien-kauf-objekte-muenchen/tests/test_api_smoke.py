@@ -38,3 +38,8 @@ def test_sources_endpoint_works():
 def test_source_approve_not_found():
     r = client.post("/api/sources/999999/approve?approved=true")
     assert r.status_code == 404
+
+
+def test_source_runs_not_found():
+    r = client.get("/api/sources/999999/runs")
+    assert r.status_code == 404

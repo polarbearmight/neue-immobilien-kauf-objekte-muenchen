@@ -8,7 +8,7 @@ from collections import defaultdict
 from sqlalchemy.orm import Session
 
 from app.db import Base, SessionLocal, engine, ensure_schema
-from app.models import AlertRule, Listing, ListingSnapshot, Source, Watchlist
+from app.models import AlertRule, Listing, ListingSnapshot, Source, SourceRun, Watchlist
 from app.schemas import AlertRuleIn, ListingOut, SourceOut
 from app.source_reliability import attach_reliability
 from collectors.image_tools import hash_distance
@@ -186,6 +186,31 @@ def api_sources(db: Session = Depends(get_db)):
     q = select(Source).order_by(Source.name.asc())
     rows = db.execute(q).scalars().all()
     return attach_reliability(db, rows)
+
+
+@app.get("/api/sources/{source_id}/runs")
+def api_source_runs(source_id: int, limit: int = Query(20, ge=1, le=200), db: Session = Depends(get_db)):
+    src = db.execute(select(Source).where(Source.id == source_id)).scalar_one_or_none()
+    if not src:
+        return JSONResponse(status_code=404, content={"ok": False, "error": "source_not_found"})
+    rows = db.execute(
+        select(SourceRun)
+        .where(SourceRun.source_id == source_id)
+        .order_by(desc(SourceRun.started_at))
+        .limit(limit)
+    ).scalars().all()
+    return [
+        {
+            "id": r.id,
+            "started_at": r.started_at,
+            "finished_at": r.finished_at,
+            "status": r.status,
+            "new_count": r.new_count,
+            "updated_count": r.updated_count,
+            "notes": r.notes,
+        }
+        for r in rows
+    ]
 
 
 @app.get("/api/price-drops")
