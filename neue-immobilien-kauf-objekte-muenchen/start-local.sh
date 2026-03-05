@@ -31,8 +31,32 @@ cd "$ROOT_DIR/frontend"
 NEXT_PUBLIC_API_URL="http://127.0.0.1:${BACKEND_PORT}" npm run dev -- --port "$FRONTEND_PORT" &
 FRONT_PID=$!
 
+wait_for_url() {
+  local url="$1"
+  local retries="${2:-90}"
+  local delay="${3:-1}"
+  for _ in $(seq 1 "$retries"); do
+    if curl -fsS "$url" >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep "$delay"
+  done
+  return 1
+}
+
 echo "Backend:  http://127.0.0.1:${BACKEND_PORT}"
 echo "Frontend: http://127.0.0.1:${FRONTEND_PORT}"
-echo "Press Ctrl+C to stop both."
 
+if wait_for_url "http://127.0.0.1:${FRONTEND_PORT}"; then
+  if command -v open >/dev/null 2>&1; then
+    open "http://127.0.0.1:${FRONTEND_PORT}" || true
+  elif command -v xdg-open >/dev/null 2>&1; then
+    xdg-open "http://127.0.0.1:${FRONTEND_PORT}" || true
+  fi
+  echo "Browser opened automatically."
+else
+  echo "Frontend did not become reachable in time. Check logs above (port conflict or npm error)."
+fi
+
+echo "Press Ctrl+C to stop both."
 wait -n "$BACK_PID" "$FRONT_PID"
