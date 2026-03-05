@@ -1,7 +1,7 @@
 import argparse
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from sqlalchemy import select
 
@@ -33,7 +33,7 @@ def ensure_seed_row(rows: list[dict]) -> list[dict]:
     enable_seed = os.getenv("ENABLE_FALLBACK_SEED", "true").lower() in ("1", "true", "yes")
     if rows or not enable_seed:
         return rows
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     return [{
         "source": "seed",
         "source_listing_id": f"seed-{now.strftime('%Y%m%d')}",
@@ -54,7 +54,7 @@ def ensure_seed_row(rows: list[dict]) -> list[dict]:
 def _capture_fixture(source_name: str, rows: list[dict]):
     d = Path("tests/fixtures") / source_name
     d.mkdir(parents=True, exist_ok=True)
-    p = d / f"search-{datetime.utcnow().strftime('%Y%m%d-%H%M%S')}.json"
+    p = d / f"search-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}.json"
     p.write_text(json.dumps(rows[:30], ensure_ascii=False, default=str, indent=2), encoding="utf-8")
 
 
@@ -65,7 +65,7 @@ def get_or_create_source(db, name: str, base_url: str) -> Source:
     if src:
         if src.name != name:
             src.name = name
-            src.updated_at = datetime.utcnow()
+            src.updated_at = datetime.now(timezone.utc)
             db.commit()
         return src
 
@@ -101,7 +101,7 @@ def upsert_rows(db, rows: list[dict]) -> tuple[int, int]:
             )
         ).scalar_one_or_none()
         if existing:
-            existing.last_seen_at = datetime.utcnow()
+            existing.last_seen_at = datetime.now(timezone.utc)
             existing.title = row.get("title") or existing.title
             existing.description = row.get("description") or existing.description
             existing.image_url = row.get("image_url") or existing.image_url
@@ -148,7 +148,7 @@ def run_one_source(db, source_name: str, dry_run: bool = False, force: bool = Fa
     if not effective_force and (not src.approved or not src.enabled):
         return {"source": source_name, "status": "skipped", "reason": "not_approved_or_disabled", "new": 0, "updated": 0}
 
-    started = datetime.utcnow()
+    started = datetime.now(timezone.utc)
     run = SourceRun(source_id=src.id, started_at=started, status="ok", new_count=0, updated_count=0)
     db.add(run)
     db.commit()
@@ -161,7 +161,7 @@ def run_one_source(db, source_name: str, dry_run: bool = False, force: bool = Fa
     if validation.status == "blocked":
         run.status = "degraded"
         run.notes = f"validation blocked: {validation.notes}"
-        run.finished_at = datetime.utcnow()
+        run.finished_at = datetime.now(timezone.utc)
         db.commit()
         return {"source": source_name, "status": "blocked", "new": 0, "updated": 0}
 
@@ -185,11 +185,11 @@ def run_one_source(db, source_name: str, dry_run: bool = False, force: bool = Fa
 
     run.new_count = new_count
     run.updated_count = updated_count
-    run.finished_at = datetime.utcnow()
+    run.finished_at = datetime.now(timezone.utc)
     if run.status == "ok":
         run.notes = validation.notes
-    src.last_success_at = datetime.utcnow() if run.status == "ok" else src.last_success_at
-    src.updated_at = datetime.utcnow()
+    src.last_success_at = datetime.now(timezone.utc) if run.status == "ok" else src.last_success_at
+    src.updated_at = datetime.now(timezone.utc)
     db.commit()
 
     return {"source": source_name, "status": run.status, "new": new_count, "updated": updated_count}
