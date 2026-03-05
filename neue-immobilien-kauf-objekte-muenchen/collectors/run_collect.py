@@ -9,7 +9,6 @@ from app.db import SessionLocal, Base, engine, ensure_schema
 from app.models import Listing, Source, SourceRun, ListingSnapshot
 from collectors.image_tools import compute_phash_from_url
 from collectors.sz import collect_sz_listings
-from collectors.is24 import collect_is24_listings
 from collectors.immowelt import collect_immowelt_listings
 from collectors.ohne_makler import collect_ohne_makler_listings
 from collectors.wohnungsboerse import collect_wohnungsboerse_listings
@@ -22,7 +21,6 @@ from app.dedup import assign_clusters
 
 COLLECTOR_MAP = {
     "sz": (collect_sz_listings, "https://immobilienmarkt.sueddeutsche.de"),
-    "is24": (collect_is24_listings, "https://www.immobilienscout24.de"),
     "immowelt": (collect_immowelt_listings, "https://www.immowelt.de"),
     "ohne_makler": (collect_ohne_makler_listings, "https://www.ohne-makler.net"),
     "wohnungsboerse": (collect_wohnungsboerse_listings, "https://www.wohnungsboerse.net"),
