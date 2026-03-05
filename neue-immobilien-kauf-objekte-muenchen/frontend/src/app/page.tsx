@@ -68,7 +68,33 @@ export default function Page() {
           <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
           <p className="text-sm text-muted-foreground">Deal Finder · neueste zuerst · lokale Datenbank</p>
         </div>
-        <p className="text-xs text-muted-foreground">Last updated: {lastUpdated}</p>
+        <div className="flex items-center gap-2">
+          <button
+            className="rounded border px-2 py-1 text-xs"
+            onClick={() => {
+              const header = ["title", "district", "source", "price_eur", "price_per_sqm", "score", "url"];
+              const rows = filtered.map((l) => [
+                (l.title || "").replaceAll(",", " "),
+                (l.district || "").replaceAll(",", " "),
+                l.source,
+                String(l.price_eur ?? ""),
+                String(l.price_per_sqm ?? ""),
+                String(Math.round(l.deal_score || 0)),
+                l.url,
+              ]);
+              const csv = [header, ...rows].map((r) => r.join(",")).join("\n");
+              const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+              const a = document.createElement("a");
+              a.href = URL.createObjectURL(blob);
+              a.download = "listings-export.csv";
+              a.click();
+              URL.revokeObjectURL(a.href);
+            }}
+          >
+            Export CSV
+          </button>
+          <p className="text-xs text-muted-foreground">Last updated: {lastUpdated}</p>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">

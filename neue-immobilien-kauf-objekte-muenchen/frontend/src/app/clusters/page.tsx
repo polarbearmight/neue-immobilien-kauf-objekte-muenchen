@@ -8,7 +8,13 @@ export default async function ClustersPage() {
       <div className="space-y-3">
         {clusters.map((c) => (
           <div key={c.cluster_id} className="rounded-xl border p-4 text-sm">
-            <p className="mb-2 font-medium">Cluster {c.cluster_id} · {c.members_count} Quellen</p>
+            <div className="mb-2 flex items-center justify-between">
+              <p className="font-medium">Cluster {c.cluster_id} · {c.members_count} Quellen</p>
+              <div className="flex gap-2">
+                <button className="rounded border px-2 py-1 text-xs" title="Manual override coming soon">Merge</button>
+                <button className="rounded border px-2 py-1 text-xs" title="Manual override coming soon">Split</button>
+              </div>
+            </div>
             <ul className="space-y-1 text-muted-foreground">
               {c.members.map((m) => (
                 <li key={`${m.source}-${m.source_listing_id}`}>
