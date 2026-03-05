@@ -4,6 +4,7 @@ from fastapi import Depends, FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import desc, func, select
+from collections import defaultdict
 from sqlalchemy.orm import Session
 
 from app.db import Base, SessionLocal, engine, ensure_schema
@@ -193,6 +194,20 @@ def api_price_drops(limit: int = Query(200, ge=1, le=2000), db: Session = Depend
     return [r for r in rows if r.badges and "PRICE_DROP" in r.badges]
 
 
+@app.post("/api/sources/{source_id}/approve")
+def api_source_approve(source_id: int, approved: bool = True, db: Session = Depends(get_db)):
+    row = db.execute(select(Source).where(Source.id == source_id)).scalar_one_or_none()
+    if not row:
+        return JSONResponse(status_code=404, content={"ok": False, "error": "source_not_found"})
+    row.approved = approved
+    if not approved:
+        row.enabled = False
+        row.health_status = "disabled"
+    row.updated_at = datetime.utcnow()
+    db.commit()
+    return {"ok": True, "id": row.id, "approved": row.approved, "enabled": row.enabled}
+
+
 @app.post("/api/sources/{source_id}/enable")
 def api_source_enable(source_id: int, enabled: bool = True, db: Session = Depends(get_db)):
     row = db.execute(select(Source).where(Source.id == source_id)).scalar_one_or_none()
@@ -349,11 +364,30 @@ def stats(days: int = Query(7, ge=1, le=90), db: Session = Depends(get_db)):
     new_count = db.scalar(select(func.count()).select_from(Listing).where(Listing.first_seen_at >= since))
     avg_ppsqm = db.scalar(select(func.avg(Listing.price_per_sqm)).where(Listing.first_seen_at >= since, Listing.price_per_sqm.is_not(None)))
     top_deals = db.scalar(select(func.count()).select_from(Listing).where(Listing.first_seen_at >= since, Listing.deal_score.is_not(None), Listing.deal_score >= 85))
+
+    rows = db.execute(select(Listing.first_seen_at, Listing.price_per_sqm).where(Listing.first_seen_at >= since)).all()
+    counts = defaultdict(int)
+    ppsm_sum = defaultdict(float)
+    ppsm_cnt = defaultdict(int)
+    for ts, ppsm in rows:
+        d = ts.date().isoformat()
+        counts[d] += 1
+        if ppsm is not None:
+            ppsm_sum[d] += float(ppsm)
+            ppsm_cnt[d] += 1
+
+    series = []
+    for i in range(days - 1, -1, -1):
+        d = (datetime.utcnow() - timedelta(days=i)).date().isoformat()
+        avg = (ppsm_sum[d] / ppsm_cnt[d]) if ppsm_cnt[d] else None
+        series.append({"date": d, "count": counts[d], "avg_ppsqm": round(avg, 2) if avg else None})
+
     return {
         "days": days,
         "new_listings": int(new_count or 0),
         "avg_price_per_sqm": round(float(avg_ppsqm), 2) if avg_ppsqm else None,
         "top_deals": int(top_deals or 0),
+        "series": series,
     }
 
 

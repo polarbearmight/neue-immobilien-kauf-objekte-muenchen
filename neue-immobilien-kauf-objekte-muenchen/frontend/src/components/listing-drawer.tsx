@@ -1,6 +1,6 @@
 "use client";
 
-import { Listing } from "@/lib/api";
+import { Listing, API_URL } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 
 const eur = (v?: number | null) => (v == null ? "-" : new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(v));
@@ -41,7 +41,18 @@ export function ListingDrawer({ listing, onClose }: { listing: Listing | null; o
             <p className="rounded border p-2 text-muted-foreground">{listing.ai_flags || "-"}</p>
           </div>
 
-          <a href={listing.url} target="_blank" rel="noreferrer" className="inline-block rounded border px-3 py-2 text-sm hover:bg-muted">Open listing</a>
+          <div className="flex gap-2">
+            <a href={listing.url} target="_blank" rel="noreferrer" className="inline-block rounded border px-3 py-2 text-sm hover:bg-muted">Open listing</a>
+            <button
+              className="inline-block rounded border px-3 py-2 text-sm hover:bg-muted"
+              onClick={async () => {
+                if (!listing.id) return;
+                await fetch(`${API_URL}/api/watchlist/${listing.id}`, { method: "POST" });
+              }}
+            >
+              Save to Watchlist
+            </button>
+          </div>
         </div>
       </aside>
     </div>

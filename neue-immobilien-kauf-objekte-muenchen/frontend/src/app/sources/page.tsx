@@ -40,6 +40,7 @@ export default function SourcesPage() {
               </div>
               <div className="flex gap-2">
                 <button className="rounded border px-2 py-1" onClick={() => selfTest(s.id)}>Self-test</button>
+                <button className="rounded border px-2 py-1" onClick={async () => { await fetch(`${API_URL}/api/sources/${s.id}/approve?approved=${String(!s.approved)}`, { method: "POST" }); load(); }}>{s.approved ? "Unapprove" : "Approve"}</button>
                 <button className="rounded border px-2 py-1" onClick={() => toggle(s.id, !s.enabled)}>{s.enabled ? "Disable" : "Enable"}</button>
               </div>
             </div>

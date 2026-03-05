@@ -4,8 +4,16 @@ import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { API_URL, Listing } from "@/lib/api";
 import { ListingDrawer } from "@/components/listing-drawer";
+import { MiniBarChart } from "@/components/mini-bar-chart";
 
 const eur = (v?: number | null) => (v == null ? "-" : new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(v));
+
+type Stats = {
+  new_listings: number;
+  avg_price_per_sqm: number | null;
+  top_deals?: number;
+  series?: Array<{ date: string; count: number; avg_ppsqm: number | null }>;
+};
 
 function badgesFor(l: Listing): string[] {
   const out: string[] = [];
@@ -21,6 +29,7 @@ function badgesFor(l: Listing): string[] {
 
 export default function Page() {
   const [items, setItems] = useState<Listing[]>([]);
+  const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [bucket, setBucket] = useState("all");
   const [sort, setSort] = useState("newest");
@@ -33,9 +42,13 @@ export default function Page() {
     const load = async () => {
       setLoading(true);
       const params = new URLSearchParams({ bucket, sort, limit: "500", min_score: String(minScore) });
-      const res = await fetch(`${API_URL}/api/listings?${params.toString()}`, { cache: "no-store" });
-      const data = await res.json();
-      setItems(Array.isArray(data) ? data : []);
+      const [lRes, sRes] = await Promise.all([
+        fetch(`${API_URL}/api/listings?${params.toString()}`, { cache: "no-store" }),
+        fetch(`${API_URL}/api/stats?days=7`, { cache: "no-store" }),
+      ]);
+      const [lData, sData] = await Promise.all([lRes.json(), sRes.json()]);
+      setItems(Array.isArray(lData) ? lData : []);
+      setStats(sData || null);
       setLastUpdated(new Date().toLocaleTimeString("de-DE"));
       setLoading(false);
     };
@@ -58,8 +71,24 @@ export default function Page() {
         <p className="text-xs text-muted-foreground">Last updated: {lastUpdated}</p>
       </div>
 
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card className="rounded-2xl"><CardHeader><CardTitle className="text-sm">New last 7d</CardTitle></CardHeader><CardContent className="text-2xl font-semibold">{stats?.new_listings ?? 0}</CardContent></Card>
+        <Card className="rounded-2xl"><CardHeader><CardTitle className="text-sm">Median/avg €/m²</CardTitle></CardHeader><CardContent className="text-2xl font-semibold">{eur(stats?.avg_price_per_sqm)}</CardContent></Card>
+        <Card className="rounded-2xl"><CardHeader><CardTitle className="text-sm">Top deals</CardTitle></CardHeader><CardContent className="text-2xl font-semibold">{stats?.top_deals ?? 0}</CardContent></Card>
+        <Card className="rounded-2xl"><CardHeader><CardTitle className="text-sm">Shown</CardTitle></CardHeader><CardContent className="text-2xl font-semibold">{filtered.length}</CardContent></Card>
+      </div>
+
+      {stats?.series?.length ? (
+        <Card className="rounded-2xl">
+          <CardHeader><CardTitle className="text-lg">Listings per day (7d)</CardTitle></CardHeader>
+          <CardContent>
+            <MiniBarChart data={stats.series.map((s) => ({ label: s.date, value: s.count }))} />
+          </CardContent>
+        </Card>
+      ) : null}
+
       <div className="grid gap-4 lg:grid-cols-[280px_1fr]">
-        <Card className="h-fit lg:sticky lg:top-6">
+        <Card className="h-fit rounded-2xl lg:sticky lg:top-6">
           <CardHeader><CardTitle className="text-lg">Filters</CardTitle></CardHeader>
           <CardContent className="space-y-4 text-sm">
             <div>
@@ -91,11 +120,11 @@ export default function Page() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="rounded-2xl">
           <CardHeader><CardTitle className="text-lg">Listings ({filtered.length})</CardTitle></CardHeader>
           <CardContent>
             {loading ? <p className="text-sm text-muted-foreground">Lade…</p> : (
-              <div className="space-y-2">
+              <div className="space-y-2 max-h-[65vh] overflow-auto">
                 {filtered.map((l) => {
                   const score = l.deal_score || 0;
                   const rowClass = score >= 92 ? "border-l-4 bg-muted/60" : score >= 85 ? "bg-muted/30" : "";

@@ -1,17 +1,25 @@
 import { getListings } from "@/lib/api";
 
+function ageLabel(firstSeen: string) {
+  const minutes = Math.max(0, Math.round((Date.now() - new Date(firstSeen).getTime()) / 60000));
+  if (minutes < 60) return `${minutes} min ago`;
+  return `${Math.round(minutes / 60)} h ago`;
+}
+
 export default async function BrandNewPage() {
-  const listings = await getListings("brand_new=true&sort=newest&limit=100");
+  const listings = await getListings("brand_new=true&sort=newest&limit=120");
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold tracking-tight">Brand New</h1>
-      <ul className="space-y-2">
+      <div className="space-y-2">
         {listings.map((l) => (
-          <li key={`${l.source}-${l.source_listing_id}`} className="rounded-lg border p-3 text-sm">
-            {l.title || "Ohne Titel"} <span className="text-muted-foreground">({l.source})</span>
-          </li>
+          <div key={`${l.source}-${l.source_listing_id}`} className="rounded-xl border p-3 text-sm">
+            <p className="font-medium">{l.title || "Ohne Titel"}</p>
+            <p className="text-muted-foreground">{ageLabel(l.first_seen_at)} · {l.district || "-"} · {l.source}</p>
+            <a href={l.url} target="_blank" rel="noreferrer" className="mt-2 inline-block text-xs underline">Open</a>
+          </div>
         ))}
-      </ul>
+      </div>
     </div>
   );
 }
