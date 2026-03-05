@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { API_URL, Listing } from "@/lib/api";
 import { ListingDrawer } from "@/components/listing-drawer";
 import { MiniBarChart } from "@/components/mini-bar-chart";
+import { ListingTable } from "@/components/listing-table";
 
 const eur = (v?: number | null) => (v == null ? "-" : new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(v));
 
@@ -14,18 +15,6 @@ type Stats = {
   top_deals?: number;
   series?: Array<{ date: string; count: number; avg_ppsqm: number | null }>;
 };
-
-function badgesFor(l: Listing): string[] {
-  const out: string[] = [];
-  const ageHours = (Date.now() - new Date(l.first_seen_at).getTime()) / 3600000;
-  if (ageHours <= 2) out.push("🔥 JUST_LISTED");
-  else if (ageHours <= 6) out.push("🟢 BRAND_NEW");
-  if ((l.deal_score || 0) >= 92) out.push("💎 ULTRA");
-  else if ((l.deal_score || 0) >= 85) out.push("⭐ TOP_DEAL");
-  if (l.badges?.includes("PRICE_DROP")) out.push("⬇ PRICE_DROP");
-  if (l.badges?.includes("CHECK")) out.push("⚠ CHECK");
-  return out;
-}
 
 export default function Page() {
   const [items, setItems] = useState<Listing[]>([]);
@@ -149,35 +138,7 @@ export default function Page() {
         <Card className="rounded-2xl">
           <CardHeader><CardTitle className="text-lg">Listings ({filtered.length})</CardTitle></CardHeader>
           <CardContent>
-            {loading ? <p className="text-sm text-muted-foreground">Lade…</p> : (
-              <div className="space-y-2 max-h-[65vh] overflow-auto">
-                {filtered.map((l) => {
-                  const score = l.deal_score || 0;
-                  const rowClass = score >= 92 ? "border-l-4 bg-muted/60" : score >= 85 ? "bg-muted/30" : "";
-                  return (
-                    <div key={`${l.source}-${l.source_listing_id}`} className={`rounded-lg border p-3 text-sm hover:bg-muted/40 ${rowClass}`}>
-                      <div className="mb-1 flex flex-wrap gap-2 text-xs">
-                        {badgesFor(l).map((b) => <span key={b} className="rounded-full border px-2 py-0.5">{b}</span>)}
-                      </div>
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="font-medium">{l.title || "Ohne Titel"}</p>
-                          <p className="text-muted-foreground">{l.district || "-"} · {l.area_sqm || "-"} m² · {l.rooms || "-"} Zi. · {l.source}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold">{eur(l.price_eur)}</p>
-                          <p className="text-muted-foreground">{eur(l.price_per_sqm)}/m² · Score {Math.round(score)}</p>
-                        </div>
-                      </div>
-                      <div className="mt-2 flex gap-2">
-                        <button className="rounded border px-2 py-1 text-xs" onClick={() => setSelected(l)}>Details</button>
-                        <a href={l.url} target="_blank" rel="noreferrer" className="rounded border px-2 py-1 text-xs">Open</a>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+            {loading ? <p className="text-sm text-muted-foreground">Lade…</p> : <ListingTable rows={filtered} onDetails={setSelected} />}
           </CardContent>
         </Card>
       </div>
