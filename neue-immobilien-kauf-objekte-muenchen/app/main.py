@@ -907,6 +907,8 @@ def api_geo_listings(
                 "source": r.source,
                 "url": r.url,
                 "price_eur": r.price_eur,
+                "rooms": r.rooms,
+                "area_sqm": r.area_sqm,
                 "price_per_sqm": r.price_per_sqm,
                 "deal_score": r.deal_score,
                 "off_market_score": r.off_market_score,
