@@ -39,6 +39,11 @@ class ListingOut(BaseModel):
     image_hash: str | None = None
     district: str | None = None
     address: str | None = None
+    postal_code: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+    location_confidence: float | None = None
+    district_source: str | None = None
     area_sqm: float | None = None
     price_eur: float | None = None
     price_per_sqm: float | None = None

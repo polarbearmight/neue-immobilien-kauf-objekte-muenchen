@@ -41,6 +41,9 @@ def _row_hash(row: dict) -> str:
         "description": row.get("description") or "",
         "district": row.get("district") or "",
         "address": row.get("address") or "",
+        "postal_code": row.get("postal_code") or "",
+        "latitude": row.get("latitude"),
+        "longitude": row.get("longitude"),
         "price_eur": row.get("price_eur"),
         "area_sqm": row.get("area_sqm"),
         "rooms": row.get("rooms"),
@@ -167,6 +170,11 @@ def upsert_rows(db, rows: list[dict], source_name: str) -> tuple[int, int, int]:
             existing.image_hash = row.get("image_hash") or existing.image_hash
             existing.address = row.get("address") or existing.address
             existing.district = row.get("district") or existing.district
+            existing.postal_code = row.get("postal_code") or existing.postal_code
+            existing.latitude = row.get("latitude") if row.get("latitude") is not None else existing.latitude
+            existing.longitude = row.get("longitude") if row.get("longitude") is not None else existing.longitude
+            existing.location_confidence = row.get("location_confidence") if row.get("location_confidence") is not None else existing.location_confidence
+            existing.district_source = row.get("district_source") or existing.district_source
             existing.price_eur = row.get("price_eur") if row.get("price_eur") is not None else existing.price_eur
             existing.area_sqm = row.get("area_sqm") if row.get("area_sqm") is not None else existing.area_sqm
             existing.rooms = row.get("rooms") if row.get("rooms") is not None else existing.rooms

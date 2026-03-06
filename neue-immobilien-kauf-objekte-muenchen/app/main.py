@@ -157,6 +157,7 @@ def root():
             "/api/sources",
             "/api/clusters",
             "/api/off-market",
+            "/api/districts",
             "/api/collect/run",
             "/api/scan/run",
             "/api/scan/status",
@@ -187,6 +188,8 @@ def listings(
     offset: int = Query(0, ge=0),
     min_score: float = Query(0, ge=0, le=100),
     district: str | None = None,
+    districts: str | None = None,
+    postal_code: str | None = None,
     source: str | None = None,
     brand_new: bool = False,
     just_listed: bool = False,
@@ -215,6 +218,12 @@ def listings(
         q = q.where(Listing.deal_score.is_not(None), Listing.deal_score >= min_score)
     if district:
         q = q.where(Listing.district.ilike(f"%{district.strip()}%"))
+    if districts:
+        district_list = [x.strip() for x in districts.split(",") if x.strip()]
+        if district_list:
+            q = q.where(Listing.district.in_(district_list))
+    if postal_code:
+        q = q.where(Listing.postal_code == postal_code.strip())
     if source:
         q = q.where(Listing.source == source.strip().lower())
 
@@ -327,6 +336,11 @@ def listing_detail_expanded(listing_id: int, db: Session = Depends(get_db)):
             "description": listing.description,
             "district": listing.district,
             "address": listing.address,
+            "postal_code": listing.postal_code,
+            "latitude": listing.latitude,
+            "longitude": listing.longitude,
+            "location_confidence": listing.location_confidence,
+            "district_source": listing.district_source,
             "rooms": listing.rooms,
             "area_sqm": listing.area_sqm,
             "price_eur": listing.price_eur,
@@ -713,6 +727,36 @@ def api_discovery_run(db: Session = Depends(get_db)):
 
     db.commit()
     return {"ok": True, "sources": len(created), "reports": created}
+
+
+@app.get("/api/districts")
+def api_districts(db: Session = Depends(get_db)):
+    rows = db.execute(
+        select(
+            Listing.district,
+            func.count().label("cnt"),
+            func.avg(Listing.price_per_sqm).label("avg_ppsqm"),
+            func.avg(Listing.deal_score).label("avg_score"),
+            func.sum(case((Listing.deal_score >= 85, 1), else_=0)).label("top_deals"),
+        )
+        .where(Listing.district.is_not(None), Listing.is_active.is_(True))
+        .group_by(Listing.district)
+        .order_by(func.count().desc())
+    ).all()
+
+    out = []
+    for d, c, ppsm, avg_score, top_deals in rows:
+        clean = _normalize_district_name(d)
+        if not clean:
+            continue
+        out.append({
+            "district": clean,
+            "listing_count": int(c),
+            "median_or_avg_ppsqm": round(float(ppsm), 2) if ppsm else None,
+            "top_deals": int(top_deals or 0),
+            "avg_score": round(float(avg_score), 2) if avg_score else None,
+        })
+    return out
 
 
 @app.get("/api/analytics")

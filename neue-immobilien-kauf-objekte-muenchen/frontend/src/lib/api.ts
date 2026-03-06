@@ -9,6 +9,11 @@ export type Listing = {
   description?: string;
   district?: string;
   address?: string;
+  postal_code?: string;
+  latitude?: number;
+  longitude?: number;
+  location_confidence?: number;
+  district_source?: string;
   area_sqm?: number;
   rooms?: number;
   price_eur?: number;
