@@ -35,6 +35,9 @@ class SourceRun(Base):
     status: Mapped[str] = mapped_column(String(16), default="ok")
     new_count: Mapped[int] = mapped_column(Integer, default=0)
     updated_count: Mapped[int] = mapped_column(Integer, default=0)
+    skipped_known_count: Mapped[int] = mapped_column(Integer, default=0)
+    parse_errors: Mapped[int] = mapped_column(Integer, default=0)
+    http_errors: Mapped[int] = mapped_column(Integer, default=0)
     notes: Mapped[str | None] = mapped_column(String(512), nullable=True)
 
 
@@ -85,6 +88,7 @@ class Listing(Base):
     description: Mapped[str | None] = mapped_column(String(2048), nullable=True)
     image_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     image_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    raw_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     address: Mapped[str | None] = mapped_column(String(512), nullable=True)
     district: Mapped[str | None] = mapped_column(String(128), nullable=True)
     price_eur: Mapped[float | None] = mapped_column(Float, nullable=True)
@@ -98,4 +102,17 @@ class Listing(Base):
     cluster_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     posted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
-    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, index=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+
+
+class SourceState(Base):
+    __tablename__ = "source_state"
+
+    source_id: Mapped[int] = mapped_column(ForeignKey("sources.id"), primary_key=True)
+    last_successful_run: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_scan_page: Mapped[int] = mapped_column(Integer, default=1)
+    last_known_listing_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    last_etag: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    last_modified: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    notes: Mapped[str | None] = mapped_column(String(512), nullable=True)

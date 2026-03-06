@@ -1,13 +1,14 @@
 import argparse
+import hashlib
 import json
 import os
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from sqlalchemy import select
 
 from app.db import SessionLocal, Base, engine, ensure_schema
-from app.models import Listing, Source, SourceRun, ListingSnapshot
+from app.models import Listing, ListingSnapshot, Source, SourceRun, SourceState
 from collectors.image_tools import compute_phash_from_url
 from collectors.sz import collect_sz_listings
 from collectors.immowelt import collect_immowelt_listings
@@ -29,6 +30,40 @@ COLLECTOR_MAP = {
     "sis": (collect_sis_listings, "https://www.sis.de"),
     "planethome": (collect_planethome_listings, "https://planethome.de"),
 }
+
+
+def _row_hash(row: dict) -> str:
+    payload = {
+        "title": row.get("title") or "",
+        "description": row.get("description") or "",
+        "district": row.get("district") or "",
+        "address": row.get("address") or "",
+        "price_eur": row.get("price_eur"),
+        "area_sqm": row.get("area_sqm"),
+        "rooms": row.get("rooms"),
+        "price_per_sqm": row.get("price_per_sqm"),
+        "url": row.get("url") or "",
+    }
+    data = json.dumps(payload, ensure_ascii=False, sort_keys=True, default=str)
+    return hashlib.sha256(data.encode("utf-8")).hexdigest()
+
+
+def _is_inactive(last_seen_at: datetime | None) -> bool:
+    if not last_seen_at:
+        return False
+    inactive_days = int(os.getenv("INACTIVE_AFTER_DAYS", "3"))
+    return datetime.now(timezone.utc) - last_seen_at >= timedelta(days=inactive_days)
+
+
+def _get_or_create_source_state(db, source_id: int) -> SourceState:
+    state = db.execute(select(SourceState).where(SourceState.source_id == source_id)).scalar_one_or_none()
+    if state:
+        return state
+    state = SourceState(source_id=source_id, last_scan_page=1)
+    db.add(state)
+    db.commit()
+    db.refresh(state)
+    return state
 
 
 def ensure_seed_row(rows: list[dict]) -> list[dict]:
@@ -89,21 +124,40 @@ def get_or_create_source(db, name: str, base_url: str) -> Source:
     return src
 
 
-def upsert_rows(db, rows: list[dict]) -> tuple[int, int]:
+def upsert_rows(db, rows: list[dict], source_name: str) -> tuple[int, int, int]:
     new_count = 0
     updated_count = 0
+    skipped_known_count = 0
+    seen_ids: set[str] = set()
+    now = datetime.now(timezone.utc)
+
     for row in rows:
-        if row.get("image_url") and not row.get("image_hash"):
-            row["image_hash"] = compute_phash_from_url(row.get("image_url"))
+        sid = row["source_listing_id"]
+        seen_ids.add(sid)
+        row_hash = _row_hash(row)
 
         existing = db.execute(
             select(Listing).where(
                 Listing.source == row["source"],
-                Listing.source_listing_id == row["source_listing_id"],
+                Listing.source_listing_id == sid,
             )
         ).scalar_one_or_none()
+
+        if existing and existing.raw_hash == row_hash:
+            existing.last_seen_at = now
+            existing.is_active = True
+            skipped_known_count += 1
+            continue
+
+        if row.get("image_url") and not row.get("image_hash"):
+            row["image_hash"] = compute_phash_from_url(row.get("image_url"))
+
         if existing:
-            existing.last_seen_at = datetime.now(timezone.utc)
+            old_price = existing.price_eur
+            old_active = existing.is_active
+            existing.last_seen_at = now
+            existing.is_active = True
+            existing.raw_hash = row_hash
             existing.title = row.get("title") or existing.title
             existing.description = row.get("description") or existing.description
             existing.image_url = row.get("image_url") or existing.image_url
@@ -116,15 +170,21 @@ def upsert_rows(db, rows: list[dict]) -> tuple[int, int]:
             existing.price_per_sqm = row.get("price_per_sqm") if row.get("price_per_sqm") is not None else existing.price_per_sqm
             existing.posted_at = row.get("posted_at") or existing.posted_at
             existing.url = row.get("url") or existing.url
-            db.add(ListingSnapshot(
-                listing_id=existing.id,
-                price_eur=existing.price_eur,
-                price_per_sqm=existing.price_per_sqm,
-                is_active=True,
-                raw_excerpt=(existing.title or "")[:200],
-            ))
+
+            if old_price != existing.price_eur or old_active != existing.is_active:
+                db.add(ListingSnapshot(
+                    listing_id=existing.id,
+                    price_eur=existing.price_eur,
+                    price_per_sqm=existing.price_per_sqm,
+                    is_active=True,
+                    raw_excerpt=(existing.title or "")[:200],
+                ))
             updated_count += 1
         else:
+            row["raw_hash"] = row_hash
+            row["is_active"] = True
+            row["first_seen_at"] = row.get("first_seen_at") or now
+            row["last_seen_at"] = now
             new_row = Listing(**row)
             db.add(new_row)
             db.flush()
@@ -136,8 +196,29 @@ def upsert_rows(db, rows: list[dict]) -> tuple[int, int]:
                 raw_excerpt=(new_row.title or "")[:200],
             ))
             new_count += 1
+
+    stale_rows = db.execute(
+        select(Listing).where(
+            Listing.source == source_name,
+            Listing.is_active.is_(True),
+            Listing.last_seen_at < now - timedelta(hours=12),
+        )
+    ).scalars().all()
+    for stale in stale_rows:
+        if stale.source_listing_id in seen_ids:
+            continue
+        if _is_inactive(stale.last_seen_at):
+            stale.is_active = False
+            db.add(ListingSnapshot(
+                listing_id=stale.id,
+                price_eur=stale.price_eur,
+                price_per_sqm=stale.price_per_sqm,
+                is_active=False,
+                raw_excerpt=(stale.title or "")[:200],
+            ))
+
     db.commit()
-    return new_count, updated_count
+    return new_count, updated_count, skipped_known_count
 
 
 def _collect_with_timeout(collector, timeout_seconds: int) -> list[dict]:
@@ -157,7 +238,16 @@ def run_one_source(db, source_name: str, dry_run: bool = False, force: bool = Fa
         return {"source": source_name, "status": "skipped", "reason": "not_approved_or_disabled", "new": 0, "updated": 0}
 
     started = datetime.now(timezone.utc)
-    run = SourceRun(source_id=src.id, started_at=started, status="ok", new_count=0, updated_count=0)
+    run = SourceRun(
+        source_id=src.id,
+        started_at=started,
+        status="ok",
+        new_count=0,
+        updated_count=0,
+        skipped_known_count=0,
+        parse_errors=0,
+        http_errors=0,
+    )
     db.add(run)
     db.commit()
     db.refresh(run)
@@ -180,10 +270,12 @@ def run_one_source(db, source_name: str, dry_run: bool = False, force: bool = Fa
     except FutureTimeoutError:
         rows = []
         run.status = "fail"
+        run.http_errors += 1
         run.notes = f"collector timeout after {timeout_seconds}s"
     except Exception as e:
         rows = []
         run.status = "fail"
+        run.parse_errors += 1
         run.notes = f"collector error: {e}"
 
     raw_count = len(rows)
@@ -192,6 +284,8 @@ def run_one_source(db, source_name: str, dry_run: bool = False, force: bool = Fa
         n = normalize_listing_row(row)
         if n:
             normalized.append(n)
+        else:
+            run.parse_errors += 1
     rows = dedupe_rows(normalized)
 
     if source_name == "sz" and not rows:
@@ -203,20 +297,37 @@ def run_one_source(db, source_name: str, dry_run: bool = False, force: bool = Fa
         _capture_fixture(source_name, rows)
 
     if not dry_run:
-        new_count, updated_count = upsert_rows(db, rows)
+        new_count, updated_count, skipped_known_count = upsert_rows(db, rows, source_name=source_name)
     else:
-        new_count, updated_count = len(rows), 0
+        new_count, updated_count, skipped_known_count = len(rows), 0, 0
 
     run.new_count = new_count
     run.updated_count = updated_count
+    run.skipped_known_count = skipped_known_count
     run.finished_at = datetime.now(timezone.utc)
     if run.status == "ok":
         run.notes = validation.notes
+
+    state = _get_or_create_source_state(db, src.id)
+    if run.status == "ok":
+        state.last_successful_run = run.finished_at
+    state.last_scan_page = 1
+    state.last_known_listing_id = rows[0]["source_listing_id"] if rows else state.last_known_listing_id
+    state.notes = f"raw={raw_count} normalized={len(rows)} skipped_known={skipped_known_count}"
+
     src.last_success_at = datetime.now(timezone.utc) if run.status == "ok" else src.last_success_at
     src.updated_at = datetime.now(timezone.utc)
     db.commit()
 
-    return {"source": source_name, "status": run.status, "new": new_count, "updated": updated_count}
+    return {
+        "source": source_name,
+        "status": run.status,
+        "new": new_count,
+        "updated": updated_count,
+        "skipped_known": skipped_known_count,
+        "parse_errors": run.parse_errors,
+        "http_errors": run.http_errors,
+    }
 
 
 def _disabled_sources() -> set[str]:
@@ -254,7 +365,7 @@ def main():
 
         # scoring + ai flags refresh after collection
         scored = recompute_scores(db)
-        rows = db.execute(select(Listing).where(Listing.deal_score != None)).scalars().all()
+        rows = db.execute(select(Listing).where(Listing.deal_score.is_not(None))).scalars().all()
         for r in rows:
             flags, _explain = analyze_listing(r)
             r.ai_flags = serialize_flags(flags)

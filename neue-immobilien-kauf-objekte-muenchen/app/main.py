@@ -87,9 +87,13 @@ def listings(
     sqm_max: float | None = Query(None, ge=0),
     rooms_min: float | None = Query(None, ge=0),
     rooms_max: float | None = Query(None, ge=0),
+    include_inactive: bool = False,
     db: Session = Depends(get_db),
 ):
     q = select(Listing)
+
+    if not include_inactive:
+        q = q.where(Listing.is_active.is_(True))
 
     if bucket == "9000":
         q = q.where(Listing.price_per_sqm.is_not(None), Listing.price_per_sqm <= 9000)
@@ -208,6 +212,9 @@ def api_source_runs(source_id: int, limit: int = Query(20, ge=1, le=200), db: Se
             "status": r.status,
             "new_count": r.new_count,
             "updated_count": r.updated_count,
+            "skipped_known_count": getattr(r, "skipped_known_count", 0),
+            "parse_errors": getattr(r, "parse_errors", 0),
+            "http_errors": getattr(r, "http_errors", 0),
             "notes": r.notes,
         }
         for r in rows
