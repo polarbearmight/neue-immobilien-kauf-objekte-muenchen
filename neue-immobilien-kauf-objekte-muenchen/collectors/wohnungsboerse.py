@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 
 from collectors.base import AccessBlockedError, SafeCollector
 
-SEARCH_URL = "https://www.wohnungsboerse.net/wohnungen-kaufen-Muenchen/2094"
+SEARCH_URL = "https://www.wohnungsboerse.net/Bayern/Muenchen/Eigentumswohnung"
 
 _price_re = re.compile(r"([\d\.,]{3,})\s*€")
 _area_re = re.compile(r"([\d\.,]{1,6})\s*m²")
@@ -31,7 +31,7 @@ def _extract_numbers(text: str):
 
 def collect_wohnungsboerse_listings() -> list[dict]:
     c = SafeCollector()
-    c.assert_allowed("https://www.wohnungsboerse.net/robots.txt", "/wohnungen-kaufen-Muenchen/2094")
+    c.assert_allowed("https://www.wohnungsboerse.net/robots.txt", "/Bayern/Muenchen/Eigentumswohnung")
     try:
         html = c.get(SEARCH_URL)
     except AccessBlockedError as e:
@@ -42,12 +42,19 @@ def collect_wohnungsboerse_listings() -> list[dict]:
     rows = []
     seen = set()
 
-    anchors = soup.select("a[href*='wohnungen-kaufen-'], a[href*='immobilien']")
+    anchors = soup.select("a[href*='/immodetail-k/']")
+    if not anchors:
+        anchors = soup.select("a[href*='wohnungen-kaufen-'], a[href*='immobilien']")
     for a in anchors[:120]:
         href = a.get("href")
         if not href:
             continue
         url = href if href.startswith("http") else f"https://www.wohnungsboerse.net{href}"
+        low = url.lower()
+        if not re.search(r"/immodetail-k/\d+", low):
+            continue
+        if any(t in low for t in ("impressum", "datenschutz", "facebook", "instagram")):
+            continue
         sid = url.rstrip("/").split("/")[-1]
         if not sid or sid in seen:
             continue

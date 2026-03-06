@@ -35,6 +35,14 @@ def test_sources_endpoint_works():
     assert isinstance(r.json(), list)
 
 
+def test_analytics_endpoint_works():
+    r = client.get("/api/analytics?days=30")
+    assert r.status_code == 200
+    payload = r.json()
+    assert "source_distribution" in payload
+    assert "price_bands" in payload
+
+
 def test_source_approve_not_found():
     r = client.post("/api/sources/999999/approve?approved=true")
     assert r.status_code == 404

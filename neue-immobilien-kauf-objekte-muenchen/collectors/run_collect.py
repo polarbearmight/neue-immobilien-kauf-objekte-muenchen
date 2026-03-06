@@ -1,6 +1,7 @@
 import argparse
 import json
 import os
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 from datetime import datetime, timezone
 from pathlib import Path
 from sqlalchemy import select
@@ -15,6 +16,7 @@ from collectors.wohnungsboerse import collect_wohnungsboerse_listings
 from collectors.sis import collect_sis_listings
 from collectors.planethome import collect_planethome_listings
 from collectors.source_validator import validate_source
+from collectors.normalize import normalize_listing_row, dedupe_rows
 from app.scoring import recompute_scores
 from app.ai_deal_analyzer import analyze_listing, serialize_flags
 from app.dedup import assign_clusters
@@ -138,6 +140,12 @@ def upsert_rows(db, rows: list[dict]) -> tuple[int, int]:
     return new_count, updated_count
 
 
+def _collect_with_timeout(collector, timeout_seconds: int) -> list[dict]:
+    with ThreadPoolExecutor(max_workers=1) as ex:
+        fut = ex.submit(collector)
+        return fut.result(timeout=timeout_seconds)
+
+
 def run_one_source(db, source_name: str, dry_run: bool = False, force: bool = False, capture_fixture: bool = False) -> dict:
     collector, base_url = COLLECTOR_MAP[source_name]
     src = get_or_create_source(db, source_name, base_url)
@@ -165,15 +173,31 @@ def run_one_source(db, source_name: str, dry_run: bool = False, force: bool = Fa
         db.commit()
         return {"source": source_name, "status": "blocked", "new": 0, "updated": 0}
 
+    timeout_seconds = int(os.getenv("COLLECTOR_TIMEOUT_SECONDS", "120"))
+    print(f"[collector:{source_name}] start (timeout={timeout_seconds}s)", flush=True)
     try:
-        rows = collector()
+        rows = _collect_with_timeout(collector, timeout_seconds=timeout_seconds)
+    except FutureTimeoutError:
+        rows = []
+        run.status = "fail"
+        run.notes = f"collector timeout after {timeout_seconds}s"
     except Exception as e:
         rows = []
         run.status = "fail"
         run.notes = f"collector error: {e}"
 
+    raw_count = len(rows)
+    normalized = []
+    for row in rows:
+        n = normalize_listing_row(row)
+        if n:
+            normalized.append(n)
+    rows = dedupe_rows(normalized)
+
     if source_name == "sz" and not rows:
         rows = ensure_seed_row(rows)
+
+    print(f"[collector:{source_name}] fetched={raw_count} normalized={len(rows)}", flush=True)
 
     if capture_fixture:
         _capture_fixture(source_name, rows)

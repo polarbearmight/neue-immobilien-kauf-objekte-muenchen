@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from fastapi import Depends, FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from sqlalchemy import desc, func, select
+from sqlalchemy import desc, func, select, case
 from collections import defaultdict
 from sqlalchemy.orm import Session
 
@@ -380,6 +380,60 @@ def api_discovery_run(db: Session = Depends(get_db)):
 
     db.commit()
     return {"ok": True, "sources": len(created), "reports": created}
+
+
+@app.get("/api/analytics")
+def api_analytics(days: int = Query(30, ge=1, le=180), db: Session = Depends(get_db)):
+    since = datetime.utcnow() - timedelta(days=days)
+
+    source_rows = db.execute(
+        select(Listing.source, func.count().label("cnt"))
+        .where(Listing.first_seen_at >= since)
+        .group_by(Listing.source)
+        .order_by(func.count().desc())
+    ).all()
+
+    price_band_expr = case(
+        (Listing.price_per_sqm.is_(None), "unknown"),
+        (Listing.price_per_sqm <= 9000, "<=9000"),
+        (Listing.price_per_sqm <= 12000, "9001-12000"),
+        else_=">12000",
+    )
+    price_band_rows = db.execute(
+        select(price_band_expr.label("band"), func.count().label("cnt"))
+        .where(Listing.first_seen_at >= since)
+        .group_by("band")
+    ).all()
+
+    district_rows = db.execute(
+        select(Listing.district, func.count().label("cnt"), func.avg(Listing.price_per_sqm).label("avg_ppsqm"))
+        .where(Listing.first_seen_at >= since, Listing.district.is_not(None))
+        .group_by(Listing.district)
+        .having(func.count() >= 2)
+        .order_by(func.count().desc())
+        .limit(15)
+    ).all()
+
+    trend_rows = db.execute(
+        select(func.date(Listing.first_seen_at).label("d"), func.count().label("cnt"), func.avg(Listing.price_per_sqm).label("avg_ppsqm"))
+        .where(Listing.first_seen_at >= since)
+        .group_by("d")
+        .order_by("d")
+    ).all()
+
+    return {
+        "days": days,
+        "source_distribution": [{"source": s, "count": int(c)} for s, c in source_rows],
+        "price_bands": [{"band": b, "count": int(c)} for b, c in price_band_rows],
+        "district_stats": [
+            {"district": d, "count": int(c), "avg_ppsqm": round(float(a), 2) if a else None}
+            for d, c, a in district_rows
+        ],
+        "trend_insights": [
+            {"date": str(d), "count": int(c), "avg_ppsqm": round(float(a), 2) if a else None}
+            for d, c, a in trend_rows
+        ],
+    }
 
 
 @app.get("/stats")

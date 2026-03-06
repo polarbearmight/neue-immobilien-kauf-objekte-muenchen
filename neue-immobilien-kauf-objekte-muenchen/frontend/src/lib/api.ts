@@ -31,3 +31,9 @@ export const getStats = (days = 7) => apiFetch<{ new_listings: number; avg_price
 export const getSources = () => apiFetch<Array<{ name: string; health_status: string; reliability_score?: number }>>(`/api/sources`);
 export const getClusters = () => apiFetch<Array<{ cluster_id: string; members_count: number; members: Listing[] }>>(`/api/clusters`);
 export const getPriceDrops = () => apiFetch<Listing[]>(`/api/price-drops`);
+export const getAnalytics = (days = 30) => apiFetch<{
+  source_distribution: Array<{ source: string; count: number }>;
+  price_bands: Array<{ band: string; count: number }>;
+  district_stats: Array<{ district: string; count: number; avg_ppsqm: number | null }>;
+  trend_insights: Array<{ date: string; count: number; avg_ppsqm: number | null }>;
+}>(`/api/analytics?days=${days}`);
