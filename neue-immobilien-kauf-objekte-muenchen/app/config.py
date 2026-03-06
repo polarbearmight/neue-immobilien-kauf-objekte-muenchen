@@ -8,7 +8,8 @@ class Settings(BaseModel):
         "SCRAPER_UA",
         "Mozilla/5.0 (compatible; OpenClaw-ResearchBot/1.0; +https://github.com/polarbearmight)",
     )
-    request_delay_seconds: float = float(os.getenv("REQUEST_DELAY_SECONDS", "10"))
+    # Keep local runs responsive by default; can be increased via env if needed.
+    request_delay_seconds: float = float(os.getenv("REQUEST_DELAY_SECONDS", "1"))
 
 
 settings = Settings()

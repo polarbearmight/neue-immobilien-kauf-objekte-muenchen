@@ -218,12 +218,15 @@ def main():
         summary = []
         for name in targets:
             if name not in COLLECTOR_MAP:
-                print(f"WARN unknown source: {name}")
+                print(f"WARN unknown source: {name}", flush=True)
                 continue
             if name.lower() in disabled:
                 summary.append({"source": name, "status": "skipped", "reason": "disabled_by_env", "new": 0, "updated": 0})
                 continue
-            summary.append(run_one_source(db, name, dry_run=args.dry_run, force=args.force, capture_fixture=args.capture_fixture))
+            print(f"running source: {name}", flush=True)
+            result = run_one_source(db, name, dry_run=args.dry_run, force=args.force, capture_fixture=args.capture_fixture)
+            summary.append(result)
+            print(f"done source: {name} -> {result['status']} (new={result['new']}, updated={result['updated']})", flush=True)
 
         # scoring + ai flags refresh after collection
         scored = recompute_scores(db)
