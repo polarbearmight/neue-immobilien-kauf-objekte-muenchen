@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { API_URL, Listing } from "@/lib/api";
 import { ListingDrawer } from "@/components/listing-drawer";
@@ -22,6 +22,19 @@ type Analytics = {
   district_stats: Array<{ district: string; count: number; avg_ppsqm: number | null }>;
 };
 
+type ScanState = {
+  running: boolean;
+  started_at?: string | null;
+  finished_at?: string | null;
+  current_source?: string | null;
+  completed_sources: number;
+  total_sources: number;
+  new_listings_count: number;
+  updated_count: number;
+  error_count: number;
+  status: "idle" | "running" | "done" | "error" | string;
+};
+
 export default function Page() {
   const [items, setItems] = useState<Listing[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -37,6 +50,10 @@ export default function Page() {
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [lastUpdated, setLastUpdated] = useState<string>("-");
   const [error, setError] = useState<string | null>(null);
+  const [scan, setScan] = useState<ScanState | null>(null);
+  const [scanNotice, setScanNotice] = useState<string | null>(null);
+  const [refreshTick, setRefreshTick] = useState(0);
+  const prevScanStatus = useRef<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -71,7 +88,56 @@ export default function Page() {
     };
     load();
     return () => controller.abort();
-  }, [bucket, source, sort, minScore, priceMin, priceMax]);
+  }, [bucket, source, sort, minScore, priceMin, priceMax, refreshTick]);
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const controller = new AbortController();
+
+    const poll = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/scan/status`, { cache: "no-store", signal: controller.signal });
+        if (!res.ok) return;
+        const data = await res.json();
+        const next: ScanState | null = data?.scan || null;
+        setScan(next);
+
+        if (next?.status === "done" && prevScanStatus.current !== "done") {
+          setScanNotice("Scan Complete");
+          setRefreshTick((v) => v + 1);
+          timer = setTimeout(() => setScanNotice(null), 2500);
+        } else if (next?.status === "error" && prevScanStatus.current !== "error") {
+          setScanNotice("Scan Failed");
+        }
+        prevScanStatus.current = next?.status || null;
+      } catch {
+        // ignore scan polling errors
+      }
+    };
+
+    poll();
+    const id = setInterval(poll, 2000);
+    return () => {
+      clearInterval(id);
+      controller.abort();
+      if (timer) clearTimeout(timer);
+    };
+  }, []);
+
+  const startScan = async () => {
+    setScanNotice(null);
+    try {
+      const res = await fetch(`${API_URL}/api/scan/run`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        setScanNotice("Scan Failed");
+        return;
+      }
+      setScan(data?.scan || null);
+    } catch {
+      setScanNotice("Scan Failed");
+    }
+  };
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -93,6 +159,16 @@ export default function Page() {
           <p className="text-sm text-muted-foreground">Deal Finder · neueste zuerst · lokale Datenbank</p>
         </div>
         <div className="flex items-center gap-2">
+          <button className="rounded border px-2 py-1 text-xs" onClick={() => setRefreshTick((v) => v + 1)}>
+            Refresh
+          </button>
+          <button
+            className="rounded border px-2 py-1 text-xs"
+            onClick={startScan}
+            disabled={scan?.running}
+          >
+            {scan?.running ? "Scanning..." : scan?.status === "done" ? "Scan Complete" : scan?.status === "error" ? "Scan Failed" : "Scan Sources"}
+          </button>
           <button
             className="rounded border px-2 py-1 text-xs"
             onClick={() => {
@@ -120,6 +196,18 @@ export default function Page() {
           <p className="text-xs text-muted-foreground">Last updated: {lastUpdated}</p>
         </div>
       </div>
+
+      {scan ? (
+        <div className="rounded-md border px-3 py-2 text-xs text-muted-foreground">
+          <span className="mr-4">Source: {scan.current_source || "-"}</span>
+          <span className="mr-4">Progress: {scan.completed_sources}/{scan.total_sources}</span>
+          <span className="mr-4">New: {scan.new_listings_count}</span>
+          <span className="mr-4">Updated: {scan.updated_count}</span>
+          <span>Errors: {scan.error_count}</span>
+        </div>
+      ) : null}
+
+      {scanNotice ? <p className="text-xs text-green-700">{scanNotice}</p> : null}
 
       <div className="grid gap-4 md:grid-cols-4">
         <Card className="rounded-2xl"><CardHeader><CardTitle className="text-sm">New last 7d</CardTitle></CardHeader><CardContent className="text-2xl font-semibold">{stats?.new_listings ?? 0}</CardContent></Card>

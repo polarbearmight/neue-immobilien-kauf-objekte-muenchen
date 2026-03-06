@@ -1,4 +1,5 @@
 from datetime import timedelta
+import threading
 
 from fastapi import Depends, FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,7 +14,10 @@ from app.schemas import AlertRuleIn, ListingOut, SourceOut
 from app.source_reliability import attach_reliability
 from app.time_utils import utc_now
 from collectors.image_tools import hash_distance
-from collectors.run_collect import COLLECTOR_MAP, run_one_source
+from collectors.run_collect import COLLECTOR_MAP, run_one_source_isolated
+from app.scoring import recompute_scores
+from app.ai_deal_analyzer import analyze_listing, serialize_flags
+from app.dedup import assign_clusters
 from collectors.source_discovery import SEED_SOURCES, discover_source_card, write_source_report
 from collectors.source_validator import validate_source
 
@@ -27,6 +31,85 @@ app.add_middleware(
 )
 Base.metadata.create_all(bind=engine)
 ensure_schema()
+
+scan_lock = threading.Lock()
+scan_state = {
+    "running": False,
+    "started_at": None,
+    "finished_at": None,
+    "current_source": None,
+    "completed_sources": 0,
+    "total_sources": 0,
+    "new_listings_count": 0,
+    "updated_count": 0,
+    "error_count": 0,
+    "status": "idle",
+}
+
+
+def _scan_status_payload() -> dict:
+    return {
+        "running": scan_state["running"],
+        "started_at": scan_state["started_at"],
+        "finished_at": scan_state["finished_at"],
+        "current_source": scan_state["current_source"],
+        "completed_sources": scan_state["completed_sources"],
+        "total_sources": scan_state["total_sources"],
+        "new_listings_count": scan_state["new_listings_count"],
+        "updated_count": scan_state["updated_count"],
+        "error_count": scan_state["error_count"],
+        "status": scan_state["status"],
+    }
+
+
+def _run_scan_background(targets: list[str]):
+    with scan_lock:
+        scan_state["running"] = True
+        scan_state["started_at"] = utc_now().isoformat()
+        scan_state["finished_at"] = None
+        scan_state["current_source"] = None
+        scan_state["completed_sources"] = 0
+        scan_state["total_sources"] = len(targets)
+        scan_state["new_listings_count"] = 0
+        scan_state["updated_count"] = 0
+        scan_state["error_count"] = 0
+        scan_state["status"] = "running"
+
+    try:
+        for name in targets:
+            with scan_lock:
+                scan_state["current_source"] = name
+            result = run_one_source_isolated(name, dry_run=False, force=False, capture_fixture=False)
+            with scan_lock:
+                scan_state["completed_sources"] += 1
+                scan_state["new_listings_count"] += int(result.get("new", 0) or 0)
+                scan_state["updated_count"] += int(result.get("updated", 0) or 0)
+                if result.get("status") in ("fail", "blocked"):
+                    scan_state["error_count"] += 1
+
+        db = SessionLocal()
+        try:
+            recompute_scores(db)
+            rows = db.execute(select(Listing).where(Listing.deal_score.is_not(None))).scalars().all()
+            for r in rows:
+                flags, _ = analyze_listing(r)
+                r.ai_flags = serialize_flags(flags)
+            assign_clusters(rows)
+            db.commit()
+        finally:
+            db.close()
+
+        with scan_lock:
+            scan_state["status"] = "done"
+    except Exception:
+        with scan_lock:
+            scan_state["status"] = "error"
+            scan_state["error_count"] += 1
+    finally:
+        with scan_lock:
+            scan_state["running"] = False
+            scan_state["current_source"] = None
+            scan_state["finished_at"] = utc_now().isoformat()
 
 
 def get_db():
@@ -51,6 +134,8 @@ def root():
             "/api/sources",
             "/api/clusters",
             "/api/collect/run",
+            "/api/scan/run",
+            "/api/scan/status",
             "/api/discovery/run",
             "/api/price-drops",
             "/api/watchlist",
@@ -150,15 +235,40 @@ def listing_detail(listing_id: int, db: Session = Depends(get_db)):
 
 
 @app.post("/api/collect/run")
-def api_collect_run(source: str = Query("all"), dry_run: bool = Query(False), db: Session = Depends(get_db)):
+def api_collect_run(source: str = Query("all"), dry_run: bool = Query(False)):
     targets = [source] if source != "all" else list(COLLECTOR_MAP.keys())
     summary = []
     for name in targets:
         if name not in COLLECTOR_MAP:
             summary.append({"source": name, "status": "unknown_source"})
             continue
-        summary.append(run_one_source(db, name, dry_run=dry_run))
+        summary.append(run_one_source_isolated(name, dry_run=dry_run))
     return {"ok": True, "dry_run": dry_run, "summary": summary}
+
+
+@app.post("/api/scan/run")
+def api_scan_run(db: Session = Depends(get_db)):
+    with scan_lock:
+        if scan_state["running"]:
+            return {"ok": True, "already_running": True, "scan": _scan_status_payload()}
+
+    approved_enabled = db.execute(
+        select(Source.name).where(Source.approved.is_(True), Source.enabled.is_(True)).order_by(Source.name.asc())
+    ).scalars().all()
+    targets = [name for name in approved_enabled if name in COLLECTOR_MAP]
+
+    if not targets:
+        return JSONResponse(status_code=400, content={"ok": False, "error": "no_enabled_sources"})
+
+    t = threading.Thread(target=_run_scan_background, args=(targets,), daemon=True)
+    t.start()
+    return {"ok": True, "already_running": False, "scan": _scan_status_payload()}
+
+
+@app.get("/api/scan/status")
+def api_scan_status():
+    with scan_lock:
+        return {"ok": True, "scan": _scan_status_payload()}
 
 
 @app.get("/duplicates")
