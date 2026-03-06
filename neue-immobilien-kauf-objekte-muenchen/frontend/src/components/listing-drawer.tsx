@@ -16,7 +16,9 @@ type ListingDetailPayload = {
   cluster?: {
     cluster_id?: string | null;
     members_count: number;
-    members: Array<{ id: number; source: string; title?: string | null; url: string; price_eur?: number | null }>;
+    canonical_listing_id?: number | null;
+    sources?: string[];
+    members: Array<{ id: number; source: string; title?: string | null; url: string; price_eur?: number | null; is_canonical?: boolean }>;
   };
   price_history?: {
     old_price?: number | null;
@@ -99,6 +101,7 @@ export function ListingDrawer({ listing, onClose }: { listing: Listing | null; o
               <p>Source: {detail?.source?.name || l.source}</p>
               <p>Reliability: {detail?.source?.reliability_score ?? "-"}</p>
               <p>Cluster members: {detail?.cluster?.members_count ?? 0}</p>
+              <p>Seen on: {(detail?.cluster?.sources || []).join(", ") || "-"}</p>
             </div>
           </details>
 
@@ -136,7 +139,7 @@ export function ListingDrawer({ listing, onClose }: { listing: Listing | null; o
               <summary className="cursor-pointer font-medium">Seen on</summary>
               <div className="mt-2 space-y-1 text-xs text-muted-foreground">
                 {detail?.cluster?.members.map((m) => (
-                  <p key={m.id}>{m.source} · {eur(m.price_eur)} · {m.title || "-"}</p>
+                  <p key={m.id}>{m.source} · {eur(m.price_eur)} · {m.title || "-"}{m.is_canonical ? " · canonical" : ""}</p>
                 ))}
               </div>
             </details>
