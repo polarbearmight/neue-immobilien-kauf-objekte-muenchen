@@ -11,8 +11,9 @@ from sqlalchemy.orm import Session
 from app.db import Base, SessionLocal, engine, ensure_schema
 from app.models import AlertRule, Listing, ListingSnapshot, Source, SourceRun, Watchlist
 from app.schemas import AlertRuleIn, ListingOut, SourceOut
-from app.source_reliability import attach_reliability
+from app.source_reliability import attach_reliability, compute_reliability
 from app.time_utils import utc_now
+from app.investment import recompute_investments
 from collectors.image_tools import hash_distance
 from collectors.run_collect import COLLECTOR_MAP, run_one_source_isolated
 from app.scoring import recompute_scores
@@ -95,6 +96,10 @@ def _run_scan_background(targets: list[str]):
                 flags, _ = analyze_listing(r)
                 r.ai_flags = serialize_flags(flags)
             assign_clusters(rows)
+            rel = compute_reliability(db)
+            sources = db.execute(select(Source)).scalars().all()
+            rel_by_name = {s.name: rel.get(s.id, 0) for s in sources}
+            recompute_investments(db, reliability_by_source=rel_by_name)
             db.commit()
         finally:
             db.close()
@@ -293,6 +298,12 @@ def listing_detail_expanded(listing_id: int, db: Session = Depends(get_db)):
             "price_eur": listing.price_eur,
             "price_per_sqm": listing.price_per_sqm,
             "deal_score": listing.deal_score,
+            "estimated_rent_per_sqm": listing.estimated_rent_per_sqm,
+            "estimated_monthly_rent": listing.estimated_monthly_rent,
+            "gross_yield_percent": listing.gross_yield_percent,
+            "price_to_rent_ratio": listing.price_to_rent_ratio,
+            "investment_score": listing.investment_score,
+            "investment_explain": listing.investment_explain,
             "badges": listing.badges,
             "score_explain": listing.score_explain,
             "ai_flags": listing.ai_flags,

@@ -21,6 +21,8 @@ from collectors.normalize import normalize_listing_row, dedupe_rows
 from app.scoring import recompute_scores
 from app.ai_deal_analyzer import analyze_listing, serialize_flags
 from app.dedup import assign_clusters
+from app.investment import recompute_investments
+from app.source_reliability import compute_reliability
 
 COLLECTOR_MAP = {
     "sz": (collect_sz_listings, "https://immobilienmarkt.sueddeutsche.de"),
@@ -451,12 +453,16 @@ def main():
             flags, _explain = analyze_listing(r)
             r.ai_flags = serialize_flags(flags)
         clustered = assign_clusters(rows)
+        rel = compute_reliability(db)
+        sources = db.execute(select(Source)).scalars().all()
+        rel_by_name = {s.name: rel.get(s.id, 0) for s in sources}
+        invested = recompute_investments(db, reliability_by_source=rel_by_name)
         db.commit()
 
         print("collector_summary")
         for row in summary:
             print(row)
-        print({"scored": scored, "ai_flagged": len(rows), "clustered": clustered})
+        print({"scored": scored, "ai_flagged": len(rows), "clustered": clustered, "invested": invested})
     finally:
         db.close()
 

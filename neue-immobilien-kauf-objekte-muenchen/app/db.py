@@ -28,6 +28,18 @@ def ensure_schema():
             conn.execute(text("ALTER TABLE listings ADD COLUMN image_hash VARCHAR(64)"))
         if "deal_score" not in cols:
             conn.execute(text("ALTER TABLE listings ADD COLUMN deal_score FLOAT"))
+        if "estimated_rent_per_sqm" not in cols:
+            conn.execute(text("ALTER TABLE listings ADD COLUMN estimated_rent_per_sqm FLOAT"))
+        if "estimated_monthly_rent" not in cols:
+            conn.execute(text("ALTER TABLE listings ADD COLUMN estimated_monthly_rent FLOAT"))
+        if "gross_yield_percent" not in cols:
+            conn.execute(text("ALTER TABLE listings ADD COLUMN gross_yield_percent FLOAT"))
+        if "price_to_rent_ratio" not in cols:
+            conn.execute(text("ALTER TABLE listings ADD COLUMN price_to_rent_ratio FLOAT"))
+        if "investment_score" not in cols:
+            conn.execute(text("ALTER TABLE listings ADD COLUMN investment_score FLOAT"))
+        if "investment_explain" not in cols:
+            conn.execute(text("ALTER TABLE listings ADD COLUMN investment_explain VARCHAR(2048)"))
         if "badges" not in cols:
             conn.execute(text("ALTER TABLE listings ADD COLUMN badges VARCHAR(1024)"))
         if "score_explain" not in cols:
@@ -49,6 +61,7 @@ def ensure_schema():
         conn.execute(text("CREATE INDEX IF NOT EXISTS ix_listings_district_first_seen ON listings(district, first_seen_at)"))
         conn.execute(text("CREATE INDEX IF NOT EXISTS ix_listings_ppsqm_first_seen ON listings(price_per_sqm, first_seen_at)"))
         conn.execute(text("CREATE INDEX IF NOT EXISTS ix_listings_score_first_seen ON listings(deal_score, first_seen_at)"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS ix_listings_investment_score ON listings(investment_score)"))
         conn.execute(text("CREATE INDEX IF NOT EXISTS ix_listings_cluster_first_seen ON listings(cluster_id, first_seen_at)"))
         conn.execute(text("CREATE INDEX IF NOT EXISTS ix_listings_last_seen_at ON listings(last_seen_at)"))
         conn.execute(text("CREATE INDEX IF NOT EXISTS ix_listings_is_active ON listings(is_active)"))

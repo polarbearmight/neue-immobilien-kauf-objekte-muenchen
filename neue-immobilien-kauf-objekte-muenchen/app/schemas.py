@@ -43,6 +43,12 @@ class ListingOut(BaseModel):
     price_eur: float | None = None
     price_per_sqm: float | None = None
     deal_score: float | None = None
+    estimated_rent_per_sqm: float | None = None
+    estimated_monthly_rent: float | None = None
+    gross_yield_percent: float | None = None
+    price_to_rent_ratio: float | None = None
+    investment_score: float | None = None
+    investment_explain: str | None = None
     badges: str | None = None
     score_explain: str | None = None
     ai_flags: str | None = None
