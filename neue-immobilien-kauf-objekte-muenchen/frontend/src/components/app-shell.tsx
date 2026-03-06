@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import type { ReactNode } from "react";
 
 const nav = [
   ["Dashboard", "/"],
@@ -18,7 +19,7 @@ const nav = [
   ["Settings", "/settings"],
 ] as const;
 
-export function AppShell({ children }: { children: JSX.Element | JSX.Element[] }) {
+export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [dark, setDark] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
