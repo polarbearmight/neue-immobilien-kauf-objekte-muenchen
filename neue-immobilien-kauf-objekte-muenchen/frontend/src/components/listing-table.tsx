@@ -11,6 +11,7 @@ const eurPerSqm = (v?: number | null) => (v == null ? "-" : `${new Intl.NumberFo
 const columnHelper = createColumnHelper<Listing>();
 
 export function ListingTable({ rows, onDetails }: { rows: Listing[]; onDetails: (l: Listing) => void }) {
+  const gridTemplate = "220px minmax(260px, 1.5fr) 220px 70px 90px 130px 120px 80px 140px";
   const columns = useMemo(
     () => [
       columnHelper.display({
@@ -71,17 +72,22 @@ export function ListingTable({ rows, onDetails }: { rows: Listing[]; onDetails: 
   const virtualRows = rowVirtualizer.getVirtualItems();
 
   return (
-    <div>
-      <div className="grid grid-cols-9 gap-2 border-b pb-2 text-xs font-medium text-muted-foreground">
-        {table.getHeaderGroups()[0].headers.map((header) => <div key={header.id}>{flexRender(header.column.columnDef.header, header.getContext())}</div>)}
-      </div>
-      <div ref={parentRef} className="max-h-[65vh] overflow-auto">
-        <div style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: "relative" }}>
+    <div className="overflow-x-auto">
+      <div className="min-w-[1330px]">
+        <div className="grid gap-2 border-b pb-2 text-xs font-medium text-muted-foreground" style={{ gridTemplateColumns: gridTemplate }}>
+          {table.getHeaderGroups()[0].headers.map((header) => <div key={header.id}>{flexRender(header.column.columnDef.header, header.getContext())}</div>)}
+        </div>
+        <div ref={parentRef} className="max-h-[65vh] overflow-auto">
+          <div style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: "relative" }}>
           {virtualRows.map((vr) => {
             const row = table.getRowModel().rows[vr.index];
             const rowClass = listingHighlightRowClass(row.original);
             return (
-              <div key={row.id} className={`grid grid-cols-9 gap-2 border-b py-2 text-sm ${rowClass}`} style={{ position: "absolute", top: 0, left: 0, width: "100%", transform: `translateY(${vr.start}px)` }}>
+              <div
+                key={row.id}
+                className={`grid gap-2 border-b py-2 text-sm ${rowClass}`}
+                style={{ position: "absolute", top: 0, left: 0, width: "100%", transform: `translateY(${vr.start}px)`, gridTemplateColumns: gridTemplate }}
+              >
                 {row.getVisibleCells().map((cell) => {
                   const isDistrict = cell.column.id === "district";
                   return (
@@ -93,6 +99,7 @@ export function ListingTable({ rows, onDetails }: { rows: Listing[]; onDetails: 
               </div>
             );
           })}
+          </div>
         </div>
       </div>
     </div>
