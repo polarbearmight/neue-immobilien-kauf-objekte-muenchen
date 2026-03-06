@@ -378,13 +378,11 @@ def api_scan_run(db: Session = Depends(get_db)):
         if scan_state["running"]:
             return {"ok": True, "already_running": True, "scan": _scan_status_payload()}
 
-    approved_enabled = db.execute(
-        select(Source.name).where(Source.approved.is_(True), Source.enabled.is_(True)).order_by(Source.name.asc())
-    ).scalars().all()
-    targets = [name for name in approved_enabled if name in COLLECTOR_MAP]
+    # Product decision: manual scan should run all built-in collectors regardless of source approval/enable flags.
+    targets = list(COLLECTOR_MAP.keys())
 
     if not targets:
-        return JSONResponse(status_code=400, content={"ok": False, "error": "no_enabled_sources"})
+        return JSONResponse(status_code=400, content={"ok": False, "error": "no_collectors_registered"})
 
     t = threading.Thread(target=_run_scan_background, args=(targets,), daemon=True)
     t.start()
