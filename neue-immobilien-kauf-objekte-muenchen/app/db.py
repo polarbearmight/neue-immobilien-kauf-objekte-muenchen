@@ -36,6 +36,12 @@ def ensure_schema():
             conn.execute(text("ALTER TABLE listings ADD COLUMN ai_flags VARCHAR(1024)"))
         if "cluster_id" not in cols:
             conn.execute(text("ALTER TABLE listings ADD COLUMN cluster_id VARCHAR(64)"))
+        if "raw_hash" not in cols:
+            conn.execute(text("ALTER TABLE listings ADD COLUMN raw_hash VARCHAR(64)"))
+        if "is_active" not in cols:
+            conn.execute(text("ALTER TABLE listings ADD COLUMN is_active BOOLEAN DEFAULT 1"))
+        if "last_seen_at" in cols:
+            conn.execute(text("UPDATE listings SET is_active = 1 WHERE is_active IS NULL"))
 
         # Query-speed indexes for common dashboard/API filters
         conn.execute(text("CREATE INDEX IF NOT EXISTS ix_listings_first_seen_at ON listings(first_seen_at)"))
@@ -44,10 +50,20 @@ def ensure_schema():
         conn.execute(text("CREATE INDEX IF NOT EXISTS ix_listings_ppsqm_first_seen ON listings(price_per_sqm, first_seen_at)"))
         conn.execute(text("CREATE INDEX IF NOT EXISTS ix_listings_score_first_seen ON listings(deal_score, first_seen_at)"))
         conn.execute(text("CREATE INDEX IF NOT EXISTS ix_listings_cluster_first_seen ON listings(cluster_id, first_seen_at)"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS ix_listings_last_seen_at ON listings(last_seen_at)"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS ix_listings_is_active ON listings(is_active)"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS ix_listings_raw_hash ON listings(raw_hash)"))
 
         if "listing_snapshots" in table_names:
             conn.execute(text("CREATE INDEX IF NOT EXISTS ix_snapshots_listing_captured ON listing_snapshots(listing_id, captured_at)"))
         if "watchlist" in table_names:
             conn.execute(text("CREATE INDEX IF NOT EXISTS ix_watchlist_created_at ON watchlist(created_at)"))
         if "source_runs" in table_names:
+            source_run_cols = {c["name"] for c in insp.get_columns("source_runs")}
+            if "skipped_known_count" not in source_run_cols:
+                conn.execute(text("ALTER TABLE source_runs ADD COLUMN skipped_known_count INTEGER DEFAULT 0"))
+            if "parse_errors" not in source_run_cols:
+                conn.execute(text("ALTER TABLE source_runs ADD COLUMN parse_errors INTEGER DEFAULT 0"))
+            if "http_errors" not in source_run_cols:
+                conn.execute(text("ALTER TABLE source_runs ADD COLUMN http_errors INTEGER DEFAULT 0"))
             conn.execute(text("CREATE INDEX IF NOT EXISTS ix_source_runs_source_started ON source_runs(source_id, started_at)"))
