@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 from types import SimpleNamespace
 
 from app.scoring import compute_score
@@ -41,6 +41,14 @@ def test_ai_analyzer_flags_spam_and_risk():
     assert "FLAG_MARKETING_SPAM" in flags
     assert any(k in flags for k in ["FLAG_RENOVATION", "FLAG_RISK"])
     assert "negative" in explain
+
+
+def test_compute_score_handles_naive_listing_datetime():
+    naive_posted = datetime.now() - timedelta(hours=2)
+    l = mk_listing(posted_at=naive_posted, first_seen_at=naive_posted)
+    score, badges, _explain = compute_score(l, city_median=11000, has_price_drop=False)
+    assert score is not None
+    assert "JUST_LISTED" in badges or "BRAND_NEW" in badges
 
 
 def test_dedup_assigns_same_cluster_for_similar_rows():
