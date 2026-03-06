@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from fastapi import Depends, FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -216,8 +216,13 @@ def api_source_runs(source_id: int, limit: int = Query(20, ge=1, le=200), db: Se
 
 @app.get("/api/price-drops")
 def api_price_drops(limit: int = Query(200, ge=1, le=2000), db: Session = Depends(get_db)):
-    rows = db.execute(select(Listing).where(Listing.badges.is_not(None)).order_by(desc(Listing.first_seen_at)).limit(limit)).scalars().all()
-    return [r for r in rows if r.badges and "PRICE_DROP" in r.badges]
+    rows = db.execute(
+        select(Listing)
+        .where(Listing.badges.is_not(None), Listing.badges.ilike("%PRICE_DROP%"))
+        .order_by(desc(Listing.first_seen_at))
+        .limit(limit)
+    ).scalars().all()
+    return rows
 
 
 @app.post("/api/sources/{source_id}/approve")
@@ -456,8 +461,9 @@ def stats(days: int = Query(7, ge=1, le=90), db: Session = Depends(get_db)):
             ppsm_cnt[d] += 1
 
     series = []
+    base_now = utc_now()
     for i in range(days - 1, -1, -1):
-        d = (utc_now() - timedelta(days=i)).date().isoformat()
+        d = (base_now - timedelta(days=i)).date().isoformat()
         avg = (ppsm_sum[d] / ppsm_cnt[d]) if ppsm_cnt[d] else None
         series.append({"date": d, "count": counts[d], "avg_ppsqm": round(avg, 2) if avg else None})
 
