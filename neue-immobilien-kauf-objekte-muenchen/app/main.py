@@ -234,6 +234,96 @@ def listing_detail(listing_id: int, db: Session = Depends(get_db)):
     return row
 
 
+@app.get("/api/listings/{listing_id}/detail")
+def listing_detail_expanded(listing_id: int, db: Session = Depends(get_db)):
+    listing = db.execute(select(Listing).where(Listing.id == listing_id)).scalar_one_or_none()
+    if not listing:
+        return JSONResponse(status_code=404, content={"ok": False, "error": "listing_not_found"})
+
+    src = db.execute(select(Source).where(Source.name == listing.source)).scalar_one_or_none()
+    src_payload = None
+    if src:
+        src_payload = attach_reliability(db, [src])[0]
+
+    cluster_members = []
+    if listing.cluster_id:
+        members = db.execute(
+            select(Listing)
+            .where(Listing.cluster_id == listing.cluster_id)
+            .order_by(Listing.first_seen_at.desc())
+            .limit(30)
+        ).scalars().all()
+        cluster_members = [
+            {
+                "id": m.id,
+                "source": m.source,
+                "title": m.title,
+                "url": m.url,
+                "price_eur": m.price_eur,
+                "price_per_sqm": m.price_per_sqm,
+                "first_seen_at": m.first_seen_at,
+            }
+            for m in members
+        ]
+
+    snaps = db.execute(
+        select(ListingSnapshot)
+        .where(ListingSnapshot.listing_id == listing_id)
+        .order_by(ListingSnapshot.captured_at.asc())
+        .limit(120)
+    ).scalars().all()
+
+    old_price = snaps[0].price_eur if snaps else None
+    current_price = snaps[-1].price_eur if snaps else listing.price_eur
+    has_price_drop = bool(old_price is not None and current_price is not None and current_price < old_price)
+
+    return {
+        "ok": True,
+        "listing": {
+            "id": listing.id,
+            "source": listing.source,
+            "source_listing_id": listing.source_listing_id,
+            "url": listing.url,
+            "title": listing.title,
+            "description": listing.description,
+            "district": listing.district,
+            "address": listing.address,
+            "rooms": listing.rooms,
+            "area_sqm": listing.area_sqm,
+            "price_eur": listing.price_eur,
+            "price_per_sqm": listing.price_per_sqm,
+            "deal_score": listing.deal_score,
+            "badges": listing.badges,
+            "score_explain": listing.score_explain,
+            "ai_flags": listing.ai_flags,
+            "cluster_id": listing.cluster_id,
+            "posted_at": listing.posted_at,
+            "first_seen_at": listing.first_seen_at,
+        },
+        "source": src_payload,
+        "cluster": {
+            "cluster_id": listing.cluster_id,
+            "members_count": len(cluster_members),
+            "members": cluster_members,
+        },
+        "price_history": {
+            "old_price": old_price,
+            "current_price": current_price,
+            "has_price_drop": has_price_drop,
+            "snapshots": [
+                {
+                    "id": s.id,
+                    "captured_at": s.captured_at,
+                    "price_eur": s.price_eur,
+                    "price_per_sqm": s.price_per_sqm,
+                    "is_active": s.is_active,
+                }
+                for s in snaps
+            ],
+        },
+    }
+
+
 @app.post("/api/collect/run")
 def api_collect_run(source: str = Query("all"), dry_run: bool = Query(False)):
     targets = [source] if source != "all" else list(COLLECTOR_MAP.keys())

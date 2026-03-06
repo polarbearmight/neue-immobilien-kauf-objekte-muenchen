@@ -57,3 +57,8 @@ def test_source_approve_not_found():
 def test_source_runs_not_found():
     r = client.get("/api/sources/999999/runs")
     assert r.status_code == 404
+
+
+def test_listing_detail_expanded_not_found():
+    r = client.get("/api/listings/999999/detail")
+    assert r.status_code == 404
