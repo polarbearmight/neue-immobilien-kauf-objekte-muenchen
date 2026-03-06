@@ -1,16 +1,17 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 from types import SimpleNamespace
 
 from app.scoring import compute_score
 from app.ai_deal_analyzer import analyze_listing
 from app.dedup import assign_clusters
+from app.time_utils import utc_now
 
 
 def mk_listing(**kw):
     base = dict(
         price_per_sqm=9000,
-        posted_at=datetime.utcnow() - timedelta(hours=1),
-        first_seen_at=datetime.utcnow() - timedelta(hours=1),
+        posted_at=utc_now() - timedelta(hours=1),
+        first_seen_at=utc_now() - timedelta(hours=1),
         area_sqm=65,
         price_eur=585000,
         title="Helle Wohnung mit Balkon",

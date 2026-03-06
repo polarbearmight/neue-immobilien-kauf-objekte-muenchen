@@ -34,25 +34,39 @@ export default function Page() {
   const [selected, setSelected] = useState<Listing | null>(null);
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [lastUpdated, setLastUpdated] = useState<string>("-");
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const controller = new AbortController();
     const load = async () => {
       setLoading(true);
-      const params = new URLSearchParams({ bucket, sort, limit: "500", min_score: String(minScore) });
-      if (source !== "all") params.set("source", source);
-      const [lRes, sRes, aRes] = await Promise.all([
-        fetch(`${API_URL}/api/listings?${params.toString()}`, { cache: "no-store" }),
-        fetch(`${API_URL}/api/stats?days=7`, { cache: "no-store" }),
-        fetch(`${API_URL}/api/analytics?days=30`, { cache: "no-store" }),
-      ]);
-      const [lData, sData, aData] = await Promise.all([lRes.json(), sRes.json(), aRes.json()]);
-      setItems(Array.isArray(lData) ? lData : []);
-      setStats(sData || null);
-      setAnalytics(aData || null);
-      setLastUpdated(new Date().toLocaleTimeString("de-DE"));
-      setLoading(false);
+      setError(null);
+      try {
+        const params = new URLSearchParams({ bucket, sort, limit: "500", min_score: String(minScore) });
+        if (source !== "all") params.set("source", source);
+        const [lRes, sRes, aRes] = await Promise.all([
+          fetch(`${API_URL}/api/listings?${params.toString()}`, { cache: "no-store", signal: controller.signal }),
+          fetch(`${API_URL}/api/stats?days=7`, { cache: "no-store", signal: controller.signal }),
+          fetch(`${API_URL}/api/analytics?days=30`, { cache: "no-store", signal: controller.signal }),
+        ]);
+        if (!lRes.ok || !sRes.ok || !aRes.ok) throw new Error(`api_error_${lRes.status}_${sRes.status}_${aRes.status}`);
+
+        const [lData, sData, aData] = await Promise.all([lRes.json(), sRes.json(), aRes.json()]);
+        setItems(Array.isArray(lData) ? lData : []);
+        setStats(sData || null);
+        setAnalytics(aData || null);
+        setLastUpdated(new Date().toLocaleTimeString("de-DE"));
+      } catch {
+        if (!controller.signal.aborted) {
+          setError("Daten konnten nicht geladen werden. Bitte erneut versuchen.");
+          setItems([]);
+        }
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
     };
     load();
+    return () => controller.abort();
   }, [bucket, source, sort, minScore]);
 
   const filtered = useMemo(() => {
@@ -63,7 +77,8 @@ export default function Page() {
 
   const sources = useMemo(() => {
     const fromAnalytics = analytics?.source_distribution?.map((x) => x.source) || [];
-    return ["all", ...fromAnalytics];
+    const unique = Array.from(new Set(fromAnalytics)).sort((a, b) => a.localeCompare(b));
+    return ["all", ...unique];
   }, [analytics]);
 
   return (
@@ -138,6 +153,8 @@ export default function Page() {
           </CardContent>
         </Card>
       </div>
+
+      {error ? <p className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">{error}</p> : null}
 
       <div className="grid gap-4 lg:grid-cols-[280px_1fr]">
         <Card className="h-fit rounded-2xl lg:sticky lg:top-6">

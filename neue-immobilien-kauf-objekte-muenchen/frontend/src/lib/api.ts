@@ -20,10 +20,21 @@ export type Listing = {
   first_seen_at: string;
 };
 
-async function apiFetch<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, { cache: "no-store" });
+async function apiFetch<T>(path: string, signal?: AbortSignal): Promise<T> {
+  const res = await fetch(`${API_URL}${path}`, { cache: "no-store", signal });
   if (!res.ok) throw new Error(`API ${res.status}`);
   return res.json();
+}
+
+export function parseBadges(raw?: string | null): string[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed.map(String).filter(Boolean);
+  } catch {
+    // fall back to legacy comma-separated values
+  }
+  return raw.split(",").map((x) => x.trim()).filter(Boolean);
 }
 
 export const getListings = (params = "") => apiFetch<Listing[]>(`/api/listings${params ? `?${params}` : ""}`);

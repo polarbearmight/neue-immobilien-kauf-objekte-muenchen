@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Listing, API_URL } from "@/lib/api";
+import { Listing, API_URL, parseBadges } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 
 const eur = (v?: number | null) => (v == null ? "-" : new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(v));
@@ -12,17 +12,27 @@ export function ListingDrawer({ listing, onClose }: { listing: Listing | null; o
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
 
   useEffect(() => {
+    const controller = new AbortController();
     const load = async () => {
-      if (!listing?.id) return setSnapshots([]);
-      const res = await fetch(`${API_URL}/api/listings/${listing.id}/snapshots?limit=20`, { cache: "no-store" });
-      const data = await res.json();
-      setSnapshots(Array.isArray(data) ? data : []);
+      if (!listing?.id) {
+        setSnapshots([]);
+        return;
+      }
+      try {
+        const res = await fetch(`${API_URL}/api/listings/${listing.id}/snapshots?limit=20`, { cache: "no-store", signal: controller.signal });
+        if (!res.ok) throw new Error(`snapshots_${res.status}`);
+        const data = await res.json();
+        setSnapshots(Array.isArray(data) ? data : []);
+      } catch {
+        if (!controller.signal.aborted) setSnapshots([]);
+      }
     };
     load();
+    return () => controller.abort();
   }, [listing?.id]);
 
   if (!listing) return null;
-  const badgeList = (listing.badges || "").split(",").map((x) => x.trim()).filter(Boolean);
+  const badgeList = parseBadges(listing.badges);
 
   return (
     <div className="fixed inset-0 z-50 flex">

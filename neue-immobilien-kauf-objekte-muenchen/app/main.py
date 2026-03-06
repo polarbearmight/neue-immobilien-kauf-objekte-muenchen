@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from fastapi import Depends, FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,6 +11,7 @@ from app.db import Base, SessionLocal, engine, ensure_schema
 from app.models import AlertRule, Listing, ListingSnapshot, Source, SourceRun, Watchlist
 from app.schemas import AlertRuleIn, ListingOut, SourceOut
 from app.source_reliability import attach_reliability
+from app.time_utils import utc_now
 from collectors.image_tools import hash_distance
 from collectors.run_collect import COLLECTOR_MAP, run_one_source
 from collectors.source_discovery import SEED_SOURCES, discover_source_card, write_source_report
@@ -65,7 +66,7 @@ def favicon():
 
 @app.get("/health")
 def health():
-    return {"ok": True, "ts": datetime.utcnow().isoformat()}
+    return {"ok": True, "ts": utc_now().isoformat()}
 
 
 @app.get("/listings", response_model=list[ListingOut])
@@ -117,7 +118,7 @@ def listings(
     if rooms_max is not None:
         q = q.where(Listing.rooms.is_not(None), Listing.rooms <= rooms_max)
 
-    now = datetime.utcnow()
+    now = utc_now()
     if just_listed:
         q = q.where(Listing.first_seen_at >= now - timedelta(hours=2))
     elif brand_new:
@@ -215,8 +216,13 @@ def api_source_runs(source_id: int, limit: int = Query(20, ge=1, le=200), db: Se
 
 @app.get("/api/price-drops")
 def api_price_drops(limit: int = Query(200, ge=1, le=2000), db: Session = Depends(get_db)):
-    rows = db.execute(select(Listing).where(Listing.badges.is_not(None)).order_by(desc(Listing.first_seen_at)).limit(limit)).scalars().all()
-    return [r for r in rows if r.badges and "PRICE_DROP" in r.badges]
+    rows = db.execute(
+        select(Listing)
+        .where(Listing.badges.is_not(None), Listing.badges.ilike("%PRICE_DROP%"))
+        .order_by(desc(Listing.first_seen_at))
+        .limit(limit)
+    ).scalars().all()
+    return rows
 
 
 @app.post("/api/sources/{source_id}/approve")
@@ -228,7 +234,7 @@ def api_source_approve(source_id: int, approved: bool = True, db: Session = Depe
     if not approved:
         row.enabled = False
         row.health_status = "disabled"
-    row.updated_at = datetime.utcnow()
+    row.updated_at = utc_now()
     db.commit()
     return {"ok": True, "id": row.id, "approved": row.approved, "enabled": row.enabled}
 
@@ -243,7 +249,7 @@ def api_source_enable(source_id: int, enabled: bool = True, db: Session = Depend
     row.enabled = enabled
     if not enabled:
         row.health_status = "disabled"
-    row.updated_at = datetime.utcnow()
+    row.updated_at = utc_now()
     db.commit()
     return {"ok": True, "id": row.id, "enabled": row.enabled, "health_status": row.health_status}
 
@@ -257,7 +263,7 @@ def api_source_self_test(source_id: int, db: Session = Depends(get_db)):
     result = validate_source(row.base_url)
     row.health_status = result.status if row.enabled else "disabled"
     row.last_error = None if result.status == "healthy" else result.notes
-    row.updated_at = datetime.utcnow()
+    row.updated_at = utc_now()
     db.commit()
     return {
         "ok": True,
@@ -291,30 +297,29 @@ def api_watchlist_add(listing_id: int, notes: str | None = None, db: Session = D
 
 @app.get("/api/watchlist")
 def api_watchlist(db: Session = Depends(get_db)):
-    rows = db.execute(select(Watchlist).order_by(Watchlist.created_at.desc())).scalars().all()
-    out = []
-    for w in rows:
-        l = db.execute(select(Listing).where(Listing.id == w.listing_id)).scalar_one_or_none()
-        if not l:
-            continue
-        out.append(
-            {
-                "id": w.id,
-                "created_at": w.created_at,
-                "notes": w.notes,
-                "listing": {
-                    "id": l.id,
-                    "source": l.source,
-                    "title": l.title,
-                    "url": l.url,
-                    "price_eur": l.price_eur,
-                    "price_per_sqm": l.price_per_sqm,
-                    "deal_score": l.deal_score,
-                    "district": l.district,
-                },
-            }
-        )
-    return out
+    rows = db.execute(
+        select(Watchlist, Listing)
+        .join(Listing, Listing.id == Watchlist.listing_id)
+        .order_by(Watchlist.created_at.desc())
+    ).all()
+    return [
+        {
+            "id": w.id,
+            "created_at": w.created_at,
+            "notes": w.notes,
+            "listing": {
+                "id": l.id,
+                "source": l.source,
+                "title": l.title,
+                "url": l.url,
+                "price_eur": l.price_eur,
+                "price_per_sqm": l.price_per_sqm,
+                "deal_score": l.deal_score,
+                "district": l.district,
+            },
+        }
+        for w, l in rows
+    ]
 
 
 @app.post("/api/alert-rules")
@@ -362,7 +367,7 @@ def api_discovery_run(db: Session = Depends(get_db)):
         if row:
             row.kind = card.kind
             row.robots_status = card.robots_status
-            row.updated_at = datetime.utcnow()
+            row.updated_at = utc_now()
         else:
             row = Source(
                 name=card.name,
@@ -384,7 +389,7 @@ def api_discovery_run(db: Session = Depends(get_db)):
 
 @app.get("/api/analytics")
 def api_analytics(days: int = Query(30, ge=1, le=180), db: Session = Depends(get_db)):
-    since = datetime.utcnow() - timedelta(days=days)
+    since = utc_now() - timedelta(days=days)
 
     source_rows = db.execute(
         select(Listing.source, func.count().label("cnt"))
@@ -439,7 +444,7 @@ def api_analytics(days: int = Query(30, ge=1, le=180), db: Session = Depends(get
 @app.get("/stats")
 @app.get("/api/stats")
 def stats(days: int = Query(7, ge=1, le=90), db: Session = Depends(get_db)):
-    since = datetime.utcnow() - timedelta(days=days)
+    since = utc_now() - timedelta(days=days)
     new_count = db.scalar(select(func.count()).select_from(Listing).where(Listing.first_seen_at >= since))
     avg_ppsqm = db.scalar(select(func.avg(Listing.price_per_sqm)).where(Listing.first_seen_at >= since, Listing.price_per_sqm.is_not(None)))
     top_deals = db.scalar(select(func.count()).select_from(Listing).where(Listing.first_seen_at >= since, Listing.deal_score.is_not(None), Listing.deal_score >= 85))
@@ -456,8 +461,9 @@ def stats(days: int = Query(7, ge=1, le=90), db: Session = Depends(get_db)):
             ppsm_cnt[d] += 1
 
     series = []
+    base_now = utc_now()
     for i in range(days - 1, -1, -1):
-        d = (datetime.utcnow() - timedelta(days=i)).date().isoformat()
+        d = (base_now - timedelta(days=i)).date().isoformat()
         avg = (ppsm_sum[d] / ppsm_cnt[d]) if ppsm_cnt[d] else None
         series.append({"date": d, "count": counts[d], "avg_ppsqm": round(avg, 2) if avg else None})
 

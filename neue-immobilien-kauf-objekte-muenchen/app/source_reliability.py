@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 from sqlalchemy import select
 from app.models import Source, SourceRun
+from app.time_utils import utc_now
 
 
 def compute_reliability(db, days: int = 30) -> dict[int, int]:
-    since = datetime.utcnow() - timedelta(days=days)
+    since = utc_now() - timedelta(days=days)
     runs = db.execute(select(SourceRun).where(SourceRun.started_at >= since)).scalars().all()
 
     bucket: dict[int, list[SourceRun]] = {}

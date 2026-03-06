@@ -43,6 +43,12 @@ def test_analytics_endpoint_works():
     assert "price_bands" in payload
 
 
+def test_price_drops_endpoint_works():
+    r = client.get("/api/price-drops?limit=10")
+    assert r.status_code == 200
+    assert isinstance(r.json(), list)
+
+
 def test_source_approve_not_found():
     r = client.post("/api/sources/999999/approve?approved=true")
     assert r.status_code == 404

@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timedelta
+from datetime import timedelta
 from sqlalchemy import select, func
 
 from app.models import Listing, ListingSnapshot
+from app.time_utils import utc_now
 
 
 def _clamp(v: float, lo: float, hi: float) -> float:
@@ -15,7 +16,7 @@ def compute_score(listing: Listing, city_median: float | None, has_price_drop: b
     if not listing.price_per_sqm or not city_median or city_median <= 0:
         return None, [], {"reason": "missing_median_or_ppsqm"}
 
-    now = datetime.utcnow()
+    now = utc_now()
     age_h = (now - (listing.posted_at or listing.first_seen_at)).total_seconds() / 3600.0
 
     price_advantage = (city_median - listing.price_per_sqm) / city_median
@@ -85,14 +86,14 @@ def compute_score(listing: Listing, city_median: float | None, has_price_drop: b
 
 
 def recompute_scores(db, window_days: int = 14) -> int:
-    since = datetime.utcnow() - timedelta(days=window_days)
-    city_median = db.scalar(select(func.avg(Listing.price_per_sqm)).where(Listing.first_seen_at >= since, Listing.price_per_sqm != None))
-    rows = db.execute(select(Listing).where(Listing.price_per_sqm != None)).scalars().all()
+    since = utc_now() - timedelta(days=window_days)
+    city_median = db.scalar(select(func.avg(Listing.price_per_sqm)).where(Listing.first_seen_at >= since, Listing.price_per_sqm.is_not(None)))
+    rows = db.execute(select(Listing).where(Listing.price_per_sqm.is_not(None))).scalars().all()
     count = 0
     for row in rows:
         snaps = db.execute(
             select(ListingSnapshot)
-            .where(ListingSnapshot.listing_id == row.id, ListingSnapshot.price_eur != None)
+            .where(ListingSnapshot.listing_id == row.id, ListingSnapshot.price_eur.is_not(None))
             .order_by(ListingSnapshot.captured_at.desc())
             .limit(2)
         ).scalars().all()
