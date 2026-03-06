@@ -57,6 +57,7 @@ export default function Page() {
   const [source, setSource] = useState("all");
   const [sort, setSort] = useState("newest");
   const [selectedDistricts, setSelectedDistricts] = useState<string[]>([]);
+  const [allDistrictOptions, setAllDistrictOptions] = useState<string[]>([]);
   const [minScore, setMinScore] = useState(0);
   const [priceMin, setPriceMin] = useState<number | "">("");
   const [priceMax, setPriceMax] = useState<number | "">("");
@@ -167,10 +168,28 @@ export default function Page() {
     return ["all", ...unique];
   }, [analytics]);
 
+  useEffect(() => {
+    const controller = new AbortController();
+    const loadDistricts = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/districts`, { cache: "no-store", signal: controller.signal });
+        if (!res.ok) return;
+        const data = await res.json();
+        const options = Array.from(new Set((Array.isArray(data) ? data.map((x: { district?: string }) => x.district).filter(Boolean) : []))).sort((a, b) => a.localeCompare(b));
+        setAllDistrictOptions(options);
+      } catch {
+        // ignore district option fetch errors
+      }
+    };
+    loadDistricts();
+    return () => controller.abort();
+  }, []);
+
   const districtOptions = useMemo(() => {
+    if (allDistrictOptions.length) return allDistrictOptions;
     const items = analytics?.district_stats?.map((d) => d.district).filter(Boolean) || [];
     return Array.from(new Set(items)).sort((a, b) => a.localeCompare(b));
-  }, [analytics]);
+  }, [analytics, allDistrictOptions]);
 
   return (
     <div className="space-y-6">
@@ -338,9 +357,14 @@ export default function Page() {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-muted-foreground">Districts (multi)</label>
+              <div className="mb-1 flex items-center justify-between">
+                <label className="block text-muted-foreground">Districts (multi)</label>
+                <button className="rounded border px-2 py-0.5 text-[11px]" onClick={() => setSelectedDistricts([])}>
+                  Alle anzeigen
+                </button>
+              </div>
               <select
-                className="h-28 w-full rounded-md border px-2 py-2"
+                className="h-32 w-full rounded-md border px-2 py-2"
                 multiple
                 value={selectedDistricts}
                 onChange={(e) => {
