@@ -17,9 +17,16 @@ export function ListingTable({ rows, onDetails }: { rows: Listing[]; onDetails: 
         id: "badges",
         header: "Badges",
         cell: (info) => {
-          const b = listingHighlightBadges(info.row.original);
-          if (!b.length) return "-";
-          return <div className="flex flex-wrap gap-1">{b.map((x) => <span key={x.key} className={`rounded border px-1.5 py-0.5 text-[10px] ${badgeToneClass(x.tone)}`}>{x.label}</span>)}</div>;
+          const all = listingHighlightBadges(info.row.original);
+          if (!all.length) return "-";
+          const shown = all.slice(0, 2);
+          const rest = all.length - shown.length;
+          return (
+            <div className="flex h-6 items-center gap-1 overflow-hidden whitespace-nowrap">
+              {shown.map((x) => <span key={x.key} className={`rounded border px-1.5 py-0.5 text-[10px] ${badgeToneClass(x.tone)}`}>{x.label}</span>)}
+              {rest > 0 ? <span className="text-[10px] text-muted-foreground">+{rest}</span> : null}
+            </div>
+          );
         },
       }),
       columnHelper.accessor("title", { header: "Title", cell: (info) => info.getValue() || "Ohne Titel" }),

@@ -55,8 +55,9 @@ export default function DealsPage() {
           const isUltra = (l.deal_score || 0) >= 95;
           return (
             <div key={`${l.source}-${l.source_listing_id}`} className={`rounded-xl border p-4 text-sm ${rowClass} ${isUltra ? "shadow-md" : ""}`}>
-              <div className="mb-2 flex flex-wrap gap-1">
-                {h.map((b) => <span key={b.key} className={`rounded border px-1.5 py-0.5 text-[10px] ${badgeToneClass(b.tone)}`}>{b.label}</span>)}
+              <div className="mb-2 flex min-h-6 items-center gap-1 overflow-hidden whitespace-nowrap">
+                {h.slice(0, 3).map((b) => <span key={b.key} className={`rounded border px-1.5 py-0.5 text-[10px] ${badgeToneClass(b.tone)}`}>{b.label}</span>)}
+                {h.length > 3 ? <span className="text-[10px] text-muted-foreground">+{h.length - 3}</span> : null}
               </div>
               <p className="mb-1 text-lg font-semibold">Score {Math.round(l.deal_score || 0)}{l.investment_score != null ? ` · Inv ${Math.round(l.investment_score)}` : ""}</p>
               <p className="font-medium">{l.title || "Ohne Titel"}</p>
