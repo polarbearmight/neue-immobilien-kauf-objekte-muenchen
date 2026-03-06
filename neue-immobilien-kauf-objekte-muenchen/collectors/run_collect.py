@@ -16,6 +16,7 @@ from collectors.ohne_makler import collect_ohne_makler_listings
 from collectors.wohnungsboerse import collect_wohnungsboerse_listings
 from collectors.sis import collect_sis_listings
 from collectors.planethome import collect_planethome_listings
+from collectors.brokers import BROKER_SOURCES, make_broker_collector
 from collectors.source_validator import validate_source
 from collectors.normalize import normalize_listing_row, dedupe_rows
 from app.scoring import recompute_scores
@@ -35,6 +36,9 @@ COLLECTOR_MAP = {
     "sis": (collect_sis_listings, "https://www.sis.de"),
     "planethome": (collect_planethome_listings, "https://planethome.de"),
 }
+
+for _name, _url in BROKER_SOURCES.items():
+    COLLECTOR_MAP[_name] = (make_broker_collector(_name, _url), _url)
 
 
 def _row_hash(row: dict) -> str:
@@ -104,6 +108,7 @@ def _capture_fixture(source_name: str, rows: list[dict]):
 
 
 def get_or_create_source(db, name: str, base_url: str) -> Source:
+    is_broker = name.startswith("broker_")
     src = db.execute(select(Source).where(Source.name == name)).scalar_one_or_none()
     if not src:
         src = db.execute(select(Source).where(Source.base_url == base_url)).scalar_one_or_none()
@@ -119,12 +124,12 @@ def get_or_create_source(db, name: str, base_url: str) -> Source:
         name=name,
         base_url=base_url,
         kind="html",
-        discovery_method="seed",
+        discovery_method="broker_seed" if is_broker else "seed",
         robots_status="unknown",
         approved=(not approval_required),
         enabled=(not approval_required),
         health_status="disabled" if approval_required else "healthy",
-        rate_limit_seconds=8,
+        rate_limit_seconds=7200 if is_broker else 8,
     )
     db.add(src)
     db.commit()
