@@ -16,6 +16,7 @@ from app.source_reliability import attach_reliability, compute_reliability
 from app.time_utils import utc_now
 from app.investment import recompute_investments
 from app.off_market import recompute_off_market
+from app.location import recompute_locations
 from collectors.image_tools import hash_distance
 from collectors.run_collect import COLLECTOR_MAP, run_one_source_isolated
 from app.scoring import recompute_scores
@@ -100,6 +101,7 @@ def _run_scan_background(targets: list[str]):
 
         db = SessionLocal()
         try:
+            recompute_locations(db)
             recompute_scores(db)
             rows = db.execute(select(Listing).where(Listing.deal_score.is_not(None))).scalars().all()
             for r in rows:

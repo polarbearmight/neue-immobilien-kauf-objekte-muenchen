@@ -54,11 +54,27 @@ def compute_score(listing: Listing, city_median: float | None, has_price_drop: b
         risk_penalty += 20
     if listing.price_eur and listing.price_eur < 50000:
         risk_penalty += 16
+
+    location_conf = float(getattr(listing, "location_confidence", 0) or 0)
+    district_val = (getattr(listing, "district", None) or "").strip().lower()
+    if location_conf < 50:
+        risk_penalty += 12
+    if district_val in ("", "münchen", "munchen"):
+        risk_penalty += 6
+
+    title_val = (getattr(listing, "title", None) or "").strip().lower()
+    generic_titles = {"wohnung zum kauf", "haus zum kauf", "penthouse zum kauf"}
+    if title_val in generic_titles:
+        risk_penalty += 8
+
     if risk_penalty > 0:
         badges.append("CHECK")
 
     raw = 50 + price_component + size_component + freshness_component + liquidity_component - risk_penalty
     score = round(_clamp(raw, 0, 100), 2)
+
+    if "CHECK" in badges and score > 84:
+        score = 84.0
 
     if listing.price_per_sqm <= 9000:
         badges.append("UNDER_9000")

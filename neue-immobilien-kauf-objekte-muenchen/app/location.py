@@ -130,10 +130,12 @@ def resolve_location(row: dict) -> dict:
                 lat = _parse_float(m.group(1))
                 lon = _parse_float(m.group(2))
 
-    postal = _extract_postal(str(ld_postal) if ld_postal else None, address, ld_addr, district_raw, title, description)
+    postal = _extract_postal(row.get("postal_code"), str(ld_postal) if ld_postal else None, address, ld_addr, district_raw, title, description)
     if postal and postal in POSTAL_CODE_DISTRICTS:
         d, conf = POSTAL_CODE_DISTRICTS[postal]
         return {"district": d, "postal_code": postal, "latitude": lat, "longitude": lon, "location_confidence": conf, "district_source": "postal_code"}
+    if postal and postal.startswith("80"):
+        return {"district": MUNICH_UNKNOWN_DISTRICT, "postal_code": postal, "latitude": lat, "longitude": lon, "location_confidence": 20, "district_source": "postal_inference"}
 
     if ld_addr or ld_postal:
         d = _district_from_text(ld_addr, district_raw, title, description)
@@ -153,3 +155,32 @@ def resolve_location(row: dict) -> dict:
         return {"district": d, "postal_code": postal, "latitude": lat, "longitude": lon, "location_confidence": 100, "district_source": "coordinates"}
 
     return {"district": MUNICH_UNKNOWN_DISTRICT, "postal_code": postal, "latitude": lat, "longitude": lon, "location_confidence": 0, "district_source": "fallback"}
+
+
+def recompute_locations(db) -> int:
+    from sqlalchemy import select
+    from app.models import Listing
+
+    rows = db.execute(select(Listing)).scalars().all()
+    changed = 0
+    for r in rows:
+        loc = resolve_location(
+            {
+                "title": r.title,
+                "description": r.description,
+                "district": r.district,
+                "address": r.address,
+                "latitude": r.latitude,
+                "longitude": r.longitude,
+                "postal_code": r.postal_code,
+            }
+        )
+        r.district = loc.get("district") or r.district or MUNICH_UNKNOWN_DISTRICT
+        r.postal_code = loc.get("postal_code") or r.postal_code
+        r.latitude = loc.get("latitude") if loc.get("latitude") is not None else r.latitude
+        r.longitude = loc.get("longitude") if loc.get("longitude") is not None else r.longitude
+        r.location_confidence = loc.get("location_confidence") if loc.get("location_confidence") is not None else r.location_confidence
+        r.district_source = loc.get("district_source") or r.district_source
+        changed += 1
+    db.commit()
+    return changed
