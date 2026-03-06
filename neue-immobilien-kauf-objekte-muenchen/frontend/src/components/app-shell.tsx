@@ -12,6 +12,7 @@ const nav = [
   ["Clusters", "/clusters"],
   ["Off-Market", "/off-market"],
   ["Districts", "/districts"],
+  ["Geo Heatmap", "/geo"],
   ["Sources", "/sources"],
   ["Settings", "/settings"],
 ] as const;

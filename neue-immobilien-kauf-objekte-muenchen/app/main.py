@@ -17,6 +17,9 @@ from app.time_utils import utc_now
 from app.investment import recompute_investments
 from app.off_market import recompute_off_market
 from app.location import recompute_locations
+from app.district_analytics import district_metrics
+from app.geo_clusters import geo_cells
+from app.geo_heatmap import geo_hotspots, geo_summary
 from collectors.image_tools import hash_distance
 from collectors.run_collect import COLLECTOR_MAP, run_one_source_isolated
 from app.scoring import recompute_scores
@@ -173,6 +176,10 @@ def root():
             "/api/clusters",
             "/api/off-market",
             "/api/districts",
+            "/api/geo/districts",
+            "/api/geo/hotspots",
+            "/api/geo/cells",
+            "/api/geo/summary",
             "/api/collect/run",
             "/api/scan/run",
             "/api/scan/status",
@@ -754,32 +761,55 @@ def api_discovery_run(db: Session = Depends(get_db)):
 
 @app.get("/api/districts")
 def api_districts(db: Session = Depends(get_db)):
-    rows = db.execute(
-        select(
-            Listing.district,
-            func.count().label("cnt"),
-            func.avg(Listing.price_per_sqm).label("avg_ppsqm"),
-            func.avg(Listing.deal_score).label("avg_score"),
-            func.sum(case((Listing.deal_score >= 85, 1), else_=0)).label("top_deals"),
-        )
-        .where(Listing.district.is_not(None), Listing.is_active.is_(True))
-        .group_by(Listing.district)
-        .order_by(func.count().desc())
-    ).all()
+    rows = district_metrics(db, window="all")
+    return [
+        {
+            "district": r["district"],
+            "listing_count": r["listing_count"],
+            "median_or_avg_ppsqm": r["median_price_per_sqm"] or r["average_price_per_sqm"],
+            "top_deals": r["top_deal_count"],
+            "avg_score": r["average_deal_score"],
+        }
+        for r in rows
+    ]
 
-    out = []
-    for d, c, ppsm, avg_score, top_deals in rows:
-        clean = _normalize_district_name(d)
-        if not clean:
-            continue
-        out.append({
-            "district": clean,
-            "listing_count": int(c),
-            "median_or_avg_ppsqm": round(float(ppsm), 2) if ppsm else None,
-            "top_deals": int(top_deals or 0),
-            "avg_score": round(float(avg_score), 2) if avg_score else None,
-        })
-    return out
+
+@app.get("/api/geo/districts")
+def api_geo_districts(
+    window: str = Query("30d"),
+    min_score: float = Query(0, ge=0, le=100),
+    source: str | None = None,
+    district: str | None = None,
+    db: Session = Depends(get_db),
+):
+    return {"ok": True, "window": window, "rows": district_metrics(db, window=window, min_score=min_score, source=source, district_filter=district)}
+
+
+@app.get("/api/geo/hotspots")
+def api_geo_hotspots(
+    window: str = Query("30d"),
+    min_score: float = Query(0, ge=0, le=100),
+    source: str | None = None,
+    district: str | None = None,
+    db: Session = Depends(get_db),
+):
+    return {"ok": True, "window": window, "rows": geo_hotspots(db, window=window, min_score=min_score, source=source, district=district)}
+
+
+@app.get("/api/geo/cells")
+def api_geo_cells(window: str = Query("30d"), db: Session = Depends(get_db)):
+    return {"ok": True, "window": window, "rows": geo_cells(db, window=window)}
+
+
+@app.get("/api/geo/summary")
+def api_geo_summary(
+    window: str = Query("30d"),
+    min_score: float = Query(0, ge=0, le=100),
+    source: str | None = None,
+    district: str | None = None,
+    db: Session = Depends(get_db),
+):
+    return {"ok": True, **geo_summary(db, window=window, min_score=min_score, source=source, district=district)}
 
 
 @app.get("/api/analytics")
