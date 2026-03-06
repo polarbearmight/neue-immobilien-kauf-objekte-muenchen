@@ -3,20 +3,22 @@
 import { useMemo, useRef } from "react";
 import { useReactTable, getCoreRowModel, flexRender, createColumnHelper } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { Listing } from "@/lib/api";
+import { Listing, parseBadges } from "@/lib/api";
 
 const eur = (v?: number | null) => (v == null ? "-" : new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(v));
+const eurPerSqm = (v?: number | null) => (v == null ? "-" : `${new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 }).format(v)} €/m²`);
 const columnHelper = createColumnHelper<Listing>();
 
 function badges(l: Listing) {
   const out: string[] = [];
   const ageHours = (Date.now() - new Date(l.first_seen_at).getTime()) / 3600000;
+  const parsedBadges = parseBadges(l.badges);
   if (ageHours <= 2) out.push("🔥");
   else if (ageHours <= 6) out.push("🟢");
   if ((l.deal_score || 0) >= 92) out.push("💎");
   else if ((l.deal_score || 0) >= 85) out.push("⭐");
-  if (l.badges?.includes("PRICE_DROP")) out.push("⬇");
-  if (l.badges?.includes("CHECK")) out.push("⚠");
+  if (parsedBadges.includes("PRICE_DROP")) out.push("⬇");
+  if (parsedBadges.includes("CHECK")) out.push("⚠");
   return out.join(" ");
 }
 
@@ -29,7 +31,7 @@ export function ListingTable({ rows, onDetails }: { rows: Listing[]; onDetails: 
       columnHelper.accessor("rooms", { header: "Rooms", cell: (info) => info.getValue() ?? "-" }),
       columnHelper.accessor("area_sqm", { header: "Size", cell: (info) => (info.getValue() ? `${info.getValue()} m²` : "-") }),
       columnHelper.accessor("price_eur", { header: "Price", cell: (info) => eur(info.getValue()) }),
-      columnHelper.accessor("price_per_sqm", { header: "€/m²", cell: (info) => eur(info.getValue()) }),
+      columnHelper.accessor("price_per_sqm", { header: "€/m²", cell: (info) => eurPerSqm(info.getValue()) }),
       columnHelper.accessor("deal_score", { header: "Score", cell: (info) => Math.round(info.getValue() || 0) }),
       columnHelper.display({
         id: "actions",
