@@ -175,7 +175,12 @@ export default function Page() {
         const res = await fetch(`${API_URL}/api/districts`, { cache: "no-store", signal: controller.signal });
         if (!res.ok) return;
         const data = await res.json();
-        const options = Array.from(new Set((Array.isArray(data) ? data.map((x: { district?: string }) => x.district).filter(Boolean) : []))).sort((a, b) => a.localeCompare(b));
+        const raw: string[] = Array.isArray(data)
+          ? data
+              .map((x: { district?: string }) => x.district)
+              .filter((v): v is string => typeof v === "string" && v.length > 0)
+          : [];
+        const options = Array.from(new Set(raw)).sort((a, b) => a.localeCompare(b));
         setAllDistrictOptions(options);
       } catch {
         // ignore district option fetch errors

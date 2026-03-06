@@ -1,9 +1,8 @@
 "use client";
 
-import "leaflet/dist/leaflet.css";
 import { useEffect, useMemo, useState } from "react";
-import type { FeatureCollection } from "geojson";
-import { MapContainer, TileLayer, GeoJSON, CircleMarker, Popup } from "react-leaflet";
+import dynamic from "next/dynamic";
+import type { ComponentType } from "react";
 import { API_URL, parseBadges } from "@/lib/api";
 
 type DistrictMetric = {
@@ -33,6 +32,12 @@ type MarkerRow = {
 };
 
 const munichCenter: [number, number] = [48.137154, 11.576124];
+
+const LMapContainer = dynamic(() => import("react-leaflet").then((m) => m.MapContainer), { ssr: false }) as unknown as ComponentType<any>;
+const LTileLayer = dynamic(() => import("react-leaflet").then((m) => m.TileLayer), { ssr: false }) as unknown as ComponentType<any>;
+const LGeoJSON = dynamic(() => import("react-leaflet").then((m) => m.GeoJSON), { ssr: false }) as unknown as ComponentType<any>;
+const LCircleMarker = dynamic(() => import("react-leaflet").then((m) => m.CircleMarker), { ssr: false }) as unknown as ComponentType<any>;
+const LPopup = dynamic(() => import("react-leaflet").then((m) => m.Popup), { ssr: false }) as unknown as ComponentType<any>;
 
 function colorForMode(mode: string, m?: DistrictMetric) {
   if (!m) return "#9ca3af";
@@ -72,7 +77,7 @@ export default function MapPage() {
   const [source, setSource] = useState("all");
   const [district, setDistrict] = useState("all");
   const [view, setView] = useState<"district" | "markers">("district");
-  const [geojson, setGeojson] = useState<FeatureCollection | null>(null);
+  const [geojson, setGeojson] = useState<object | null>(null);
   const [districtRows, setDistrictRows] = useState<DistrictMetric[]>([]);
   const [markerRows, setMarkerRows] = useState<MarkerRow[]>([]);
 
@@ -120,12 +125,12 @@ export default function MapPage() {
 
       <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
         <div className="rounded-xl border p-2">
-          <MapContainer center={munichCenter} zoom={11} style={{ height: 560, width: "100%" }}>
-            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap contributors" />
+          <LMapContainer center={munichCenter} zoom={11} style={{ height: 560, width: "100%" }}>
+            <LTileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap contributors" />
             {view === "district" && geojson ? (
-              <GeoJSON
+              <LGeoJSON
                 data={geojson}
-                style={(feature) => {
+                style={(feature: any) => {
                   const name = String(feature?.properties?.name || "");
                   return {
                     color: "#374151",
@@ -134,7 +139,7 @@ export default function MapPage() {
                     fillColor: colorForMode(mode, metricByDistrict.get(name)),
                   };
                 }}
-                onEachFeature={(feature, layer) => {
+                onEachFeature={(feature: any, layer: any) => {
                   const name = String(feature?.properties?.name || "");
                   const m = metricByDistrict.get(name);
                   layer.bindTooltip(name);
@@ -147,19 +152,19 @@ export default function MapPage() {
 
             {view === "markers" || mode === "markers"
               ? markerRows.slice(0, 1500).map((m) => (
-                  <CircleMarker key={m.id} center={[m.latitude!, m.longitude!]} radius={5} pathOptions={{ color: markerColor(m), fillOpacity: 0.8 }}>
-                    <Popup>
+                  <LCircleMarker key={m.id} center={[m.latitude!, m.longitude!]} radius={5} pathOptions={{ color: markerColor(m), fillOpacity: 0.8 }}>
+                    <LPopup>
                       <div className="text-xs">
                         <p><strong>{m.title || "Listing"}</strong></p>
                         <p>{m.district || "München"} · {m.source}</p>
                         <p>Score {Math.round(m.deal_score || 0)} · Off-market {Math.round(m.off_market_score || 0)}</p>
                         <a href={m.url} target="_blank" rel="noreferrer">Open</a>
                       </div>
-                    </Popup>
-                  </CircleMarker>
+                    </LPopup>
+                  </LCircleMarker>
                 ))
               : null}
-          </MapContainer>
+          </LMapContainer>
         </div>
 
         <div className="rounded-xl border p-3 text-sm">
