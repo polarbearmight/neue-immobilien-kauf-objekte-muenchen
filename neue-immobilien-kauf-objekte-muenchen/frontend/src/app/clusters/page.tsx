@@ -16,11 +16,14 @@ export default async function ClustersPage() {
               </div>
             </div>
             <ul className="space-y-1 text-muted-foreground">
-              {c.members.map((m) => (
-                <li key={`${m.source}-${m.source_listing_id}`}>
-                  {m.source}: <a href={m.url} target="_blank" rel="noreferrer" className="underline">{m.title || "Ohne Titel"}</a>
-                </li>
-              ))}
+              {c.members.map((m, idx) => {
+                const key = m.id != null ? `listing-${m.id}` : `${c.cluster_id}-${m.source}-${m.source_listing_id || m.url || idx}`;
+                return (
+                  <li key={key}>
+                    {m.source}: <a href={m.url} target="_blank" rel="noreferrer" className="underline">{m.title || "Ohne Titel"}</a>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         ))}
