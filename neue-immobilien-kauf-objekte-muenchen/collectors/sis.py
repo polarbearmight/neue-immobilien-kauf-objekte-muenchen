@@ -11,6 +11,7 @@ _price_re = re.compile(r"([\d\.,]{3,})\s*€")
 _area_re = re.compile(r"([\d\.,]{1,6})\s*m²")
 _rooms_re = re.compile(r"(\d+[\.,]?\d*)\s*(?:Zimmer|Zi)")
 _detail_link_re = re.compile(r"https://www\.sis\.de/immobilie/[^\"'\s<]+")
+_city_re = re.compile(r"\b\d{5}\s+([A-ZÄÖÜ][A-Za-zÄÖÜäöüß\- ]{2,40})\b")
 
 
 def _to_num(val: str | None) -> float | None:
@@ -79,6 +80,10 @@ def collect_sis_listings() -> list[dict]:
         loc = soup.select_one("[class*='location'], [class*='city'], [itemprop='addressLocality']")
         if loc:
             district = loc.get_text(" ", strip=True)[:120] or None
+        if not district:
+            m = _city_re.search(full_text)
+            if m:
+                district = m.group(1).strip()[:120]
 
         img = None
         og = soup.select_one("meta[property='og:image']")

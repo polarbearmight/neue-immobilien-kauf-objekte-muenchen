@@ -9,11 +9,19 @@ SEARCH_URL = "https://planethome.de/immobiliensuche"
 API_URL = "https://api.planethome.com/property-search-index-service/graphql"
 
 
-def _to_num(val: str | None) -> float | None:
-    if not val:
+def _to_num(val) -> float | None:
+    if val is None:
+        return None
+    if isinstance(val, (int, float)):
+        return float(val)
+    s = str(val).strip()
+    if not s:
         return None
     try:
-        return float(str(val).replace(".", "").replace(",", "."))
+        # de-DE formatted strings like "1.234.567,89"
+        if "," in s:
+            s = s.replace(".", "").replace(",", ".")
+        return float(s)
     except Exception:
         return None
 
@@ -116,7 +124,7 @@ def collect_planethome_listings() -> list[dict]:
                 area = _to_num(area_raw)
                 rooms = _to_num((((prop.get("premises") or {}).get("roomNumbers") or {}).get("numberOfRooms")))
 
-                if ppsqm is None and price and area:
+                if (ppsqm is None or ppsqm <= 0) and price and area:
                     ppsqm = round(price / area, 2)
 
                 detail_url = f"https://planethome.de/objekt-detailseite?propertyId={provider_id}&portal=ph-de"
