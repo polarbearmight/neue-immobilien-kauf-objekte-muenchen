@@ -20,6 +20,7 @@ from app.location import recompute_locations
 from app.district_analytics import district_metrics
 from app.geo_clusters import geo_cells
 from app.geo_heatmap import geo_hotspots, geo_summary
+from app.district_name_map import canonicalize_district_name
 from collectors.image_tools import hash_distance
 from collectors.run_collect import COLLECTOR_MAP, run_one_source_isolated
 from app.scoring import recompute_scores
@@ -188,6 +189,7 @@ def root():
             "/api/geo/hotspots",
             "/api/geo/cells",
             "/api/geo/summary",
+            "/api/geo/listings",
             "/api/location/coverage",
             "/api/collect/run",
             "/api/scan/run",
@@ -863,6 +865,58 @@ def api_geo_summary(
     db: Session = Depends(get_db),
 ):
     return {"ok": True, **geo_summary(db, window=window, min_score=min_score, source=source, district=district)}
+
+
+@app.get("/api/geo/listings")
+def api_geo_listings(
+    window: str = Query("30d"),
+    min_score: float = Query(0, ge=0, le=100),
+    source: str | None = None,
+    district: str | None = None,
+    limit: int = Query(1200, ge=1, le=5000),
+    db: Session = Depends(get_db),
+):
+    since = None
+    now = utc_now()
+    if window == "24h":
+        since = now - timedelta(hours=24)
+    elif window == "7d":
+        since = now - timedelta(days=7)
+    elif window == "30d":
+        since = now - timedelta(days=30)
+
+    q = select(Listing).where(Listing.is_active.is_(True))
+    if since:
+        q = q.where(Listing.first_seen_at >= since)
+    if min_score > 0:
+        q = q.where(Listing.deal_score.is_not(None), Listing.deal_score >= min_score)
+    if source and source != "all":
+        q = q.where(Listing.source == source)
+    if district and district != "all":
+        d = canonicalize_district_name(district)
+        q = q.where(Listing.district == d)
+
+    rows = db.execute(q.order_by(Listing.first_seen_at.desc()).limit(limit)).scalars().all()
+    out = []
+    for r in rows:
+        out.append(
+            {
+                "id": r.id,
+                "title": r.title,
+                "district": r.district,
+                "source": r.source,
+                "url": r.url,
+                "price_eur": r.price_eur,
+                "price_per_sqm": r.price_per_sqm,
+                "deal_score": r.deal_score,
+                "off_market_score": r.off_market_score,
+                "badges": r.badges,
+                "latitude": r.latitude,
+                "longitude": r.longitude,
+                "first_seen_at": r.first_seen_at,
+            }
+        )
+    return {"ok": True, "rows": out}
 
 
 @app.get("/api/analytics")
