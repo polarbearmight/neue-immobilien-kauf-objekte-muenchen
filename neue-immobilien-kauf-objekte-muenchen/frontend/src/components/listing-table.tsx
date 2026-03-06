@@ -30,7 +30,13 @@ export function ListingTable({ rows, onDetails }: { rows: Listing[]; onDetails: 
         },
       }),
       columnHelper.accessor("title", { header: "Title", cell: (info) => info.getValue() || "Ohne Titel" }),
-      columnHelper.accessor("district", { header: "District", cell: (info) => info.getValue() ? `📍 ${info.getValue()}` : "📍 München" }),
+      columnHelper.accessor("district", {
+        header: "District",
+        cell: (info) => {
+          const val = info.getValue() ? `📍 ${info.getValue()}` : "📍 München";
+          return <span className="inline-block min-w-[170px] whitespace-nowrap">{val}</span>;
+        },
+      }),
       columnHelper.accessor("rooms", { header: "Rooms", cell: (info) => info.getValue() ?? "-" }),
       columnHelper.accessor("area_sqm", { header: "Size", cell: (info) => (info.getValue() ? `${info.getValue()} m²` : "-") }),
       columnHelper.accessor("price_eur", { header: "Price", cell: (info) => eur(info.getValue()) }),
@@ -76,7 +82,14 @@ export function ListingTable({ rows, onDetails }: { rows: Listing[]; onDetails: 
             const rowClass = listingHighlightRowClass(row.original);
             return (
               <div key={row.id} className={`grid grid-cols-9 gap-2 border-b py-2 text-sm ${rowClass}`} style={{ position: "absolute", top: 0, left: 0, width: "100%", transform: `translateY(${vr.start}px)` }}>
-                {row.getVisibleCells().map((cell) => <div key={cell.id} className="truncate">{flexRender(cell.column.columnDef.cell, cell.getContext())}</div>)}
+                {row.getVisibleCells().map((cell) => {
+                  const isDistrict = cell.column.id === "district";
+                  return (
+                    <div key={cell.id} className={isDistrict ? "overflow-visible" : "truncate"}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </div>
+                  );
+                })}
               </div>
             );
           })}
