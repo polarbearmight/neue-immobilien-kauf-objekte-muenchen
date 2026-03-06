@@ -54,6 +54,11 @@ npm install
 npm run dev
 ```
 
+One-command local run (collect all sources first, then start backend+frontend):
+```bash
+./start-all-sources.sh
+```
+
 Open:
 - API docs: http://127.0.0.1:8001/docs
 - UI: http://127.0.0.1:3000
