@@ -14,6 +14,7 @@ from app.schemas import AlertRuleIn, ListingOut, SourceOut
 from app.source_reliability import attach_reliability, compute_reliability
 from app.time_utils import utc_now
 from app.investment import recompute_investments
+from app.off_market import recompute_off_market
 from collectors.image_tools import hash_distance
 from collectors.run_collect import COLLECTOR_MAP, run_one_source_isolated
 from app.scoring import recompute_scores
@@ -100,6 +101,7 @@ def _run_scan_background(targets: list[str]):
             sources = db.execute(select(Source)).scalars().all()
             rel_by_name = {s.name: rel.get(s.id, 0) for s in sources}
             recompute_investments(db, reliability_by_source=rel_by_name)
+            recompute_off_market(db)
             db.commit()
         finally:
             db.close()
@@ -138,6 +140,7 @@ def root():
             "/api/stats",
             "/api/sources",
             "/api/clusters",
+            "/api/off-market",
             "/api/collect/run",
             "/api/scan/run",
             "/api/scan/status",
@@ -319,6 +322,11 @@ def listing_detail_expanded(listing_id: int, db: Session = Depends(get_db)):
             "price_to_rent_ratio": listing.price_to_rent_ratio,
             "investment_score": listing.investment_score,
             "investment_explain": listing.investment_explain,
+            "off_market_score": listing.off_market_score,
+            "off_market_flags": listing.off_market_flags,
+            "off_market_explain": listing.off_market_explain,
+            "exclusivity_score": listing.exclusivity_score,
+            "source_popularity_score": listing.source_popularity_score,
             "badges": listing.badges,
             "score_explain": listing.score_explain,
             "ai_flags": listing.ai_flags,
@@ -569,6 +577,38 @@ def api_alert_rule_create(payload: AlertRuleIn, db: Session = Depends(get_db)):
 @app.get("/api/alert-rules")
 def api_alert_rule_list(db: Session = Depends(get_db)):
     return db.execute(select(AlertRule).order_by(AlertRule.created_at.desc())).scalars().all()
+
+
+@app.get("/api/off-market")
+def api_off_market(
+    limit: int = Query(120, ge=1, le=1000),
+    min_score: float = Query(0, ge=0, le=100),
+    source: str | None = None,
+    district: str | None = None,
+    price_min: float | None = Query(None, ge=0),
+    price_max: float | None = Query(None, ge=0),
+    sqm_min: float | None = Query(None, ge=0),
+    sqm_max: float | None = Query(None, ge=0),
+    db: Session = Depends(get_db),
+):
+    q = select(Listing).where(Listing.off_market_score.is_not(None))
+    if min_score > 0:
+        q = q.where(Listing.off_market_score >= min_score)
+    if source:
+        q = q.where(Listing.source == source.strip().lower())
+    if district:
+        q = q.where(Listing.district.ilike(f"%{district.strip()}%"))
+    if price_min is not None:
+        q = q.where(Listing.price_eur.is_not(None), Listing.price_eur >= price_min)
+    if price_max is not None:
+        q = q.where(Listing.price_eur.is_not(None), Listing.price_eur <= price_max)
+    if sqm_min is not None:
+        q = q.where(Listing.area_sqm.is_not(None), Listing.area_sqm >= sqm_min)
+    if sqm_max is not None:
+        q = q.where(Listing.area_sqm.is_not(None), Listing.area_sqm <= sqm_max)
+
+    rows = db.execute(q.order_by(Listing.off_market_score.desc().nulls_last(), Listing.first_seen_at.desc()).limit(limit)).scalars().all()
+    return rows
 
 
 @app.get("/api/clusters")

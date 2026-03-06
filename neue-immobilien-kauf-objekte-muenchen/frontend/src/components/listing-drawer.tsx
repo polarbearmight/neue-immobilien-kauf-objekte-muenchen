@@ -130,8 +130,14 @@ export function ListingDrawer({ listing, onClose }: { listing: Listing | null; o
           </details>
 
           <details className="rounded border p-2" open>
-            <summary className="cursor-pointer font-medium">E) Off-Market Section (placeholder)</summary>
-            <p className="mt-2 text-muted-foreground">Off-market scoring follows in the next feature step.</p>
+            <summary className="cursor-pointer font-medium">E) Off-Market Analysis</summary>
+            <div className="mt-2 space-y-1 text-xs text-muted-foreground">
+              <p>Off-market score: {l.off_market_score != null ? Math.round(l.off_market_score) : "-"}</p>
+              <p>Exclusivity score: {l.exclusivity_score != null ? Math.round(l.exclusivity_score) : "-"}</p>
+              <p>Source popularity score: {l.source_popularity_score != null ? Math.round(l.source_popularity_score) : "-"}</p>
+              <p className="whitespace-pre-wrap">Flags: {l.off_market_flags || "-"}</p>
+              <p className="whitespace-pre-wrap">Explain: {l.off_market_explain || "-"}</p>
+            </div>
           </details>
 
           {(detail?.cluster?.members || []).length > 1 ? (
