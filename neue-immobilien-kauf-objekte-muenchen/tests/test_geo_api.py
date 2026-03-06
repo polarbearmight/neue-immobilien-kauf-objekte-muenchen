@@ -48,3 +48,11 @@ def test_location_coverage_endpoint_shape():
     payload = r.json()
     assert payload.get('ok') is True
     assert isinstance(payload.get('rows'), list)
+
+
+def test_geo_listings_endpoint_shape():
+    r = client.get('/api/geo/listings?window=30d')
+    assert r.status_code == 200
+    payload = r.json()
+    assert payload.get('ok') is True
+    assert isinstance(payload.get('rows'), list)

@@ -13,6 +13,7 @@ const nav = [
   ["Off-Market", "/off-market"],
   ["Districts", "/districts"],
   ["Geo Heatmap", "/geo"],
+  ["Map", "/map"],
   ["Sources", "/sources"],
   ["Settings", "/settings"],
 ] as const;
