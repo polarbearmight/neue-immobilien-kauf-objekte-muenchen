@@ -30,6 +30,8 @@ export default function Page() {
   const [source, setSource] = useState("all");
   const [sort, setSort] = useState("newest");
   const [minScore, setMinScore] = useState(0);
+  const [priceMin, setPriceMin] = useState<number | "">("");
+  const [priceMax, setPriceMax] = useState<number | "">("");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Listing | null>(null);
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
@@ -44,6 +46,8 @@ export default function Page() {
       try {
         const params = new URLSearchParams({ bucket, sort, limit: "500", min_score: String(minScore) });
         if (source !== "all") params.set("source", source);
+        if (priceMin !== "") params.set("price_min", String(priceMin));
+        if (priceMax !== "") params.set("price_max", String(priceMax));
         const [lRes, sRes, aRes] = await Promise.all([
           fetch(`${API_URL}/api/listings?${params.toString()}`, { cache: "no-store", signal: controller.signal }),
           fetch(`${API_URL}/api/stats?days=7`, { cache: "no-store", signal: controller.signal }),
@@ -67,7 +71,7 @@ export default function Page() {
     };
     load();
     return () => controller.abort();
-  }, [bucket, source, sort, minScore]);
+  }, [bucket, source, sort, minScore, priceMin, priceMax]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -178,6 +182,27 @@ export default function Page() {
               <select className="w-full rounded-md border px-3 py-2" value={source} onChange={(e) => setSource(e.target.value)}>
                 {sources.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-muted-foreground">Gesamtpreis (€)</label>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  className="w-full rounded-md border px-3 py-2"
+                  type="number"
+                  min={0}
+                  value={priceMin}
+                  onChange={(e) => setPriceMin(e.target.value === "" ? "" : Number(e.target.value))}
+                  placeholder="Min"
+                />
+                <input
+                  className="w-full rounded-md border px-3 py-2"
+                  type="number"
+                  min={0}
+                  value={priceMax}
+                  onChange={(e) => setPriceMax(e.target.value === "" ? "" : Number(e.target.value))}
+                  placeholder="Max"
+                />
+              </div>
             </div>
             <div>
               <label className="mb-1 block text-muted-foreground">Sort</label>
