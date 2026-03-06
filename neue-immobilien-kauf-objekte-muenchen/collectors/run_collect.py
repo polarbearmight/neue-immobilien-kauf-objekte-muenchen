@@ -340,13 +340,17 @@ def run_one_source(db, source_name: str, dry_run: bool = False, force: bool = Fa
 
     raw_count = len(rows)
     normalized = []
+    dropped_invalid = 0
     for row in rows:
         n = normalize_listing_row(row)
         if n:
             normalized.append(n)
         else:
+            dropped_invalid += 1
             run.parse_errors += 1
-    rows = dedupe_rows(normalized)
+    deduped = dedupe_rows(normalized)
+    dedupe_removed = max(0, len(normalized) - len(deduped))
+    rows = deduped
     rows, known_precheck_count = _apply_stop_early(db, source_name, rows)
 
     if source_name == "sz" and not rows:
@@ -386,6 +390,10 @@ def run_one_source(db, source_name: str, dry_run: bool = False, force: bool = Fa
         "status": run.status,
         "new": new_count,
         "updated": updated_count,
+        "raw_found": raw_count,
+        "normalized": len(rows),
+        "dropped_invalid": dropped_invalid,
+        "dedupe_removed": dedupe_removed,
         "skipped_known": total_skipped_known,
         "parse_errors": run.parse_errors,
         "http_errors": run.http_errors,

@@ -48,6 +48,7 @@ scan_state = {
     "updated_count": 0,
     "error_count": 0,
     "status": "idle",
+    "coverage": [],
 }
 
 
@@ -63,6 +64,7 @@ def _scan_status_payload() -> dict:
         "updated_count": scan_state["updated_count"],
         "error_count": scan_state["error_count"],
         "status": scan_state["status"],
+        "coverage": list(scan_state["coverage"]),
     }
 
 
@@ -78,6 +80,7 @@ def _run_scan_background(targets: list[str]):
         scan_state["updated_count"] = 0
         scan_state["error_count"] = 0
         scan_state["status"] = "running"
+        scan_state["coverage"] = []
 
     successful_sources = 0
     try:
@@ -92,12 +95,14 @@ def _run_scan_background(targets: list[str]):
                     scan_state["completed_sources"] += 1
                     scan_state["new_listings_count"] += int(result.get("new", 0) or 0)
                     scan_state["updated_count"] += int(result.get("updated", 0) or 0)
+                    scan_state["coverage"].append(result)
                     if result.get("status") in ("fail", "blocked"):
                         scan_state["error_count"] += 1
-            except Exception:
+            except Exception as e:
                 with scan_lock:
                     scan_state["completed_sources"] += 1
                     scan_state["error_count"] += 1
+                    scan_state["coverage"].append({"source": name, "status": "fail", "error": str(e), "new": 0, "updated": 0})
 
         db = SessionLocal()
         try:
@@ -171,6 +176,7 @@ def root():
             "/api/collect/run",
             "/api/scan/run",
             "/api/scan/status",
+            "/api/scan/coverage",
             "/api/discovery/run",
             "/api/price-drops",
             "/api/watchlist",
@@ -433,6 +439,13 @@ def api_scan_run(db: Session = Depends(get_db)):
 def api_scan_status():
     with scan_lock:
         return {"ok": True, "scan": _scan_status_payload()}
+
+
+@app.get("/api/scan/coverage")
+def api_scan_coverage():
+    with scan_lock:
+        scan = _scan_status_payload()
+        return {"ok": True, "running": scan.get("running"), "status": scan.get("status"), "coverage": scan.get("coverage", [])}
 
 
 @app.get("/duplicates")
