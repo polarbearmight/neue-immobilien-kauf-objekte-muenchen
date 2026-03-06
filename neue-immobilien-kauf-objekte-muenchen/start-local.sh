@@ -101,4 +101,6 @@ else
 fi
 
 echo "Press Ctrl+C to stop both."
-wait -n "$BACK_PID" "$FRONT_PID"
+
+# macOS ships Bash 3.2 (no `wait -n`). Keep process alive by waiting on both PIDs.
+wait "$BACK_PID" "$FRONT_PID"
