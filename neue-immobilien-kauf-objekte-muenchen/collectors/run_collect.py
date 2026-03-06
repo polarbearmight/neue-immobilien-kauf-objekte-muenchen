@@ -310,11 +310,16 @@ def run_one_source(db, source_name: str, dry_run: bool = False, force: bool = Fa
     src.last_error = validation.notes if validation.status != "healthy" else None
 
     if validation.status == "blocked":
+        strict_validation = os.getenv("STRICT_SOURCE_VALIDATION", "false").lower() in ("1", "true", "yes")
+        if strict_validation:
+            run.status = "degraded"
+            run.notes = f"validation blocked: {validation.notes}"
+            run.finished_at = datetime.now(timezone.utc)
+            db.commit()
+            return {"source": source_name, "status": "blocked", "new": 0, "updated": 0}
+        # best-effort mode: continue collection even when preflight validation is blocked
         run.status = "degraded"
-        run.notes = f"validation blocked: {validation.notes}"
-        run.finished_at = datetime.now(timezone.utc)
-        db.commit()
-        return {"source": source_name, "status": "blocked", "new": 0, "updated": 0}
+        run.notes = f"validation blocked (best-effort continue): {validation.notes}"
 
     timeout_seconds = int(os.getenv("COLLECTOR_TIMEOUT_SECONDS", "120"))
     print(f"[collector:{source_name}] start (timeout={timeout_seconds}s)", flush=True)
