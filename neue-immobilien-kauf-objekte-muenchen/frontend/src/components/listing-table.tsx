@@ -3,29 +3,25 @@
 import { useMemo, useRef } from "react";
 import { useReactTable, getCoreRowModel, flexRender, createColumnHelper } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { Listing, parseBadges } from "@/lib/api";
+import { Listing } from "@/lib/api";
+import { badgeToneClass, listingHighlightBadges, listingHighlightRowClass } from "@/lib/deal-highlights";
 
 const eur = (v?: number | null) => (v == null ? "-" : new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(v));
 const eurPerSqm = (v?: number | null) => (v == null ? "-" : `${new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 }).format(v)} €/m²`);
 const columnHelper = createColumnHelper<Listing>();
 
-function badges(l: Listing) {
-  const out: string[] = [];
-  const ageHours = (Date.now() - new Date(l.first_seen_at).getTime()) / 3600000;
-  const parsedBadges = parseBadges(l.badges);
-  if (ageHours <= 2) out.push("🔥");
-  else if (ageHours <= 6) out.push("🟢");
-  if ((l.deal_score || 0) >= 92) out.push("💎");
-  else if ((l.deal_score || 0) >= 85) out.push("⭐");
-  if (parsedBadges.includes("PRICE_DROP")) out.push("⬇");
-  if (parsedBadges.includes("CHECK")) out.push("⚠");
-  return out.join(" ");
-}
-
 export function ListingTable({ rows, onDetails }: { rows: Listing[]; onDetails: (l: Listing) => void }) {
   const columns = useMemo(
     () => [
-      columnHelper.display({ id: "badges", header: "Badges", cell: (info) => badges(info.row.original) || "-" }),
+      columnHelper.display({
+        id: "badges",
+        header: "Badges",
+        cell: (info) => {
+          const b = listingHighlightBadges(info.row.original);
+          if (!b.length) return "-";
+          return <div className="flex flex-wrap gap-1">{b.map((x) => <span key={x.key} className={`rounded border px-1.5 py-0.5 text-[10px] ${badgeToneClass(x.tone)}`}>{x.label}</span>)}</div>;
+        },
+      }),
       columnHelper.accessor("title", { header: "Title", cell: (info) => info.getValue() || "Ohne Titel" }),
       columnHelper.accessor("district", { header: "District", cell: (info) => info.getValue() || "-" }),
       columnHelper.accessor("rooms", { header: "Rooms", cell: (info) => info.getValue() ?? "-" }),
@@ -70,8 +66,7 @@ export function ListingTable({ rows, onDetails }: { rows: Listing[]; onDetails: 
         <div style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: "relative" }}>
           {virtualRows.map((vr) => {
             const row = table.getRowModel().rows[vr.index];
-            const s = row.original.deal_score || 0;
-            const rowClass = s >= 92 ? "bg-muted/60 border-l-4" : s >= 85 ? "bg-muted/30" : row.original.badges?.includes("CHECK") ? "bg-destructive/5" : "";
+            const rowClass = listingHighlightRowClass(row.original);
             return (
               <div key={row.id} className={`grid grid-cols-9 gap-2 border-b py-2 text-sm ${rowClass}`} style={{ position: "absolute", top: 0, left: 0, width: "100%", transform: `translateY(${vr.start}px)` }}>
                 {row.getVisibleCells().map((cell) => <div key={cell.id} className="truncate">{flexRender(cell.column.columnDef.cell, cell.getContext())}</div>)}
