@@ -188,6 +188,7 @@ def root():
             "/api/geo/hotspots",
             "/api/geo/cells",
             "/api/geo/summary",
+            "/api/location/coverage",
             "/api/collect/run",
             "/api/scan/run",
             "/api/scan/status",
@@ -807,6 +808,50 @@ def api_geo_hotspots(
 @app.get("/api/geo/cells")
 def api_geo_cells(window: str = Query("30d"), db: Session = Depends(get_db)):
     return {"ok": True, "window": window, "rows": geo_cells(db, window=window)}
+
+
+@app.get("/api/location/coverage")
+def api_location_coverage(db: Session = Depends(get_db)):
+    rows = db.execute(select(Listing)).scalars().all()
+    by_source: dict[str, dict] = {}
+    for r in rows:
+        s = r.source or "unknown"
+        b = by_source.setdefault(
+            s,
+            {
+                "source": s,
+                "total": 0,
+                "with_postal": 0,
+                "with_address": 0,
+                "district_generic_munich": 0,
+                "district_known": 0,
+                "confidence_ge_70": 0,
+                "source_postal_code": 0,
+                "source_title_detection": 0,
+                "source_address": 0,
+                "source_fallback": 0,
+            },
+        )
+        b["total"] += 1
+        if r.postal_code:
+            b["with_postal"] += 1
+        if r.address:
+            b["with_address"] += 1
+        if (r.district or "").strip().lower() in ("münchen", "munchen"):
+            b["district_generic_munich"] += 1
+        else:
+            b["district_known"] += 1
+        if (r.location_confidence or 0) >= 70:
+            b["confidence_ge_70"] += 1
+        src = (r.district_source or "fallback").strip().lower()
+        key = f"source_{src}"
+        if key in b:
+            b[key] += 1
+        else:
+            b["source_fallback"] += 1
+
+    out = sorted(by_source.values(), key=lambda x: x["total"], reverse=True)
+    return {"ok": True, "rows": out}
 
 
 @app.get("/api/geo/summary")
