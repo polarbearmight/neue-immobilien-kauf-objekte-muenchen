@@ -60,15 +60,28 @@ def to_num(val) -> float | None:
         return None
 
 
+_zip_munich_re = re.compile(r"\b(8\d{4})\s*(m[üu]nchen)\b", re.IGNORECASE)
+_object_id_re = re.compile(r"\bobjekt(?:-|\s)?id\b.*$", re.IGNORECASE)
+
+
 def normalize_location(text: str | None) -> str | None:
     if not text:
         return None
     t = " ".join(text.split()).strip(" ,;-")
     if not t:
         return None
+
+    # Remove noisy suffixes often seen in scraped locations
+    t = _object_id_re.sub("", t).strip(" ,;-")
+
+    # Canonicalize Munich zip+city strings like "81545 München"
+    m = _zip_munich_re.search(t)
+    if m:
+        t = f"{m.group(1)} München"
+
     if len(t) > 128:
         t = t[:128]
-    return t
+    return t or None
 
 
 def is_probable_listing_url(url: str | None) -> bool:
@@ -142,13 +155,28 @@ def normalize_listing_row(row: dict) -> dict | None:
     }
 
 
+def _secondary_key(row: dict) -> tuple:
+    source = (row.get("source") or "").strip().lower()
+    title = (row.get("title") or "").strip().lower()
+    district = (row.get("district") or "").strip().lower()
+    price = round(float(row.get("price_eur") or 0) / 1000.0) * 1000
+    area = round(float(row.get("area_sqm") or 0), 1)
+    rooms = round(float(row.get("rooms") or 0), 1)
+    return source, title, district, price, area, rooms
+
+
 def dedupe_rows(rows: list[dict]) -> list[dict]:
     out = []
-    seen = set()
+    seen_primary = set()
+    seen_secondary = set()
     for row in rows:
-        key = (row.get("source"), row.get("source_listing_id"))
-        if key in seen:
+        primary = (row.get("source"), row.get("source_listing_id"))
+        secondary = _secondary_key(row)
+        if primary in seen_primary:
             continue
-        seen.add(key)
+        if secondary in seen_secondary:
+            continue
+        seen_primary.add(primary)
+        seen_secondary.add(secondary)
         out.append(row)
     return out
