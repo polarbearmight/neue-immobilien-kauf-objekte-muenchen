@@ -9,6 +9,7 @@ from app.time_utils import utc_now
 
 def mk_listing(**kw):
     base = dict(
+        source="immowelt",
         price_per_sqm=9000,
         posted_at=utc_now() - timedelta(hours=1),
         first_seen_at=utc_now() - timedelta(hours=1),
@@ -17,6 +18,7 @@ def mk_listing(**kw):
         title="Helle Wohnung mit Balkon",
         description="renoviert und ruhig",
         district="schwabing",
+        address="80801 München, Beispielstraße 1",
         badges=None,
         deal_score=None,
         cluster_id=None,
@@ -51,11 +53,19 @@ def test_compute_score_handles_naive_listing_datetime():
     assert "JUST_LISTED" in badges or "BRAND_NEW" in badges
 
 
-def test_dedup_assigns_same_cluster_for_similar_rows():
-    a = mk_listing(district="maxvorstadt", area_sqm=61, price_eur=720000)
-    b = mk_listing(district="maxvorstadt", area_sqm=62, price_eur=719000)
-    c = mk_listing(district="haaidhausen", area_sqm=120, price_eur=1500000)
+def test_dedup_assigns_same_cluster_for_cross_source_similar_rows():
+    a = mk_listing(source="immowelt", district="maxvorstadt", address="80799 München, Arcisstraße 10", area_sqm=61, price_eur=720000, title="Helle 2-Zi Wohnung")
+    b = mk_listing(source="immoscout", district="maxvorstadt", address="80799 München Arcisstraße 10", area_sqm=62, price_eur=719000, title="Helle 2 Zimmer Wohnung")
+    c = mk_listing(source="immowelt", district="haaidhausen", address="81667 München, Testweg 99", area_sqm=120, price_eur=1500000)
     changed = assign_clusters([a, b, c])
     assert changed >= 2
     assert a.cluster_id is not None
     assert a.cluster_id == b.cluster_id
+
+
+def test_dedup_does_not_cluster_same_source_duplicates():
+    a = mk_listing(source="immowelt", district="maxvorstadt", area_sqm=61, price_eur=720000, title="Helle 2-Zi Wohnung")
+    b = mk_listing(source="immowelt", district="maxvorstadt", area_sqm=62, price_eur=719000, title="Helle 2 Zimmer Wohnung")
+    assign_clusters([a, b])
+    assert a.cluster_id is None
+    assert b.cluster_id is None

@@ -251,6 +251,8 @@ def listing_detail_expanded(listing_id: int, db: Session = Depends(get_db)):
         src_payload = attach_reliability(db, [src])[0]
 
     cluster_members = []
+    canonical_member_id = None
+    cluster_sources = []
     if listing.cluster_id:
         members = db.execute(
             select(Listing)
@@ -258,6 +260,18 @@ def listing_detail_expanded(listing_id: int, db: Session = Depends(get_db)):
             .order_by(Listing.first_seen_at.desc())
             .limit(30)
         ).scalars().all()
+        if members:
+            canonical = sorted(
+                members,
+                key=lambda x: (
+                    x.price_eur is None,
+                    x.price_eur or 0,
+                    -(x.deal_score or 0),
+                    x.first_seen_at,
+                ),
+            )[0]
+            canonical_member_id = canonical.id
+            cluster_sources = sorted({m.source for m in members})
         cluster_members = [
             {
                 "id": m.id,
@@ -267,6 +281,7 @@ def listing_detail_expanded(listing_id: int, db: Session = Depends(get_db)):
                 "price_eur": m.price_eur,
                 "price_per_sqm": m.price_per_sqm,
                 "first_seen_at": m.first_seen_at,
+                "is_canonical": m.id == canonical_member_id,
             }
             for m in members
         ]
@@ -315,6 +330,8 @@ def listing_detail_expanded(listing_id: int, db: Session = Depends(get_db)):
         "cluster": {
             "cluster_id": listing.cluster_id,
             "members_count": len(cluster_members),
+            "canonical_listing_id": canonical_member_id,
+            "sources": cluster_sources,
             "members": cluster_members,
         },
         "price_history": {
@@ -557,19 +574,58 @@ def api_alert_rule_list(db: Session = Depends(get_db)):
 @app.get("/api/clusters")
 def api_clusters(limit: int = Query(200, ge=1, le=2000), db: Session = Depends(get_db)):
     rows = db.execute(select(Listing).where(Listing.cluster_id.is_not(None)).order_by(desc(Listing.first_seen_at)).limit(limit)).scalars().all()
-    clusters = {}
+    clusters = defaultdict(list)
     for r in rows:
-        clusters.setdefault(r.cluster_id, []).append(
+        clusters[r.cluster_id].append(r)
+
+    out = []
+    for cid, members in clusters.items():
+        canonical = sorted(
+            members,
+            key=lambda x: (
+                x.price_eur is None,
+                x.price_eur or 0,
+                -(x.deal_score or 0),
+                x.first_seen_at,
+            ),
+        )[0]
+        payload_members = [
             {
                 "id": r.id,
                 "source": r.source,
+                "source_listing_id": r.source_listing_id,
                 "title": r.title,
                 "url": r.url,
                 "price_eur": r.price_eur,
+                "price_per_sqm": r.price_per_sqm,
                 "area_sqm": r.area_sqm,
+                "district": r.district,
+            }
+            for r in sorted(members, key=lambda x: (x.source, x.price_eur or 0))
+        ]
+        sources = sorted({m.source for m in members})
+        out.append(
+            {
+                "cluster_id": cid,
+                "members_count": len(payload_members),
+                "sources": sources,
+                "canonical_listing_id": canonical.id,
+                "canonical": {
+                    "id": canonical.id,
+                    "source": canonical.source,
+                    "title": canonical.title,
+                    "url": canonical.url,
+                    "price_eur": canonical.price_eur,
+                    "price_per_sqm": canonical.price_per_sqm,
+                    "area_sqm": canonical.area_sqm,
+                    "district": canonical.district,
+                },
+                "members": payload_members,
             }
         )
-    return [{"cluster_id": cid, "members": members, "members_count": len(members)} for cid, members in clusters.items()]
+
+    out.sort(key=lambda x: x["members_count"], reverse=True)
+    return out
 
 
 @app.post("/api/discovery/run")

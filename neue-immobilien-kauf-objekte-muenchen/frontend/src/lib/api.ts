@@ -48,7 +48,7 @@ export function parseBadges(raw?: string | null): string[] {
 export const getListings = (params = "") => apiFetch<Listing[]>(`/api/listings${params ? `?${params}` : ""}`);
 export const getStats = (days = 7) => apiFetch<{ new_listings: number; avg_price_per_sqm: number | null; top_deals?: number; series?: Array<{ date: string; count: number; avg_ppsqm: number | null }> }>(`/api/stats?days=${days}`);
 export const getSources = () => apiFetch<Array<{ name: string; health_status: string; reliability_score?: number }>>(`/api/sources`);
-export const getClusters = () => apiFetch<Array<{ cluster_id: string; members_count: number; members: Listing[] }>>(`/api/clusters`);
+export const getClusters = () => apiFetch<Array<{ cluster_id: string; members_count: number; sources?: string[]; canonical_listing_id?: number; canonical?: Listing; members: Listing[] }>>(`/api/clusters`);
 export const getPriceDrops = () => apiFetch<Listing[]>(`/api/price-drops`);
 export const getAnalytics = (days = 30) => apiFetch<{
   source_distribution: Array<{ source: string; count: number }>;

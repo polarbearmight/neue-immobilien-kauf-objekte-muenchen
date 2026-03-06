@@ -43,6 +43,12 @@ def test_analytics_endpoint_works():
     assert "price_bands" in payload
 
 
+def test_clusters_endpoint_works():
+    r = client.get("/api/clusters")
+    assert r.status_code == 200
+    assert isinstance(r.json(), list)
+
+
 def test_price_drops_endpoint_works():
     r = client.get("/api/price-drops?limit=10")
     assert r.status_code == 200
