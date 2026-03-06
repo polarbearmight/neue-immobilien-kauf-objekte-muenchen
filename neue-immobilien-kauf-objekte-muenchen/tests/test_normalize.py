@@ -41,7 +41,7 @@ def test_normalize_cleans_noisy_munich_district():
     }
     out = normalize_listing_row(row)
     assert out is not None
-    assert out["district"] == "München"
+    assert out["district"] == "Untergiesing-Harlaching"
 
 
 def test_dedupe_rows_drops_secondary_duplicates_same_source():

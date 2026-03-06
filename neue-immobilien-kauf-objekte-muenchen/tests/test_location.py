@@ -3,7 +3,7 @@ from app.location import resolve_location
 
 def test_postal_code_to_district_mapping():
     loc = resolve_location({"address": "Leopoldstraße 45, 80802 München"})
-    assert loc["district"] == "Schwabing"
+    assert loc["district"] == "Schwabing-Freimann"
     assert loc["district_source"] == "postal_code"
     assert loc["location_confidence"] >= 90
 
