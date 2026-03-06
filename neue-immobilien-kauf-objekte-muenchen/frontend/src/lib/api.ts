@@ -14,6 +14,12 @@ export type Listing = {
   price_eur?: number;
   price_per_sqm?: number;
   deal_score?: number;
+  estimated_rent_per_sqm?: number;
+  estimated_monthly_rent?: number;
+  gross_yield_percent?: number;
+  price_to_rent_ratio?: number;
+  investment_score?: number;
+  investment_explain?: string;
   badges?: string;
   score_explain?: string;
   ai_flags?: string;

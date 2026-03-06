@@ -115,8 +115,15 @@ export function ListingDrawer({ listing, onClose }: { listing: Listing | null; o
           </details>
 
           <details className="rounded border p-2" open>
-            <summary className="cursor-pointer font-medium">D) Investment Section (placeholder)</summary>
-            <p className="mt-2 text-muted-foreground">Estimated rent / yield fields follow in the next feature step.</p>
+            <summary className="cursor-pointer font-medium">D) Investment Section</summary>
+            <div className="mt-2 space-y-1 text-xs text-muted-foreground">
+              <p>Estimated rent €/m²: {eur(l.estimated_rent_per_sqm)}</p>
+              <p>Estimated monthly rent: {eur(l.estimated_monthly_rent)}</p>
+              <p>Gross yield: {l.gross_yield_percent != null ? `${l.gross_yield_percent.toFixed(2)}%` : "-"}</p>
+              <p>Price-to-rent ratio: {l.price_to_rent_ratio != null ? l.price_to_rent_ratio.toFixed(2) : "-"}</p>
+              <p>Investment score: {l.investment_score != null ? Math.round(l.investment_score) : "-"}</p>
+              <p className="whitespace-pre-wrap">Explain: {l.investment_explain || "-"}</p>
+            </div>
           </details>
 
           <details className="rounded border p-2" open>
