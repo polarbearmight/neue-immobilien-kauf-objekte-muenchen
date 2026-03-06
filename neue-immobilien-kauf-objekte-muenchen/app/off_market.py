@@ -19,6 +19,7 @@ def recompute_off_market(db) -> int:
 
     source_counts = Counter([r.source for r in rows if r.source])
     max_source = max(source_counts.values()) if source_counts else 1
+    major_sources = {"immowelt", "sz", "wohnungsboerse", "ohne_makler", "planethome", "sis"}
 
     cluster_counts = Counter([r.cluster_id for r in rows if r.cluster_id])
     district_counts = Counter([getattr(r, "district", None) for r in rows if getattr(r, "district", None)])
@@ -62,6 +63,12 @@ def recompute_off_market(db) -> int:
         if (getattr(r, "price_per_sqm", 0) or 0) >= 12000 and cluster_size <= 1 and source_popularity_score >= 65:
             expensive_district_bonus = 4.0
 
+        broker_only_bonus = 0.0
+        if (r.source or "").startswith("broker_") and cluster_size <= 1:
+            broker_only_bonus = 8.0
+        elif (r.source or "").startswith("broker_") and not any((s in major_sources) for s in source_counts.keys()):
+            broker_only_bonus = 5.0
+
         off_market_score = _clamp(
             exclusivity_score * 0.45
             + source_popularity_score * 0.25
@@ -69,6 +76,7 @@ def recompute_off_market(db) -> int:
             + deal_boost
             + district_single_bonus
             + expensive_district_bonus
+            + broker_only_bonus
             - suspicious_penalty
         )
 
@@ -95,6 +103,7 @@ def recompute_off_market(db) -> int:
             "suspicious_penalty": suspicious_penalty,
             "district_single_bonus": district_single_bonus,
             "expensive_district_bonus": expensive_district_bonus,
+            "broker_only_bonus": broker_only_bonus,
             "final": round(off_market_score, 2),
         }
 
