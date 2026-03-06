@@ -78,16 +78,24 @@ def _run_scan_background(targets: list[str]):
         scan_state["error_count"] = 0
         scan_state["status"] = "running"
 
+    successful_sources = 0
     try:
         for name in targets:
             with scan_lock:
                 scan_state["current_source"] = name
-            result = run_one_source_isolated(name, dry_run=False, force=False, capture_fixture=False)
-            with scan_lock:
-                scan_state["completed_sources"] += 1
-                scan_state["new_listings_count"] += int(result.get("new", 0) or 0)
-                scan_state["updated_count"] += int(result.get("updated", 0) or 0)
-                if result.get("status") in ("fail", "blocked"):
+            try:
+                result = run_one_source_isolated(name, dry_run=False, force=False, capture_fixture=False)
+                if result.get("status") == "ok":
+                    successful_sources += 1
+                with scan_lock:
+                    scan_state["completed_sources"] += 1
+                    scan_state["new_listings_count"] += int(result.get("new", 0) or 0)
+                    scan_state["updated_count"] += int(result.get("updated", 0) or 0)
+                    if result.get("status") in ("fail", "blocked"):
+                        scan_state["error_count"] += 1
+            except Exception:
+                with scan_lock:
+                    scan_state["completed_sources"] += 1
                     scan_state["error_count"] += 1
 
         db = SessionLocal()
@@ -108,7 +116,7 @@ def _run_scan_background(targets: list[str]):
             db.close()
 
         with scan_lock:
-            scan_state["status"] = "done"
+            scan_state["status"] = "done" if successful_sources > 0 else "error"
     except Exception:
         with scan_lock:
             scan_state["status"] = "error"
