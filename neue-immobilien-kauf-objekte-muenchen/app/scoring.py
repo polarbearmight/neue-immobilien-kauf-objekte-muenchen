@@ -12,7 +12,7 @@ def _clamp(v: float, lo: float, hi: float) -> float:
     return max(lo, min(hi, v))
 
 
-def compute_score(listing: Listing, city_median: float | None, has_price_drop: bool = False) -> tuple[float | None, list[str], dict]:
+def compute_score(listing: Listing, city_median: float | None, has_price_drop: bool = False, district_median: float | None = None) -> tuple[float | None, list[str], dict]:
     if not listing.price_per_sqm or not city_median or city_median <= 0:
         return None, [], {"reason": "missing_median_or_ppsqm"}
 
@@ -20,7 +20,8 @@ def compute_score(listing: Listing, city_median: float | None, has_price_drop: b
     listing_ts = ensure_utc(listing.posted_at or listing.first_seen_at)
     age_h = (now - listing_ts).total_seconds() / 3600.0
 
-    price_advantage = (city_median - listing.price_per_sqm) / city_median
+    median_used = district_median if district_median and district_median > 0 else city_median
+    price_advantage = (median_used - listing.price_per_sqm) / median_used
     price_component = 60 * _clamp(price_advantage / 0.35, -1, 1)  # [-60,+60]
 
     size = listing.area_sqm or 0
@@ -86,8 +87,15 @@ def compute_score(listing: Listing, city_median: float | None, has_price_drop: b
     elif score >= 85:
         badges.append("TOP_DEAL")
 
+    if district_median and district_median > 0 and listing.price_per_sqm < district_median * 0.9:
+        raw += 4
+        score = round(_clamp(raw, 0, 100), 2)
+
+    if district_median and district_median > 0 and district_median > city_median * 1.15 and listing.price_per_sqm > district_median * 0.97:
+        score = min(score, 82.0)
+
     explain = {
-        "median_used": city_median,
+        "median_used": median_used,
         "weights": {
             "price_component": round(price_component, 2),
             "size_component": round(size_component, 2),
@@ -106,6 +114,13 @@ def recompute_scores(db, window_days: int = 14) -> int:
     since = utc_now() - timedelta(days=window_days)
     city_median = db.scalar(select(func.avg(Listing.price_per_sqm)).where(Listing.first_seen_at >= since, Listing.price_per_sqm.is_not(None)))
     rows = db.execute(select(Listing).where(Listing.price_per_sqm.is_not(None))).scalars().all()
+    district_rows = db.execute(
+        select(Listing.district, func.avg(Listing.price_per_sqm))
+        .where(Listing.price_per_sqm.is_not(None), Listing.district.is_not(None))
+        .group_by(Listing.district)
+    ).all()
+    district_medians = {d: float(v) for d, v in district_rows if d and v}
+
     count = 0
     for row in rows:
         snaps = db.execute(
@@ -119,7 +134,12 @@ def recompute_scores(db, window_days: int = 14) -> int:
             drop_ratio = (snaps[1].price_eur - snaps[0].price_eur) / snaps[1].price_eur
             has_price_drop = drop_ratio >= 0.05
 
-        score, badges, explain = compute_score(row, city_median, has_price_drop=has_price_drop)
+        score, badges, explain = compute_score(
+            row,
+            city_median,
+            has_price_drop=has_price_drop,
+            district_median=district_medians.get(row.district),
+        )
         row.deal_score = score
         row.badges = json.dumps(badges, ensure_ascii=False)
         row.score_explain = json.dumps(explain, ensure_ascii=False)

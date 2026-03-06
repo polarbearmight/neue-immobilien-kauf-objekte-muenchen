@@ -21,6 +21,7 @@ def recompute_off_market(db) -> int:
     max_source = max(source_counts.values()) if source_counts else 1
 
     cluster_counts = Counter([r.cluster_id for r in rows if r.cluster_id])
+    district_counts = Counter([getattr(r, "district", None) for r in rows if getattr(r, "district", None)])
     now = utc_now()
     changed = 0
 
@@ -52,11 +53,22 @@ def recompute_off_market(db) -> int:
         if "CHECK" in badges:
             suspicious_penalty = 20.0
 
+        district_single_bonus = 0.0
+        district_val = getattr(r, "district", None)
+        if district_val and district_counts.get(district_val, 0) <= 3 and cluster_size <= 1:
+            district_single_bonus = 6.0
+
+        expensive_district_bonus = 0.0
+        if (getattr(r, "price_per_sqm", 0) or 0) >= 12000 and cluster_size <= 1 and source_popularity_score >= 65:
+            expensive_district_bonus = 4.0
+
         off_market_score = _clamp(
             exclusivity_score * 0.45
             + source_popularity_score * 0.25
             + freshness_boost
             + deal_boost
+            + district_single_bonus
+            + expensive_district_bonus
             - suspicious_penalty
         )
 
@@ -81,6 +93,8 @@ def recompute_off_market(db) -> int:
             "freshness_hours": round(age_h, 2),
             "deal_score": r.deal_score,
             "suspicious_penalty": suspicious_penalty,
+            "district_single_bonus": district_single_bonus,
+            "expensive_district_bonus": expensive_district_bonus,
             "final": round(off_market_score, 2),
         }
 
