@@ -2,7 +2,7 @@ import argparse
 import hashlib
 import json
 import os
-from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError, as_completed
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from sqlalchemy import select
@@ -227,6 +227,48 @@ def _collect_with_timeout(collector, timeout_seconds: int) -> list[dict]:
         return fut.result(timeout=timeout_seconds)
 
 
+def _should_stop_early(scanned: int, known_count: int, known_streak: int) -> bool:
+    known_ratio_threshold = float(os.getenv("STOP_EARLY_KNOWN_RATIO", "0.8"))
+    known_streak_threshold = int(os.getenv("STOP_EARLY_KNOWN_STREAK", "20"))
+    min_scan = int(os.getenv("STOP_EARLY_MIN_SCAN", "25"))
+
+    if scanned < min_scan:
+        return False
+    known_ratio = known_count / scanned if scanned else 0.0
+    return known_streak >= known_streak_threshold or known_ratio >= known_ratio_threshold
+
+
+def _apply_stop_early(db, source_name: str, rows: list[dict]) -> tuple[list[dict], int]:
+    if not rows:
+        return rows, 0
+
+    kept: list[dict] = []
+    known_count = 0
+    known_streak = 0
+    scanned = 0
+
+    for row in rows:
+        scanned += 1
+        existing = db.execute(
+            select(Listing.id).where(
+                Listing.source == source_name,
+                Listing.source_listing_id == row["source_listing_id"],
+            )
+        ).scalar_one_or_none()
+
+        if existing:
+            known_count += 1
+            known_streak += 1
+        else:
+            known_streak = 0
+            kept.append(row)
+
+        if _should_stop_early(scanned=scanned, known_count=known_count, known_streak=known_streak):
+            break
+
+    return kept, known_count
+
+
 def run_one_source(db, source_name: str, dry_run: bool = False, force: bool = False, capture_fixture: bool = False) -> dict:
     collector, base_url = COLLECTOR_MAP[source_name]
     src = get_or_create_source(db, source_name, base_url)
@@ -287,11 +329,12 @@ def run_one_source(db, source_name: str, dry_run: bool = False, force: bool = Fa
         else:
             run.parse_errors += 1
     rows = dedupe_rows(normalized)
+    rows, known_precheck_count = _apply_stop_early(db, source_name, rows)
 
     if source_name == "sz" and not rows:
         rows = ensure_seed_row(rows)
 
-    print(f"[collector:{source_name}] fetched={raw_count} normalized={len(rows)}", flush=True)
+    print(f"[collector:{source_name}] fetched={raw_count} normalized={len(rows)} known_precheck={known_precheck_count}", flush=True)
 
     if capture_fixture:
         _capture_fixture(source_name, rows)
@@ -303,7 +346,7 @@ def run_one_source(db, source_name: str, dry_run: bool = False, force: bool = Fa
 
     run.new_count = new_count
     run.updated_count = updated_count
-    run.skipped_known_count = skipped_known_count
+    run.skipped_known_count = skipped_known_count + known_precheck_count
     run.finished_at = datetime.now(timezone.utc)
     if run.status == "ok":
         run.notes = validation.notes
@@ -313,7 +356,8 @@ def run_one_source(db, source_name: str, dry_run: bool = False, force: bool = Fa
         state.last_successful_run = run.finished_at
     state.last_scan_page = 1
     state.last_known_listing_id = rows[0]["source_listing_id"] if rows else state.last_known_listing_id
-    state.notes = f"raw={raw_count} normalized={len(rows)} skipped_known={skipped_known_count}"
+    total_skipped_known = skipped_known_count + known_precheck_count
+    state.notes = f"raw={raw_count} normalized={len(rows)} skipped_known={total_skipped_known}"
 
     src.last_success_at = datetime.now(timezone.utc) if run.status == "ok" else src.last_success_at
     src.updated_at = datetime.now(timezone.utc)
@@ -324,7 +368,7 @@ def run_one_source(db, source_name: str, dry_run: bool = False, force: bool = Fa
         "status": run.status,
         "new": new_count,
         "updated": updated_count,
-        "skipped_known": skipped_known_count,
+        "skipped_known": total_skipped_known,
         "parse_errors": run.parse_errors,
         "http_errors": run.http_errors,
     }
@@ -333,6 +377,54 @@ def run_one_source(db, source_name: str, dry_run: bool = False, force: bool = Fa
 def _disabled_sources() -> set[str]:
     raw = os.getenv("DISABLED_SOURCES", "")
     return {x.strip().lower() for x in raw.split(",") if x.strip()}
+
+
+def run_one_source_isolated(source_name: str, dry_run: bool = False, force: bool = False, capture_fixture: bool = False) -> dict:
+    db = SessionLocal()
+    try:
+        return run_one_source(db, source_name, dry_run=dry_run, force=force, capture_fixture=capture_fixture)
+    finally:
+        db.close()
+
+
+def run_targets(targets: list[str], disabled: set[str], dry_run: bool = False, force: bool = False, capture_fixture: bool = False) -> list[dict]:
+    summary: list[dict] = []
+    valid_targets = []
+    for name in targets:
+        if name not in COLLECTOR_MAP:
+            print(f"WARN unknown source: {name}", flush=True)
+            continue
+        if name.lower() in disabled:
+            summary.append({"source": name, "status": "skipped", "reason": "disabled_by_env", "new": 0, "updated": 0})
+            continue
+        valid_targets.append(name)
+
+    max_workers = int(os.getenv("COLLECTOR_MAX_WORKERS", "1"))
+    max_workers = max(1, min(max_workers, len(valid_targets) or 1))
+
+    if max_workers == 1:
+        for name in valid_targets:
+            print(f"running source: {name}", flush=True)
+            result = run_one_source_isolated(name, dry_run=dry_run, force=force, capture_fixture=capture_fixture)
+            summary.append(result)
+            print(f"done source: {name} -> {result['status']} (new={result['new']}, updated={result['updated']})", flush=True)
+        return summary
+
+    with ThreadPoolExecutor(max_workers=max_workers) as ex:
+        futures = {
+            ex.submit(run_one_source_isolated, name, dry_run, force, capture_fixture): name
+            for name in valid_targets
+        }
+        for fut in as_completed(futures):
+            name = futures[fut]
+            try:
+                result = fut.result()
+            except Exception as e:
+                result = {"source": name, "status": "fail", "reason": f"orchestrator_error: {e}", "new": 0, "updated": 0}
+            summary.append(result)
+            print(f"done source: {name} -> {result['status']} (new={result.get('new', 0)}, updated={result.get('updated', 0)})", flush=True)
+
+    return summary
 
 
 def main():
@@ -346,24 +438,13 @@ def main():
     Base.metadata.create_all(bind=engine)
     ensure_schema()
 
+    targets = [args.source] if args.source != "all" else list(COLLECTOR_MAP.keys())
+    disabled = _disabled_sources()
+    summary = run_targets(targets, disabled, dry_run=args.dry_run, force=args.force, capture_fixture=args.capture_fixture)
+
+    # scoring + ai flags refresh after collection
     db = SessionLocal()
     try:
-        targets = [args.source] if args.source != "all" else list(COLLECTOR_MAP.keys())
-        disabled = _disabled_sources()
-        summary = []
-        for name in targets:
-            if name not in COLLECTOR_MAP:
-                print(f"WARN unknown source: {name}", flush=True)
-                continue
-            if name.lower() in disabled:
-                summary.append({"source": name, "status": "skipped", "reason": "disabled_by_env", "new": 0, "updated": 0})
-                continue
-            print(f"running source: {name}", flush=True)
-            result = run_one_source(db, name, dry_run=args.dry_run, force=args.force, capture_fixture=args.capture_fixture)
-            summary.append(result)
-            print(f"done source: {name} -> {result['status']} (new={result['new']}, updated={result['updated']})", flush=True)
-
-        # scoring + ai flags refresh after collection
         scored = recompute_scores(db)
         rows = db.execute(select(Listing).where(Listing.deal_score.is_not(None))).scalars().all()
         for r in rows:
