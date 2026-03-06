@@ -294,6 +294,19 @@ def run_one_source(db, source_name: str, dry_run: bool = False, force: bool = Fa
     allow_unapproved = os.getenv("ALLOW_UNAPPROVED_SOURCES", "true").lower() in ("1", "true", "yes")
     effective_force = force or allow_unapproved
 
+    if not force and src.last_success_at and src.rate_limit_seconds:
+        age_s = (datetime.now(timezone.utc) - ensure_utc(src.last_success_at)).total_seconds()
+        if age_s < float(src.rate_limit_seconds):
+            remaining = int(float(src.rate_limit_seconds) - age_s)
+            return {
+                "source": source_name,
+                "status": "skipped",
+                "reason": "rate_limited",
+                "remaining_seconds": remaining,
+                "new": 0,
+                "updated": 0,
+            }
+
     if not effective_force and (not src.approved or not src.enabled):
         return {"source": source_name, "status": "skipped", "reason": "not_approved_or_disabled", "new": 0, "updated": 0}
 

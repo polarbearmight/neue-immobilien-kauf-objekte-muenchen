@@ -34,11 +34,12 @@ def test_scan_run_respects_single_running_lock():
         scan_state['status'] = 'running'
 
     try:
-        r = client.post('/api/scan/run')
-        assert r.status_code == 200
-        payload = r.json()
-        assert payload.get('already_running') is True
-        assert payload.get('scan', {}).get('running') is True
+        for endpoint in ('/api/scan/run', '/api/scan/run-major', '/api/scan/run-brokers'):
+            r = client.post(endpoint)
+            assert r.status_code == 200
+            payload = r.json()
+            assert payload.get('already_running') is True
+            assert payload.get('scan', {}).get('running') is True
     finally:
         with scan_lock:
             scan_state['running'] = False

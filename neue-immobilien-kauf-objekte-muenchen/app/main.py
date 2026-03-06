@@ -72,6 +72,14 @@ def _scan_status_payload() -> dict:
     }
 
 
+def _broker_targets() -> list[str]:
+    return [x for x in COLLECTOR_MAP.keys() if x.startswith("broker_")]
+
+
+def _major_targets() -> list[str]:
+    return [x for x in COLLECTOR_MAP.keys() if not x.startswith("broker_")]
+
+
 def _run_scan_background(targets: list[str]):
     with scan_lock:
         scan_state["running"] = True
@@ -193,6 +201,8 @@ def root():
             "/api/location/coverage",
             "/api/collect/run",
             "/api/scan/run",
+            "/api/scan/run-major",
+            "/api/scan/run-brokers",
             "/api/scan/status",
             "/api/scan/coverage",
             "/api/discovery/run",
@@ -442,15 +452,43 @@ def api_scan_run(db: Session = Depends(get_db)):
         if scan_state["running"]:
             return {"ok": True, "already_running": True, "scan": _scan_status_payload()}
 
-    # Product decision: manual scan should run all built-in collectors regardless of source approval/enable flags.
     targets = list(COLLECTOR_MAP.keys())
-
     if not targets:
         return JSONResponse(status_code=400, content={"ok": False, "error": "no_collectors_registered"})
 
     t = threading.Thread(target=_run_scan_background, args=(targets,), daemon=True)
     t.start()
-    return {"ok": True, "already_running": False, "scan": _scan_status_payload()}
+    return {"ok": True, "already_running": False, "targets": targets, "scan": _scan_status_payload()}
+
+
+@app.post("/api/scan/run-major")
+def api_scan_run_major(db: Session = Depends(get_db)):
+    with scan_lock:
+        if scan_state["running"]:
+            return {"ok": True, "already_running": True, "scan": _scan_status_payload()}
+
+    targets = _major_targets()
+    if not targets:
+        return JSONResponse(status_code=400, content={"ok": False, "error": "no_major_collectors_registered"})
+
+    t = threading.Thread(target=_run_scan_background, args=(targets,), daemon=True)
+    t.start()
+    return {"ok": True, "already_running": False, "targets": targets, "scan": _scan_status_payload()}
+
+
+@app.post("/api/scan/run-brokers")
+def api_scan_run_brokers(db: Session = Depends(get_db)):
+    with scan_lock:
+        if scan_state["running"]:
+            return {"ok": True, "already_running": True, "scan": _scan_status_payload()}
+
+    targets = _broker_targets()
+    if not targets:
+        return JSONResponse(status_code=400, content={"ok": False, "error": "no_broker_collectors_registered"})
+
+    t = threading.Thread(target=_run_scan_background, args=(targets,), daemon=True)
+    t.start()
+    return {"ok": True, "already_running": False, "targets": targets, "scan": _scan_status_payload()}
 
 
 @app.get("/api/scan/status")
