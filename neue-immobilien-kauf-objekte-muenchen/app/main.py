@@ -150,7 +150,15 @@ def _normalize_district_name(raw: str | None) -> str | None:
     x = _district_zip_city_re.sub("", x)
     x = x.replace("München", "").replace("Munich", "")
     x = re.sub(r"\s{2,}", " ", x).strip(" ,.-")
-    return x or None
+
+    low = x.lower()
+    if not x:
+        return None
+    if "objekt-id" in low or low in {"objekt", "id", "objekt id", "objekt-id"}:
+        return None
+    if len(x) <= 2:
+        return None
+    return x
 
 
 def get_db():
