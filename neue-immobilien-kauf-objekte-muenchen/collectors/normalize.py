@@ -141,6 +141,7 @@ def normalize_listing_row(row: dict) -> dict | None:
         "description": description,
         "district": district,
         "address": address,
+        "url": url,
         "json_ld": row.get("json_ld"),
         "latitude": row.get("latitude"),
         "longitude": row.get("longitude"),

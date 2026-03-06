@@ -179,6 +179,7 @@ def resolve_location(row: dict) -> dict:
     description = row.get("description")
     district_raw = row.get("district")
     address = row.get("address")
+    url = row.get("url")
 
     json_ld = row.get("json_ld") if isinstance(row.get("json_ld"), dict) else {}
     ld_addr = json_ld.get("streetAddress") or json_ld.get("address")
@@ -208,11 +209,11 @@ def resolve_location(row: dict) -> dict:
         if d:
             return {"district": d, "postal_code": postal, "latitude": lat, "longitude": lon, "location_confidence": 70, "district_source": "structured_data"}
 
-    d = _district_from_text(address, district_raw)
+    d = _district_from_text(address, district_raw, url)
     if d:
         return {"district": d, "postal_code": postal, "latitude": lat, "longitude": lon, "location_confidence": 70, "district_source": "address"}
 
-    d = _district_from_text(title, description)
+    d = _district_from_text(title, description, url)
     if d:
         return {"district": d, "postal_code": postal, "latitude": lat, "longitude": lon, "location_confidence": 50, "district_source": "title_detection"}
 
@@ -236,6 +237,7 @@ def recompute_locations(db) -> int:
                 "description": r.description,
                 "district": r.district,
                 "address": r.address,
+                "url": r.url,
                 "latitude": r.latitude,
                 "longitude": r.longitude,
                 "postal_code": r.postal_code,
