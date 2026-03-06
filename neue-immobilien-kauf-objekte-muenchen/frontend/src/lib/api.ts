@@ -8,6 +8,7 @@ export type Listing = {
   title?: string;
   description?: string;
   district?: string;
+  address?: string;
   area_sqm?: number;
   rooms?: number;
   price_eur?: number;
@@ -17,6 +18,7 @@ export type Listing = {
   score_explain?: string;
   ai_flags?: string;
   cluster_id?: string;
+  posted_at?: string;
   first_seen_at: string;
 };
 
