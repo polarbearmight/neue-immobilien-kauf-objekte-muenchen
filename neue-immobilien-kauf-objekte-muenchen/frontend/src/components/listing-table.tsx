@@ -30,7 +30,7 @@ export function ListingTable({ rows, onDetails }: { rows: Listing[]; onDetails: 
         },
       }),
       columnHelper.accessor("title", { header: "Title", cell: (info) => info.getValue() || "Ohne Titel" }),
-      columnHelper.accessor("district", { header: "District", cell: (info) => info.getValue() || "-" }),
+      columnHelper.accessor("district", { header: "District", cell: (info) => info.getValue() ? `📍 ${info.getValue()}` : "📍 München" }),
       columnHelper.accessor("rooms", { header: "Rooms", cell: (info) => info.getValue() ?? "-" }),
       columnHelper.accessor("area_sqm", { header: "Size", cell: (info) => (info.getValue() ? `${info.getValue()} m²` : "-") }),
       columnHelper.accessor("price_eur", { header: "Price", cell: (info) => eur(info.getValue()) }),
