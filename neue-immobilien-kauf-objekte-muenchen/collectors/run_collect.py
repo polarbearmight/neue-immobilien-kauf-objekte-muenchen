@@ -24,6 +24,7 @@ from app.dedup import assign_clusters
 from app.investment import recompute_investments
 from app.source_reliability import compute_reliability
 from app.off_market import recompute_off_market
+from app.time_utils import ensure_utc
 
 COLLECTOR_MAP = {
     "sz": (collect_sz_listings, "https://immobilienmarkt.sueddeutsche.de"),
@@ -58,7 +59,7 @@ def _is_inactive(last_seen_at: datetime | None) -> bool:
     if not last_seen_at:
         return False
     inactive_days = int(os.getenv("INACTIVE_AFTER_DAYS", "3"))
-    return datetime.now(timezone.utc) - last_seen_at >= timedelta(days=inactive_days)
+    return datetime.now(timezone.utc) - ensure_utc(last_seen_at) >= timedelta(days=inactive_days)
 
 
 def _get_or_create_source_state(db, source_id: int) -> SourceState:
