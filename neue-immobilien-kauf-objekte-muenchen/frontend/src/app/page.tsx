@@ -42,6 +42,7 @@ export default function Page() {
   const [bucket, setBucket] = useState("all");
   const [source, setSource] = useState("all");
   const [sort, setSort] = useState("newest");
+  const [selectedDistricts, setSelectedDistricts] = useState<string[]>([]);
   const [minScore, setMinScore] = useState(0);
   const [priceMin, setPriceMin] = useState<number | "">("");
   const [priceMax, setPriceMax] = useState<number | "">("");
@@ -63,6 +64,7 @@ export default function Page() {
       try {
         const params = new URLSearchParams({ bucket, sort, limit: "500", min_score: String(minScore) });
         if (source !== "all") params.set("source", source);
+        if (selectedDistricts.length) params.set("districts", selectedDistricts.join(","));
         if (priceMin !== "") params.set("price_min", String(priceMin));
         if (priceMax !== "") params.set("price_max", String(priceMax));
         const [lRes, sRes, aRes] = await Promise.all([
@@ -88,7 +90,7 @@ export default function Page() {
     };
     load();
     return () => controller.abort();
-  }, [bucket, source, sort, minScore, priceMin, priceMax, refreshTick]);
+  }, [bucket, source, sort, selectedDistricts, minScore, priceMin, priceMax, refreshTick]);
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;
@@ -149,6 +151,11 @@ export default function Page() {
     const fromAnalytics = analytics?.source_distribution?.map((x) => x.source) || [];
     const unique = Array.from(new Set(fromAnalytics)).sort((a, b) => a.localeCompare(b));
     return ["all", ...unique];
+  }, [analytics]);
+
+  const districtOptions = useMemo(() => {
+    const items = analytics?.district_stats?.map((d) => d.district).filter(Boolean) || [];
+    return Array.from(new Set(items)).sort((a, b) => a.localeCompare(b));
   }, [analytics]);
 
   return (
@@ -269,6 +276,20 @@ export default function Page() {
               <label className="mb-1 block text-muted-foreground">Source</label>
               <select className="w-full rounded-md border px-3 py-2" value={source} onChange={(e) => setSource(e.target.value)}>
                 {sources.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-muted-foreground">Districts (multi)</label>
+              <select
+                className="h-28 w-full rounded-md border px-2 py-2"
+                multiple
+                value={selectedDistricts}
+                onChange={(e) => {
+                  const values = Array.from(e.target.selectedOptions).map((o) => o.value);
+                  setSelectedDistricts(values);
+                }}
+              >
+                {districtOptions.map((d) => <option key={d} value={d}>{d}</option>)}
               </select>
             </div>
             <div>

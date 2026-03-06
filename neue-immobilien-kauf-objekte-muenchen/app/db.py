@@ -22,6 +22,16 @@ def ensure_schema():
         cols = {c["name"] for c in insp.get_columns("listings")}
         if "description" not in cols:
             conn.execute(text("ALTER TABLE listings ADD COLUMN description VARCHAR(2048)"))
+        if "postal_code" not in cols:
+            conn.execute(text("ALTER TABLE listings ADD COLUMN postal_code VARCHAR(16)"))
+        if "latitude" not in cols:
+            conn.execute(text("ALTER TABLE listings ADD COLUMN latitude FLOAT"))
+        if "longitude" not in cols:
+            conn.execute(text("ALTER TABLE listings ADD COLUMN longitude FLOAT"))
+        if "location_confidence" not in cols:
+            conn.execute(text("ALTER TABLE listings ADD COLUMN location_confidence FLOAT"))
+        if "district_source" not in cols:
+            conn.execute(text("ALTER TABLE listings ADD COLUMN district_source VARCHAR(64)"))
         if "image_url" not in cols:
             conn.execute(text("ALTER TABLE listings ADD COLUMN image_url VARCHAR(1024)"))
         if "image_hash" not in cols:
@@ -69,6 +79,8 @@ def ensure_schema():
         conn.execute(text("CREATE INDEX IF NOT EXISTS ix_listings_first_seen_at ON listings(first_seen_at)"))
         conn.execute(text("CREATE INDEX IF NOT EXISTS ix_listings_source_first_seen ON listings(source, first_seen_at)"))
         conn.execute(text("CREATE INDEX IF NOT EXISTS ix_listings_district_first_seen ON listings(district, first_seen_at)"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS ix_listings_postal_code ON listings(postal_code)"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS ix_listings_location_confidence ON listings(location_confidence)"))
         conn.execute(text("CREATE INDEX IF NOT EXISTS ix_listings_ppsqm_first_seen ON listings(price_per_sqm, first_seen_at)"))
         conn.execute(text("CREATE INDEX IF NOT EXISTS ix_listings_score_first_seen ON listings(deal_score, first_seen_at)"))
         conn.execute(text("CREATE INDEX IF NOT EXISTS ix_listings_investment_score ON listings(investment_score)"))
