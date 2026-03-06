@@ -43,8 +43,9 @@ export default function OffMarketPage() {
           const badges = listingHighlightBadges(l);
           return (
             <div key={`${l.source}-${l.source_listing_id}`} className="rounded-xl border p-4 text-sm">
-              <div className="mb-2 flex flex-wrap gap-1">
-                {badges.map((b) => <span key={b.key} className={`rounded border px-1.5 py-0.5 text-[10px] ${badgeToneClass(b.tone)}`}>{b.label}</span>)}
+              <div className="mb-2 flex min-h-6 items-center gap-1 overflow-hidden whitespace-nowrap">
+                {badges.slice(0, 3).map((b) => <span key={b.key} className={`rounded border px-1.5 py-0.5 text-[10px] ${badgeToneClass(b.tone)}`}>{b.label}</span>)}
+                {badges.length > 3 ? <span className="text-[10px] text-muted-foreground">+{badges.length - 3}</span> : null}
               </div>
               <p className="mb-1 text-lg font-semibold">Off-Market {Math.round(l.off_market_score || 0)}</p>
               <p className="font-medium">{l.title || "Ohne Titel"}</p>

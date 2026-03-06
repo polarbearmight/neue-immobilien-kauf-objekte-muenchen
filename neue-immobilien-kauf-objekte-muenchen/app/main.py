@@ -1,4 +1,5 @@
 from datetime import timedelta
+import re
 import threading
 
 from fastapi import Depends, FastAPI, Query
@@ -117,6 +118,21 @@ def _run_scan_background(targets: list[str]):
             scan_state["running"] = False
             scan_state["current_source"] = None
             scan_state["finished_at"] = utc_now().isoformat()
+
+
+_district_object_id_re = re.compile(r"\bobjekt[- ]?id\b[:# ]*\w+", re.IGNORECASE)
+_district_zip_city_re = re.compile(r"\b8\d{4}\s+m[üu]nchen\b", re.IGNORECASE)
+
+
+def _normalize_district_name(raw: str | None) -> str | None:
+    if not raw:
+        return None
+    x = raw.strip()
+    x = _district_object_id_re.sub("", x)
+    x = _district_zip_city_re.sub("", x)
+    x = x.replace("München", "").replace("Munich", "")
+    x = re.sub(r"\s{2,}", " ", x).strip(" ,.-")
+    return x or None
 
 
 def get_db():
@@ -726,10 +742,29 @@ def api_analytics(days: int = Query(30, ge=1, le=180), db: Session = Depends(get
         select(Listing.district, func.count().label("cnt"), func.avg(Listing.price_per_sqm).label("avg_ppsqm"))
         .where(Listing.first_seen_at >= since, Listing.district.is_not(None))
         .group_by(Listing.district)
-        .having(func.count() >= 2)
         .order_by(func.count().desc())
-        .limit(15)
+        .limit(200)
     ).all()
+
+    district_bucket: dict[str, dict[str, float]] = {}
+    for d, c, a in district_rows:
+        clean = _normalize_district_name(d)
+        if not clean:
+            continue
+        b = district_bucket.setdefault(clean, {"count": 0, "ppsqm_sum": 0.0, "ppsqm_cnt": 0})
+        b["count"] += int(c)
+        if a is not None:
+            b["ppsqm_sum"] += float(a) * int(c)
+            b["ppsqm_cnt"] += int(c)
+
+    district_stats = []
+    for name, b in district_bucket.items():
+        if b["count"] < 2:
+            continue
+        avg = (b["ppsqm_sum"] / b["ppsqm_cnt"]) if b["ppsqm_cnt"] else None
+        district_stats.append({"district": name, "count": int(b["count"]), "avg_ppsqm": round(avg, 2) if avg else None})
+    district_stats.sort(key=lambda x: x["count"], reverse=True)
+    district_stats = district_stats[:15]
 
     trend_rows = db.execute(
         select(func.date(Listing.first_seen_at).label("d"), func.count().label("cnt"), func.avg(Listing.price_per_sqm).label("avg_ppsqm"))
@@ -742,10 +777,7 @@ def api_analytics(days: int = Query(30, ge=1, le=180), db: Session = Depends(get
         "days": days,
         "source_distribution": [{"source": s, "count": int(c)} for s, c in source_rows],
         "price_bands": [{"band": b, "count": int(c)} for b, c in price_band_rows],
-        "district_stats": [
-            {"district": d, "count": int(c), "avg_ppsqm": round(float(a), 2) if a else None}
-            for d, c, a in district_rows
-        ],
+        "district_stats": district_stats,
         "trend_insights": [
             {"date": str(d), "count": int(c), "avg_ppsqm": round(float(a), 2) if a else None}
             for d, c, a in trend_rows
