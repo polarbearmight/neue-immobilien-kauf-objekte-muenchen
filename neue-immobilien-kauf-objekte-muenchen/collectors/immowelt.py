@@ -1,6 +1,6 @@
 import re
-from datetime import datetime
 from urllib.parse import urljoin
+from app.time_utils import utc_now
 from bs4 import BeautifulSoup
 from collectors.base import SafeCollector, AccessBlockedError
 from collectors.image_tools import is_probable_property_photo
@@ -158,8 +158,8 @@ def collect_immowelt_listings() -> list[dict]:
                 "area_sqm": area,
                 "rooms": rooms,
                 "price_per_sqm": price_per_sqm,
-                "first_seen_at": datetime.utcnow(),
-                "last_seen_at": datetime.utcnow(),
+                "first_seen_at": utc_now(),
+                "last_seen_at": utc_now(),
             }
         )
 

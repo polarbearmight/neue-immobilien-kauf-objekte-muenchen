@@ -1,6 +1,6 @@
 import re
-from datetime import datetime
 
+from app.time_utils import utc_now
 from bs4 import BeautifulSoup
 
 from collectors.base import AccessBlockedError, SafeCollector
@@ -82,8 +82,8 @@ def collect_ohne_makler_listings() -> list[dict]:
                 "area_sqm": area,
                 "rooms": rooms,
                 "price_per_sqm": ppsqm,
-                "first_seen_at": datetime.utcnow(),
-                "last_seen_at": datetime.utcnow(),
+                "first_seen_at": utc_now(),
+                "last_seen_at": utc_now(),
             }
         )
 

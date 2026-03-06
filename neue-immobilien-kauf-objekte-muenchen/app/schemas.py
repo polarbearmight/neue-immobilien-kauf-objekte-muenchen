@@ -1,5 +1,6 @@
-from pydantic import BaseModel
 from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict
 
 
 class SourceOut(BaseModel):
@@ -15,8 +16,7 @@ class SourceOut(BaseModel):
     last_error: str | None = None
     reliability_score: int | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class AlertRuleIn(BaseModel):
@@ -51,5 +51,4 @@ class ListingOut(BaseModel):
     posted_at: datetime | None = None
     first_seen_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

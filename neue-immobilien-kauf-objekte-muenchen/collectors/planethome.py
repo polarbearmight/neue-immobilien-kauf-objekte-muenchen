@@ -1,6 +1,6 @@
 import re
-from datetime import datetime
 
+from app.time_utils import utc_now
 import httpx
 
 from collectors.base import AccessBlockedError, SafeCollector
@@ -142,8 +142,8 @@ def collect_planethome_listings() -> list[dict]:
                         "area_sqm": area,
                         "rooms": rooms,
                         "price_per_sqm": ppsqm,
-                        "first_seen_at": datetime.utcnow(),
-                        "last_seen_at": datetime.utcnow(),
+                        "first_seen_at": utc_now(),
+                        "last_seen_at": utc_now(),
                     }
                 )
                 if len(rows) >= 120:
