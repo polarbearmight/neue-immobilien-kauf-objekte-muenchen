@@ -49,6 +49,11 @@ class ListingOut(BaseModel):
     price_to_rent_ratio: float | None = None
     investment_score: float | None = None
     investment_explain: str | None = None
+    off_market_score: float | None = None
+    off_market_flags: str | None = None
+    off_market_explain: str | None = None
+    exclusivity_score: float | None = None
+    source_popularity_score: float | None = None
     badges: str | None = None
     score_explain: str | None = None
     ai_flags: str | None = None

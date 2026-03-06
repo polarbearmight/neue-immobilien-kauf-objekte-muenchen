@@ -23,6 +23,7 @@ from app.ai_deal_analyzer import analyze_listing, serialize_flags
 from app.dedup import assign_clusters
 from app.investment import recompute_investments
 from app.source_reliability import compute_reliability
+from app.off_market import recompute_off_market
 
 COLLECTOR_MAP = {
     "sz": (collect_sz_listings, "https://immobilienmarkt.sueddeutsche.de"),
@@ -457,12 +458,13 @@ def main():
         sources = db.execute(select(Source)).scalars().all()
         rel_by_name = {s.name: rel.get(s.id, 0) for s in sources}
         invested = recompute_investments(db, reliability_by_source=rel_by_name)
+        off_market = recompute_off_market(db)
         db.commit()
 
         print("collector_summary")
         for row in summary:
             print(row)
-        print({"scored": scored, "ai_flagged": len(rows), "clustered": clustered, "invested": invested})
+        print({"scored": scored, "ai_flagged": len(rows), "clustered": clustered, "invested": invested, "off_market": off_market})
     finally:
         db.close()
 

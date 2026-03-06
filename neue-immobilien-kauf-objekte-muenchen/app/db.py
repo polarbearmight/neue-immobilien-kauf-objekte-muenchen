@@ -40,6 +40,16 @@ def ensure_schema():
             conn.execute(text("ALTER TABLE listings ADD COLUMN investment_score FLOAT"))
         if "investment_explain" not in cols:
             conn.execute(text("ALTER TABLE listings ADD COLUMN investment_explain VARCHAR(2048)"))
+        if "off_market_score" not in cols:
+            conn.execute(text("ALTER TABLE listings ADD COLUMN off_market_score FLOAT"))
+        if "off_market_flags" not in cols:
+            conn.execute(text("ALTER TABLE listings ADD COLUMN off_market_flags VARCHAR(1024)"))
+        if "off_market_explain" not in cols:
+            conn.execute(text("ALTER TABLE listings ADD COLUMN off_market_explain VARCHAR(2048)"))
+        if "exclusivity_score" not in cols:
+            conn.execute(text("ALTER TABLE listings ADD COLUMN exclusivity_score FLOAT"))
+        if "source_popularity_score" not in cols:
+            conn.execute(text("ALTER TABLE listings ADD COLUMN source_popularity_score FLOAT"))
         if "badges" not in cols:
             conn.execute(text("ALTER TABLE listings ADD COLUMN badges VARCHAR(1024)"))
         if "score_explain" not in cols:
@@ -62,6 +72,7 @@ def ensure_schema():
         conn.execute(text("CREATE INDEX IF NOT EXISTS ix_listings_ppsqm_first_seen ON listings(price_per_sqm, first_seen_at)"))
         conn.execute(text("CREATE INDEX IF NOT EXISTS ix_listings_score_first_seen ON listings(deal_score, first_seen_at)"))
         conn.execute(text("CREATE INDEX IF NOT EXISTS ix_listings_investment_score ON listings(investment_score)"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS ix_listings_off_market_score ON listings(off_market_score)"))
         conn.execute(text("CREATE INDEX IF NOT EXISTS ix_listings_cluster_first_seen ON listings(cluster_id, first_seen_at)"))
         conn.execute(text("CREATE INDEX IF NOT EXISTS ix_listings_last_seen_at ON listings(last_seen_at)"))
         conn.execute(text("CREATE INDEX IF NOT EXISTS ix_listings_is_active ON listings(is_active)"))

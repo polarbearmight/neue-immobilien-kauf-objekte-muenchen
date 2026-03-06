@@ -10,6 +10,7 @@ const nav = [
   ["Brand New", "/brand-new"],
   ["Price Drops", "/price-drops"],
   ["Clusters", "/clusters"],
+  ["Off-Market", "/off-market"],
   ["Sources", "/sources"],
   ["Settings", "/settings"],
 ] as const;

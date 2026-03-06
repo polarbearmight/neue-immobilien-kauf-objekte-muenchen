@@ -20,6 +20,11 @@ export type Listing = {
   price_to_rent_ratio?: number;
   investment_score?: number;
   investment_explain?: string;
+  off_market_score?: number;
+  off_market_flags?: string;
+  off_market_explain?: string;
+  exclusivity_score?: number;
+  source_popularity_score?: number;
   badges?: string;
   score_explain?: string;
   ai_flags?: string;
@@ -50,6 +55,7 @@ export const getStats = (days = 7) => apiFetch<{ new_listings: number; avg_price
 export const getSources = () => apiFetch<Array<{ name: string; health_status: string; reliability_score?: number }>>(`/api/sources`);
 export const getClusters = () => apiFetch<Array<{ cluster_id: string; members_count: number; sources?: string[]; canonical_listing_id?: number; canonical?: Listing; members: Listing[] }>>(`/api/clusters`);
 export const getPriceDrops = () => apiFetch<Listing[]>(`/api/price-drops`);
+export const getOffMarket = (params = "") => apiFetch<Listing[]>(`/api/off-market${params ? `?${params}` : ""}`);
 export const getAnalytics = (days = 30) => apiFetch<{
   source_distribution: Array<{ source: string; count: number }>;
   price_bands: Array<{ band: string; count: number }>;
