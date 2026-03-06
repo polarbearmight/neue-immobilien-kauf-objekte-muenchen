@@ -24,6 +24,7 @@ from app.dedup import assign_clusters
 from app.investment import recompute_investments
 from app.source_reliability import compute_reliability
 from app.off_market import recompute_off_market
+from app.location import recompute_locations
 from app.time_utils import ensure_utc
 
 COLLECTOR_MAP = {
@@ -462,6 +463,7 @@ def main():
     # scoring + ai flags refresh after collection
     db = SessionLocal()
     try:
+        located = recompute_locations(db)
         scored = recompute_scores(db)
         rows = db.execute(select(Listing).where(Listing.deal_score.is_not(None))).scalars().all()
         for r in rows:
@@ -478,7 +480,7 @@ def main():
         print("collector_summary")
         for row in summary:
             print(row)
-        print({"scored": scored, "ai_flagged": len(rows), "clustered": clustered, "invested": invested, "off_market": off_market})
+        print({"located": located, "scored": scored, "ai_flagged": len(rows), "clustered": clustered, "invested": invested, "off_market": off_market})
     finally:
         db.close()
 
