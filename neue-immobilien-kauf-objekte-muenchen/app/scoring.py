@@ -5,7 +5,7 @@ from datetime import timedelta
 from sqlalchemy import select, func
 
 from app.models import Listing, ListingSnapshot
-from app.time_utils import utc_now
+from app.time_utils import ensure_utc, utc_now
 
 
 def _clamp(v: float, lo: float, hi: float) -> float:
@@ -17,7 +17,8 @@ def compute_score(listing: Listing, city_median: float | None, has_price_drop: b
         return None, [], {"reason": "missing_median_or_ppsqm"}
 
     now = utc_now()
-    age_h = (now - (listing.posted_at or listing.first_seen_at)).total_seconds() / 3600.0
+    listing_ts = ensure_utc(listing.posted_at or listing.first_seen_at)
+    age_h = (now - listing_ts).total_seconds() / 3600.0
 
     price_advantage = (city_median - listing.price_per_sqm) / city_median
     price_component = 60 * _clamp(price_advantage / 0.35, -1, 1)  # [-60,+60]
