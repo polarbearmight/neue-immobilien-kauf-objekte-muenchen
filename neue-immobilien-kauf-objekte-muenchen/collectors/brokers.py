@@ -55,6 +55,12 @@ CLASSIFIED_DISCOVERY_SOURCES: dict[str, list[str]] = {
     ]
 }
 
+AUCTION_DISCOVERY_SOURCES: dict[str, list[str]] = {
+    "auction_zvg_portal": [
+        "https://www.zvg-portal.de/",
+    ]
+}
+
 
 def _to_num(val) -> float | None:
     if val is None:

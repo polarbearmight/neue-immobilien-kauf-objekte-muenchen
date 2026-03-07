@@ -17,6 +17,7 @@ SEED_SOURCES = [
     {"name": "SIS Immobilien", "base_url": "https://www.sis.de", "kind": "html"},
     {"name": "PlanetHome", "base_url": "https://planethome.de", "kind": "html"},
     {"name": "SZ Immobilien", "base_url": "https://immobilienmarkt.sueddeutsche.de", "kind": "html"},
+    {"name": "ZVG Portal", "base_url": "https://www.zvg-portal.de/", "kind": "auction"},
 ]
 
 BROKER_CURATED_SOURCES = [

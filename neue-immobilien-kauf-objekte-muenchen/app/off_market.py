@@ -64,10 +64,17 @@ def recompute_off_market(db) -> int:
             expensive_district_bonus = 4.0
 
         broker_only_bonus = 0.0
-        if (r.source or "").startswith("broker_") and cluster_size <= 1:
+        src_name = (r.source or "")
+        if src_name.startswith("broker_") and cluster_size <= 1:
             broker_only_bonus = 8.0
-        elif (r.source or "").startswith("broker_") and not any((s in major_sources) for s in source_counts.keys()):
+        elif src_name.startswith("broker_") and not any((s in major_sources) for s in source_counts.keys()):
             broker_only_bonus = 5.0
+
+        classified_or_auction_bonus = 0.0
+        if src_name in {"kleinanzeigen"} and cluster_size <= 1:
+            classified_or_auction_bonus += 6.0
+        if src_name.startswith("auction_") and cluster_size <= 1:
+            classified_or_auction_bonus += 7.0
 
         off_market_score = _clamp(
             exclusivity_score * 0.45
@@ -77,6 +84,7 @@ def recompute_off_market(db) -> int:
             + district_single_bonus
             + expensive_district_bonus
             + broker_only_bonus
+            + classified_or_auction_bonus
             - suspicious_penalty
         )
 
@@ -104,6 +112,7 @@ def recompute_off_market(db) -> int:
             "district_single_bonus": district_single_bonus,
             "expensive_district_bonus": expensive_district_bonus,
             "broker_only_bonus": broker_only_bonus,
+            "classified_or_auction_bonus": classified_or_auction_bonus,
             "final": round(off_market_score, 2),
         }
 

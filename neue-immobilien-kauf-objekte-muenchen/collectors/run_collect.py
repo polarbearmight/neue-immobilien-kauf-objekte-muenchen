@@ -17,6 +17,7 @@ from collectors.wohnungsboerse import collect_wohnungsboerse_listings
 from collectors.sis import collect_sis_listings
 from collectors.planethome import collect_planethome_listings
 from collectors.brokers import (
+    AUCTION_DISCOVERY_SOURCES,
     BROKER_SOURCES,
     CLASSIFIED_DISCOVERY_SOURCES,
     make_broker_collector,
@@ -48,6 +49,31 @@ for _name, _url in BROKER_SOURCES.items():
 for _name, _seed_urls in CLASSIFIED_DISCOVERY_SOURCES.items():
     # use first URL as canonical base_url in Source table
     COLLECTOR_MAP[_name] = (make_multi_seed_collector(_name, _seed_urls), _seed_urls[0])
+
+for _name, _seed_urls in AUCTION_DISCOVERY_SOURCES.items():
+    COLLECTOR_MAP[_name] = (make_multi_seed_collector(_name, _seed_urls), _seed_urls[0])
+
+
+DEVELOPER_PROJECT_SOURCES = {
+    "broker_bayerische_hausbau",
+    "broker_isaria",
+    "broker_bauwerk",
+    "broker_pandion",
+    "broker_ehret_klein",
+}
+
+
+def _source_profile(name: str) -> tuple[str, int]:
+    """Returns (discovery_method, rate_limit_seconds)."""
+    if name in DEVELOPER_PROJECT_SOURCES:
+        return "secondary_discovery", 14400  # every 4 hours
+    if name.startswith("auction_"):
+        return "secondary_discovery", 21600  # every 6 hours
+    if name in CLASSIFIED_DISCOVERY_SOURCES:
+        return "secondary_discovery", 7200  # every 2 hours
+    if name.startswith("broker_"):
+        return "secondary_discovery", 7200  # every 2 hours
+    return "seed", 1800  # major portals every 30 minutes
 
 
 def _row_hash(row: dict) -> str:
@@ -117,14 +143,22 @@ def _capture_fixture(source_name: str, rows: list[dict]):
 
 
 def get_or_create_source(db, name: str, base_url: str) -> Source:
-    is_broker = name.startswith("broker_")
-    is_secondary_discovery = is_broker or name in {"kleinanzeigen"}
+    discovery_method, rate_limit_seconds = _source_profile(name)
     src = db.execute(select(Source).where(Source.name == name)).scalar_one_or_none()
     if not src:
         src = db.execute(select(Source).where(Source.base_url == base_url)).scalar_one_or_none()
     if src:
+        changed = False
         if src.name != name:
             src.name = name
+            changed = True
+        if src.discovery_method != discovery_method:
+            src.discovery_method = discovery_method
+            changed = True
+        if int(src.rate_limit_seconds or 0) != int(rate_limit_seconds):
+            src.rate_limit_seconds = int(rate_limit_seconds)
+            changed = True
+        if changed:
             src.updated_at = datetime.now(timezone.utc)
             db.commit()
         return src
@@ -134,13 +168,12 @@ def get_or_create_source(db, name: str, base_url: str) -> Source:
         name=name,
         base_url=base_url,
         kind="html",
-        discovery_method="secondary_discovery" if is_secondary_discovery else "seed",
+        discovery_method=discovery_method,
         robots_status="unknown",
         approved=(not approval_required),
         enabled=(not approval_required),
         health_status="disabled" if approval_required else "healthy",
-        # Secondary broker/classified discovery sources should run less frequently.
-        rate_limit_seconds=7200 if is_broker else (3600 if name == "kleinanzeigen" else 8),
+        rate_limit_seconds=rate_limit_seconds,
     )
     db.add(src)
     db.commit()
@@ -401,6 +434,26 @@ def run_one_source(db, source_name: str, dry_run: bool = False, force: bool = Fa
     run.finished_at = datetime.now(timezone.utc)
     if run.status == "ok":
         run.notes = validation.notes
+
+    # Source health monitoring: mark unstable after repeated failures.
+    recent = db.execute(
+        select(SourceRun)
+        .where(SourceRun.source_id == src.id)
+        .order_by(SourceRun.started_at.desc())
+        .limit(4)
+    ).scalars().all()
+    fail_streak = 0
+    for r in recent:
+        if r.status == "ok":
+            break
+        fail_streak += 1
+
+    if run.status == "ok":
+        src.health_status = "healthy"
+        src.last_error = None
+    elif fail_streak >= 3:
+        src.health_status = "unstable"
+        src.last_error = run.notes
 
     state = _get_or_create_source_state(db, src.id)
     if run.status == "ok":
