@@ -6,7 +6,7 @@ import { API_URL } from "@/lib/api";
 type Source = { id: number; name: string; health_status: string; reliability_score?: number; approved: boolean; enabled: boolean; last_error?: string };
 type SourceRun = { id: number; started_at: string; status: string; new_count: number; updated_count: number; notes?: string };
 type DistrictQuality = { total: number; assigned_pct: number; coordinates_pct: number; postal_code_pct: number; title_only_pct: number; unknown_pct: number };
-type SourceQualityRow = { count: number; missing_title: number; missing_district: number; missing_postal_code: number; missing_address: number; missing_price: number; missing_area: number; missing_rooms: number; missing_coords: number; invalid_url: number; unknown_location: number };
+type SourceQualityRow = { count: number; missing_title: number; missing_district: number; missing_postal_code: number; missing_address: number; missing_price: number; missing_area: number; missing_rooms: number; missing_coords: number; invalid_url: number; unknown_location: number; duplicate_clustered_pct?: number; parse_error_count?: number; usable_price_pct?: number; usable_sqm_pct?: number };
 
 export default function SourcesPage() {
   const [sources, setSources] = useState<Source[]>([]);
@@ -97,6 +97,9 @@ export default function SourcesPage() {
                     </p>
                     <p>
                       missing address={sourceQuality[s.name].missing_address} · missing coords={sourceQuality[s.name].missing_coords} · invalid url={sourceQuality[s.name].invalid_url} · unknown location={sourceQuality[s.name].unknown_location}
+                    </p>
+                    <p>
+                      dup clustered={sourceQuality[s.name].duplicate_clustered_pct ?? 0}% · usable price={sourceQuality[s.name].usable_price_pct ?? 0}% · usable sqm={sourceQuality[s.name].usable_sqm_pct ?? 0}% · parse errors={sourceQuality[s.name].parse_error_count ?? 0}
                     </p>
                   </div>
                 ) : null}

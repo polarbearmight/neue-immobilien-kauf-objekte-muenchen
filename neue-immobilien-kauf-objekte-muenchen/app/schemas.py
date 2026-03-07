@@ -33,6 +33,7 @@ class ListingOut(BaseModel):
     source: str
     source_listing_id: str
     url: str
+    source_url: str | None = None
     title: str | None = None
     display_title: str | None = None
     raw_title: str | None = None
@@ -49,6 +50,8 @@ class ListingOut(BaseModel):
     longitude: float | None = None
     location_confidence: float | None = None
     district_source: str | None = None
+    geo_status: str | None = None
+    map_mode_assignment: str | None = None
     area_sqm: float | None = None
     price_eur: float | None = None
     price_per_sqm: float | None = None

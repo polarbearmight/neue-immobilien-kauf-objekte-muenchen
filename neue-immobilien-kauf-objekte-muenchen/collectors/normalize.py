@@ -9,6 +9,7 @@ from app.location_resolver import resolve_location
 from app.title_normalization import make_display_title, normalize_title
 from app.field_normalization import compute_ppsqm, normalize_area, normalize_posted_at, normalize_price, normalize_rooms
 from app.listing_validator import quality_flags
+from app.district_name_map import canonicalize_district_name
 
 REAL_ESTATE_HINTS = (
     "wohnung",
@@ -184,7 +185,7 @@ def normalize_listing_row(row: dict) -> dict | None:
     })
 
     now = datetime.now(timezone.utc)
-    final_district = loc.get("district") or district
+    final_district = canonicalize_district_name(loc.get("district") or district)
     display_title = make_display_title(title, final_district, area, rooms)
 
     normalized = {

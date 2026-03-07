@@ -128,6 +128,22 @@ class Listing(Base):
     last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, index=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
 
+    @property
+    def source_url(self) -> str:
+        return self.url
+
+    @property
+    def geo_status(self) -> str:
+        if self.latitude is not None and self.longitude is not None:
+            return "coordinates"
+        if self.district and self.district != "München":
+            return "district_only"
+        return "unknown"
+
+    @property
+    def map_mode_assignment(self) -> str:
+        return "point" if self.geo_status == "coordinates" else "district"
+
 
 class SourceState(Base):
     __tablename__ = "source_state"
