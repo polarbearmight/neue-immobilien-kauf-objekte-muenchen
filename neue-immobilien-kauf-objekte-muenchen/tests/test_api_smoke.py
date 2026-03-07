@@ -19,7 +19,26 @@ def test_health_ok():
 def test_listings_endpoint_works():
     r = client.get("/api/listings?limit=5")
     assert r.status_code == 200
-    assert isinstance(r.json(), list)
+    data = r.json()
+    assert isinstance(data, list)
+    if data:
+        row = data[0]
+        for k in [
+            "display_title",
+            "district",
+            "price_eur",
+            "area_sqm",
+            "rooms",
+            "price_per_sqm",
+            "source",
+            "source_url",
+            "deal_score",
+            "cluster_id",
+            "map_mode_assignment",
+            "geo_status",
+            "location_confidence",
+        ]:
+            assert k in row
 
 
 def test_stats_endpoint_works():

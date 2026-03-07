@@ -15,6 +15,8 @@ const nav = [
   ["Districts", "/districts"],
   ["District Debug", "/district-debug"],
   ["Source Debug", "/source-debug"],
+  ["Duplicate Debug", "/duplicate-debug"],
+  ["Geo Debug", "/geo-debug"],
   ["Geo Heatmap", "/geo"],
   ["Map", "/map"],
   ["Sources", "/sources"],

@@ -270,6 +270,8 @@ def root():
             "/api/source-review",
             "/api/source-quality",
             "/api/source-debug",
+            "/api/duplicate-debug",
+            "/api/geo-debug",
             "/api/collect/run",
             "/api/scan/run",
             "/api/scan/run-major",
@@ -1064,6 +1066,53 @@ def api_source_debug(limit: int = Query(300, ge=1, le=2000), source: str | None 
             "geo_status": r.geo_status,
             "quality_flags": r.quality_flags,
             "url": r.url,
+        }
+        for r in rows
+    ]
+
+
+@app.get("/api/duplicate-debug")
+def api_duplicate_debug(limit: int = Query(300, ge=1, le=3000), db: Session = Depends(get_db)):
+    rows = db.execute(
+        select(Listing)
+        .where(Listing.is_active.is_(True), Listing.cluster_id.is_not(None))
+        .order_by(desc(Listing.first_seen_at))
+        .limit(limit)
+    ).scalars().all()
+    out: dict[str, list] = defaultdict(list)
+    for r in rows:
+        out[r.cluster_id].append(
+            {
+                "id": r.id,
+                "source": r.source,
+                "display_title": r.display_title,
+                "price_eur": r.price_eur,
+                "area_sqm": r.area_sqm,
+                "rooms": r.rooms,
+                "district": r.district,
+                "postal_code": r.postal_code,
+                "url": r.url,
+            }
+        )
+    return [{"cluster_id": cid, "members_count": len(members), "members": members} for cid, members in out.items()]
+
+
+@app.get("/api/geo-debug")
+def api_geo_debug(limit: int = Query(500, ge=1, le=5000), db: Session = Depends(get_db)):
+    rows = db.execute(select(Listing).where(Listing.is_active.is_(True)).order_by(desc(Listing.first_seen_at)).limit(limit)).scalars().all()
+    return [
+        {
+            "id": r.id,
+            "source": r.source,
+            "display_title": r.display_title,
+            "district": r.district,
+            "postal_code": r.postal_code,
+            "latitude": r.latitude,
+            "longitude": r.longitude,
+            "geo_status": r.geo_status,
+            "map_mode_assignment": r.map_mode_assignment,
+            "location_confidence": r.location_confidence,
+            "district_source": r.district_source,
         }
         for r in rows
     ]
