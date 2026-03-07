@@ -47,6 +47,7 @@ SOURCE_DENY_URL_PATTERNS: dict[str, tuple[str, ...]] = {
     "broker_immobilientreff": ("/service", "/kontakt", "/impressum", "/datenschutz", "/ueber-uns"),
     "broker_sis_immobilien": ("/ratgeber", "/aktuelles", "/service", "/karriere", "/unternehmen"),
     "broker_engel_voelkers_muenchen": ("/webinar", "/immobilienbewertung", "/karriere", "/ueber", "/blog"),
+    "broker_immo_muenchen": ("/immobilienzentrum", "/service", "/kontakt", "/impressum", "/datenschutz"),
 }
 
 CLASSIFIED_DISCOVERY_SOURCES: dict[str, list[str]] = {
