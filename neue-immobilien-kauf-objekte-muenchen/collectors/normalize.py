@@ -161,6 +161,7 @@ def normalize_listing_row(row: dict) -> dict | None:
         "image_hash": row.get("image_hash"),
         "address": address,
         "district": loc.get("district") or district,
+        "raw_district_text": district,
         "postal_code": loc.get("postal_code"),
         "latitude": loc.get("latitude"),
         "longitude": loc.get("longitude"),

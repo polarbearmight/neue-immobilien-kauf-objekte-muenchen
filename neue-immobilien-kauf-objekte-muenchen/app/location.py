@@ -24,6 +24,8 @@ def recompute_locations(db) -> int:
                 "structured_data_json": None,
             }
         )
+        if not r.raw_district_text:
+            r.raw_district_text = r.district
         r.district = loc.get("district") or r.district or MUNICH_UNKNOWN_DISTRICT
         r.postal_code = loc.get("postal_code") or r.postal_code
         r.latitude = loc.get("latitude") if loc.get("latitude") is not None else r.latitude

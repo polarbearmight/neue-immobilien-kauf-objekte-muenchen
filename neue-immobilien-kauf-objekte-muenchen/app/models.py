@@ -91,6 +91,7 @@ class Listing(Base):
     raw_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     address: Mapped[str | None] = mapped_column(String(512), nullable=True)
     district: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    raw_district_text: Mapped[str | None] = mapped_column(String(256), nullable=True)
     postal_code: Mapped[str | None] = mapped_column(String(16), nullable=True, index=True)
     latitude: Mapped[float | None] = mapped_column(Float, nullable=True)
     longitude: Mapped[float | None] = mapped_column(Float, nullable=True)

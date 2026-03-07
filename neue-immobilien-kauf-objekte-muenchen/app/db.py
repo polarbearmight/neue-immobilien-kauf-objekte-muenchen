@@ -24,6 +24,8 @@ def ensure_schema():
             conn.execute(text("ALTER TABLE listings ADD COLUMN description VARCHAR(2048)"))
         if "postal_code" not in cols:
             conn.execute(text("ALTER TABLE listings ADD COLUMN postal_code VARCHAR(16)"))
+        if "raw_district_text" not in cols:
+            conn.execute(text("ALTER TABLE listings ADD COLUMN raw_district_text VARCHAR(256)"))
         if "latitude" not in cols:
             conn.execute(text("ALTER TABLE listings ADD COLUMN latitude FLOAT"))
         if "longitude" not in cols:
