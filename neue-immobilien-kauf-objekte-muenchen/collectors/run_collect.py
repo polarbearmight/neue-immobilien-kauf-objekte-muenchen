@@ -226,6 +226,7 @@ def upsert_rows(db, rows: list[dict], source_name: str) -> tuple[int, int, int]:
             existing.image_url = row.get("image_url") or existing.image_url
             existing.image_hash = row.get("image_hash") or existing.image_hash
             existing.address = row.get("address") or existing.address
+            existing.raw_district_text = row.get("raw_district_text") or existing.raw_district_text
             existing.district = row.get("district") or existing.district
             existing.postal_code = row.get("postal_code") or existing.postal_code
             existing.latitude = row.get("latitude") if row.get("latitude") is not None else existing.latitude

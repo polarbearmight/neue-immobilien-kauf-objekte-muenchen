@@ -122,6 +122,14 @@ class Listing(Base):
     last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, index=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
 
+    @property
+    def display_title(self) -> str:
+        if self.title and self.title.strip():
+            return self.title.strip()
+        if self.address and self.address.strip():
+            return self.address.strip()
+        return f"{self.source} #{self.source_listing_id}"
+
 
 class SourceState(Base):
     __tablename__ = "source_state"
