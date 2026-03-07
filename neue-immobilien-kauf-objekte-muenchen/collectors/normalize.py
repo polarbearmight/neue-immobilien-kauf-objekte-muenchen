@@ -4,7 +4,7 @@ import re
 from datetime import datetime, timezone
 from urllib.parse import urlparse
 
-from app.location import resolve_location
+from app.location_resolver import resolve_location
 
 REAL_ESTATE_HINTS = (
     "wohnung",
@@ -134,18 +134,20 @@ def normalize_listing_row(row: dict) -> dict | None:
 
     district = normalize_location(row.get("district"))
     address = normalize_location(row.get("address"))
+    city = normalize_location(row.get("city"))
     image_url = (row.get("image_url") or "").strip() or None
 
     loc = resolve_location({
         "title": title,
         "description": description,
-        "district": district,
         "address": address,
-        "url": url,
-        "json_ld": row.get("json_ld"),
+        "postal_code": row.get("postal_code"),
+        "city": city,
+        "district_raw": district,
         "latitude": row.get("latitude"),
         "longitude": row.get("longitude"),
         "coordinates": row.get("coordinates"),
+        "structured_data_json": row.get("structured_data_json") or row.get("json_ld"),
     })
 
     now = datetime.now(timezone.utc)
