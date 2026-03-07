@@ -37,26 +37,64 @@ POSTAL_CODE_DISTRICTS: dict[str, tuple[str, int]] = {
 }
 
 DISTRICT_ALIASES: dict[str, str] = {
-    "altstadt": "Altstadt-Lehel", "lehel": "Altstadt-Lehel", "maxvorstadt": "Maxvorstadt",
-    "ludwigsvorstadt": "Ludwigsvorstadt-Isarvorstadt", "isarvorstadt": "Ludwigsvorstadt-Isarvorstadt",
-    "schwanthalerhoehe": "Schwanthalerhöhe", "schwanthalerhöhe": "Schwanthalerhöhe",
-    "au haidhausen": "Au-Haidhausen", "au-haidhausen": "Au-Haidhausen", "haidhausen": "Au-Haidhausen",
-    "sendling": "Sendling", "sendling westpark": "Sendling-Westpark", "sendling-westpark": "Sendling-Westpark",
-    "hadern": "Hadern", "laim": "Laim", "schwabing": "Schwabing-Freimann", "schwabing west": "Schwabing-West",
-    "schwabing-west": "Schwabing-West", "freimann": "Schwabing-Freimann", "schwabing freimann": "Schwabing-Freimann",
-    "schwabing-freimann": "Schwabing-Freimann", "milbertshofen": "Milbertshofen-Am Hart", "am hart": "Milbertshofen-Am Hart",
-    "feldmoching": "Feldmoching-Hasenbergl", "hasenbergl": "Feldmoching-Hasenbergl", "moosach": "Moosach",
-    "allach": "Allach-Untermenzing", "untermenzing": "Allach-Untermenzing",
-    "pasing": "Pasing-Obermenzing", "obermenzing": "Pasing-Obermenzing",
-    "aubing": "Aubing-Lochhausen-Langwied", "lochhausen": "Aubing-Lochhausen-Langwied", "langwied": "Aubing-Lochhausen-Langwied",
-    "thalkirchen": "Thalkirchen-Obersendling-Forstenried-Fürstenried-Solln", "obersendling": "Thalkirchen-Obersendling-Forstenried-Fürstenried-Solln",
-    "forstenried": "Thalkirchen-Obersendling-Forstenried-Fürstenried-Solln", "fuerstenried": "Thalkirchen-Obersendling-Forstenried-Fürstenried-Solln",
-    "fürstenried": "Thalkirchen-Obersendling-Forstenried-Fürstenried-Solln", "solln": "Thalkirchen-Obersendling-Forstenried-Fürstenried-Solln",
-    "untergiesing": "Untergiesing-Harlaching", "harlaching": "Untergiesing-Harlaching", "obergiesing": "Obergiesing-Fasangarten",
-    "fasangarten": "Obergiesing-Fasangarten", "berg am laim": "Berg am Laim", "bogenhausen": "Bogenhausen",
-    "ramersdorf": "Ramersdorf-Perlach", "perlach": "Ramersdorf-Perlach", "trudering": "Trudering-Riem", "riem": "Trudering-Riem",
-    "neuhausen": "Neuhausen-Nymphenburg", "nymphenburg": "Neuhausen-Nymphenburg",
+    "innenstadt": "Altstadt-Lehel",
+    "altstadt": "Altstadt-Lehel",
+    "lehel": "Altstadt-Lehel",
+    "maxvorstadt": "Maxvorstadt",
+    "schwabing west": "Schwabing-West",
+    "schwabing-west": "Schwabing-West",
+    "schwabing-freimann": "Schwabing-Freimann",
+    "schwabing freimann": "Schwabing-Freimann",
+    "schwabing": "Schwabing-Freimann",
+    "freimann": "Schwabing-Freimann",
+    "haidhausen": "Au-Haidhausen",
+    "au haidhausen": "Au-Haidhausen",
+    "au-haidhausen": "Au-Haidhausen",
+    "au": "Au-Haidhausen",
+    "neuhausen": "Neuhausen-Nymphenburg",
+    "nymphenburg": "Neuhausen-Nymphenburg",
+    "pasing": "Pasing-Obermenzing",
+    "obermenzing": "Pasing-Obermenzing",
+    "ramersdorf": "Ramersdorf-Perlach",
+    "perlach": "Ramersdorf-Perlach",
+    "trudering": "Trudering-Riem",
+    "riem": "Trudering-Riem",
+    "bogenhausen": "Bogenhausen",
+    "sendling": "Sendling",
+    "westpark": "Sendling-Westpark",
+    "sendling westpark": "Sendling-Westpark",
+    "sendling-westpark": "Sendling-Westpark",
+    "obergiesing": "Obergiesing-Fasangarten",
+    "untergiesing": "Untergiesing-Harlaching",
+    "harlaching": "Untergiesing-Harlaching",
+    "solln": "Thalkirchen-Obersendling-Forstenried-Fürstenried-Solln",
+    "obersendling": "Thalkirchen-Obersendling-Forstenried-Fürstenried-Solln",
+    "forstenried": "Thalkirchen-Obersendling-Forstenried-Fürstenried-Solln",
+    "fuerstenried": "Thalkirchen-Obersendling-Forstenried-Fürstenried-Solln",
+    "fürstenried": "Thalkirchen-Obersendling-Forstenried-Fürstenried-Solln",
+    "thalkirchen": "Thalkirchen-Obersendling-Forstenried-Fürstenried-Solln",
+    # additional useful aliases
+    "ludwigsvorstadt": "Ludwigsvorstadt-Isarvorstadt",
+    "isarvorstadt": "Ludwigsvorstadt-Isarvorstadt",
+    "schwanthalerhoehe": "Schwanthalerhöhe",
+    "schwanthalerhöhe": "Schwanthalerhöhe",
+    "hadern": "Hadern",
+    "laim": "Laim",
+    "milbertshofen": "Milbertshofen-Am Hart",
+    "am hart": "Milbertshofen-Am Hart",
+    "feldmoching": "Feldmoching-Hasenbergl",
+    "hasenbergl": "Feldmoching-Hasenbergl",
+    "moosach": "Moosach",
+    "allach": "Allach-Untermenzing",
+    "untermenzing": "Allach-Untermenzing",
+    "aubing": "Aubing-Lochhausen-Langwied",
+    "lochhausen": "Aubing-Lochhausen-Langwied",
+    "langwied": "Aubing-Lochhausen-Langwied",
+    "fasangarten": "Obergiesing-Fasangarten",
+    "berg am laim": "Berg am Laim",
 }
+
+WEAK_ALIASES = {"au", "innenstadt", "westpark"}
 
 ZIP_RE = re.compile(r"\b(8\d{4})\b")
 COORD_RE = re.compile(r"(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)")
@@ -94,7 +132,7 @@ def _extract_address_parts(address: str | None) -> dict[str, str | None]:
 
     postal = _extract_postal(txt)
     city = "München" if "münchen" in txt.lower() or "munchen" in txt.lower() else None
-    district_alias = _find_alias_in_text(txt)
+    district_alias, _weak = _find_alias_in_text(txt)
 
     # lightweight street extraction for patterns like "Leopoldstraße 45, 80802 München"
     street = None
@@ -121,14 +159,16 @@ def _is_munich_context(postal: str | None, city: str | None, district: str | Non
     return False
 
 
-def _find_alias_in_text(*texts: str | None) -> str | None:
+def _find_alias_in_text(*texts: str | None) -> tuple[str | None, bool]:
     hay = " | ".join(_norm(t) for t in texts if t)
     if not hay:
-        return None
-    for alias, canonical in DISTRICT_ALIASES.items():
-        if alias in hay:
-            return canonical
-    return None
+        return None, False
+
+    # prefer longer aliases first and word-boundary matching
+    for alias, canonical in sorted(DISTRICT_ALIASES.items(), key=lambda kv: len(kv[0]), reverse=True):
+        if re.search(rf"\b{re.escape(alias)}\b", hay):
+            return canonical, alias in WEAK_ALIASES
+    return None, False
 
 
 def _flatten_json_ld(obj: Any) -> list[dict]:
@@ -264,29 +304,29 @@ def resolve_location(fields: dict[str, Any]) -> dict[str, Any]:
     # 2) postal code -> district lookup
     postal = _extract_postal(postal_code, str(ld_fields.get("postal") or ""), addr_parts.get("postal"), address)
     if postal and postal in POSTAL_CODE_DISTRICTS:
-        d, conf = POSTAL_CODE_DISTRICTS[postal]
+        d, _conf = POSTAL_CODE_DISTRICTS[postal]
         return {
             "district": d,
             "postal_code": postal,
             "latitude": lat,
             "longitude": lon,
-            "location_confidence": conf,
+            "location_confidence": 90,
             "district_source": "postal_code",
         }
 
     # 3) structured data address fields
     ld_postal = _extract_postal(str(ld_fields.get("postal") or ""))
     ld_city = ld_fields.get("city")
-    by_ld = _find_alias_in_text(ld_fields.get("district_raw"), ld_fields.get("street"), ld_city, str(ld_fields.get("postal") or ""))
+    by_ld, by_ld_weak = _find_alias_in_text(ld_fields.get("district_raw"), ld_fields.get("street"), ld_city, str(ld_fields.get("postal") or ""))
     if _is_munich_context(ld_postal, ld_city, by_ld):
         if ld_postal and ld_postal in POSTAL_CODE_DISTRICTS:
-            d, conf = POSTAL_CODE_DISTRICTS[ld_postal]
+            d, _conf = POSTAL_CODE_DISTRICTS[ld_postal]
             return {
                 "district": d,
                 "postal_code": ld_postal,
                 "latitude": lat,
                 "longitude": lon,
-                "location_confidence": conf,
+                "location_confidence": 90,
                 "district_source": "structured_data_postal_code",
             }
         if by_ld:
@@ -295,44 +335,44 @@ def resolve_location(fields: dict[str, Any]) -> dict[str, Any]:
                 "postal_code": postal,
                 "latitude": lat,
                 "longitude": lon,
-                "location_confidence": 78,
-                "district_source": "structured_data",
+                "location_confidence": 20 if by_ld_weak else 80,
+                "district_source": "structured_data_alias" if by_ld_weak else "structured_data",
             }
 
     # 4) explicit address fields
-    by_addr = _find_alias_in_text(address, district_raw, city, addr_parts.get("street"), addr_parts.get("district_alias"))
+    by_addr, by_addr_weak = _find_alias_in_text(address, district_raw, city, addr_parts.get("street"), addr_parts.get("district_alias"))
     if by_addr:
         return {
             "district": by_addr,
             "postal_code": postal,
             "latitude": lat,
             "longitude": lon,
-            "location_confidence": 65 if not postal else 72,
-            "district_source": "address",
+            "location_confidence": 20 if by_addr_weak else 70,
+            "district_source": "address_alias" if by_addr_weak else "address",
         }
 
     # 5) title mention
-    by_title = _find_alias_in_text(title)
+    by_title, by_title_weak = _find_alias_in_text(title)
     if by_title:
         return {
             "district": by_title,
             "postal_code": postal,
             "latitude": lat,
             "longitude": lon,
-            "location_confidence": 45,
-            "district_source": "title",
+            "location_confidence": 20 if by_title_weak else 50,
+            "district_source": "title_alias" if by_title_weak else "title",
         }
 
     # 6) description mention
-    by_description = _find_alias_in_text(description)
+    by_description, by_description_weak = _find_alias_in_text(description)
     if by_description:
         return {
             "district": by_description,
             "postal_code": postal,
             "latitude": lat,
             "longitude": lon,
-            "location_confidence": 40,
-            "district_source": "description",
+            "location_confidence": 20 if by_description_weak else 40,
+            "district_source": "description_alias" if by_description_weak else "description",
         }
 
     # 7) fallback
@@ -341,6 +381,6 @@ def resolve_location(fields: dict[str, Any]) -> dict[str, Any]:
         "postal_code": postal,
         "latitude": lat,
         "longitude": lon,
-        "location_confidence": 10,
-        "district_source": "fallback",
+        "location_confidence": 0,
+        "district_source": "unknown",
     }

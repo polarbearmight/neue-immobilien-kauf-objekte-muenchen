@@ -826,6 +826,70 @@ def api_districts(db: Session = Depends(get_db)):
     ]
 
 
+@app.get("/api/district-debug")
+def api_district_debug(limit: int = Query(200, ge=1, le=2000), source: str | None = None, db: Session = Depends(get_db)):
+    q = select(Listing).where(Listing.is_active.is_(True)).order_by(desc(Listing.first_seen_at)).limit(limit)
+    if source:
+        q = select(Listing).where(Listing.is_active.is_(True), Listing.source == source.strip().lower()).order_by(desc(Listing.first_seen_at)).limit(limit)
+    rows = db.execute(q).scalars().all()
+    return [
+        {
+            "id": r.id,
+            "source": r.source,
+            "title": r.title,
+            "raw_address": r.address,
+            "postal_code": r.postal_code,
+            "raw_district_text": r.raw_district_text,
+            "district": r.district,
+            "district_source": r.district_source,
+            "location_confidence": r.location_confidence,
+        }
+        for r in rows
+    ]
+
+
+@app.get("/api/district-quality")
+def api_district_quality(db: Session = Depends(get_db)):
+    rows = db.execute(select(Listing).where(Listing.is_active.is_(True))).scalars().all()
+    total = len(rows)
+    if total == 0:
+        return {"total": 0, "assigned_pct": 0, "coordinates_pct": 0, "postal_code_pct": 0, "title_only_pct": 0, "unknown_pct": 0, "by_source": {}}
+
+    def pct(n: int) -> float:
+        return round((n / total) * 100.0, 2)
+
+    assigned = sum(1 for r in rows if (r.district and r.district != "München"))
+    coordinates = sum(1 for r in rows if r.district_source == "coordinates")
+    postal = sum(1 for r in rows if (r.district_source or "").startswith("postal_code") or (r.district_source or "").startswith("structured_data_postal_code"))
+    title_only = sum(1 for r in rows if (r.district_source or "") in {"title", "title_alias"})
+    unknown = sum(1 for r in rows if (r.district_source or "") in {"unknown", "fallback"} or not r.district)
+
+    by_source: dict[str, dict] = {}
+    for r in rows:
+        s = r.source or "unknown"
+        b = by_source.setdefault(s, {"count": 0, "unknown": 0, "title_only": 0, "postal": 0, "coordinates": 0})
+        b["count"] += 1
+        ds = r.district_source or ""
+        if ds in {"unknown", "fallback"} or not r.district:
+            b["unknown"] += 1
+        if ds in {"title", "title_alias"}:
+            b["title_only"] += 1
+        if ds.startswith("postal_code") or ds.startswith("structured_data_postal_code"):
+            b["postal"] += 1
+        if ds == "coordinates":
+            b["coordinates"] += 1
+
+    return {
+        "total": total,
+        "assigned_pct": pct(assigned),
+        "coordinates_pct": pct(coordinates),
+        "postal_code_pct": pct(postal),
+        "title_only_pct": pct(title_only),
+        "unknown_pct": pct(unknown),
+        "by_source": by_source,
+    }
+
+
 @app.get("/api/geo/districts")
 def api_geo_districts(
     window: str = Query("30d"),
