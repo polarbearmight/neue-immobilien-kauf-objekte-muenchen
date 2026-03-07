@@ -41,6 +41,13 @@ BROKER_SOURCES: dict[str, str] = {
 }
 
 _LINK_HINTS = ("immobil", "objekt", "projekt", "expose", "angebot", "wohnung", "haus", "kaufen")
+_NOISE_TITLE_HINTS = ("bewertung", "webinar", "ratgeber", "karriere", "service", "kontakt", "impressum", "datenschutz")
+
+SOURCE_DENY_URL_PATTERNS: dict[str, tuple[str, ...]] = {
+    "broker_immobilientreff": ("/service", "/kontakt", "/impressum", "/datenschutz", "/ueber-uns"),
+    "broker_sis_immobilien": ("/ratgeber", "/aktuelles", "/service", "/karriere", "/unternehmen"),
+    "broker_engel_voelkers_muenchen": ("/webinar", "/immobilienbewertung", "/karriere", "/ueber", "/blog"),
+}
 
 CLASSIFIED_DISCOVERY_SOURCES: dict[str, list[str]] = {
     "kleinanzeigen": [
@@ -112,7 +119,7 @@ def _extract_json_ld(soup: BeautifulSoup) -> dict:
             continue
         for item in _flatten_json_ld(data):
             t = str(item.get("@type", "")).lower()
-            if t in ("offer", "product", "residence", "house", "apartment", "realestateagent") or "offer" in item:
+            if t in ("offer", "product", "residence", "house", "apartment") or "offer" in item:
                 return item
     return {}
 
@@ -130,7 +137,7 @@ def _guess_district_from_text(text: str) -> str | None:
     return None
 
 
-def _extract_listing_links(base_url: str, html: str, max_links: int = 120) -> list[str]:
+def _extract_listing_links(source_name: str, base_url: str, html: str, max_links: int = 120) -> list[str]:
     soup = BeautifulSoup(html, "html.parser")
     out: list[str] = []
     seen: set[str] = set()
@@ -148,6 +155,8 @@ def _extract_listing_links(base_url: str, html: str, max_links: int = 120) -> li
         l = u.lower()
         if any(x in l for x in ("impressum", "datenschutz", "kontakt", "karriere", "jobs", "news")):
             continue
+        if any(x in l for x in SOURCE_DENY_URL_PATTERNS.get(source_name, ())):
+            continue
         text = f"{a.get_text(' ', strip=True)} {l}".lower()
         if not any(h in text for h in _LINK_HINTS):
             continue
@@ -158,6 +167,24 @@ def _extract_listing_links(base_url: str, html: str, max_links: int = 120) -> li
         if len(out) >= max_links:
             break
     return out
+
+
+def _is_probable_listing_detail(source_name: str, detail_url: str, title: str | None, body_text: str, has_offer_like_ld: bool) -> bool:
+    l = (detail_url or "").lower()
+    if any(x in l for x in SOURCE_DENY_URL_PATTERNS.get(source_name, ())):
+        return False
+
+    t = (title or "").lower()
+    if any(h in t for h in _NOISE_TITLE_HINTS):
+        return False
+
+    if has_offer_like_ld:
+        return True
+
+    # fallback heuristic: must look like an exposé/detail page, not generic landing content
+    if not any(k in (t + " " + l) for k in ("immobil", "objekt", "expose", "wohnung", "haus", "kaufen")):
+        return False
+    return True
 
 
 def _parse_detail(source_name: str, detail_url: str, html: str) -> dict | None:
@@ -175,6 +202,8 @@ def _parse_detail(source_name: str, detail_url: str, html: str) -> dict | None:
     district = None
     lat = None
     lon = None
+
+    has_offer_like_ld = bool(ld)
 
     if ld:
         offer = ld.get("offers") if isinstance(ld.get("offers"), dict) else ld
@@ -201,6 +230,8 @@ def _parse_detail(source_name: str, detail_url: str, html: str) -> dict | None:
         rooms = _to_num(m.group(1)) if m else None
 
     if not title:
+        return None
+    if not _is_probable_listing_detail(source_name, detail_url, title, body_text, has_offer_like_ld):
         return None
 
     sid = hashlib.sha1(detail_url.encode("utf-8")).hexdigest()[:20]
@@ -246,7 +277,7 @@ def collect_broker_listings(source_name: str, base_url: str) -> list[dict]:
         print(f"WARN {source_name} overview error: {e}")
         return []
 
-    links = _extract_listing_links(base_url, html, max_links=150)
+    links = _extract_listing_links(source_name, base_url, html, max_links=150)
     rows: list[dict] = []
     max_detail = 60
 
