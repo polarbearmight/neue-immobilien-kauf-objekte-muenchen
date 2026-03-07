@@ -19,7 +19,6 @@ BROKER_SOURCES: dict[str, str] = {
     "broker_engel_voelkers_muenchen": "https://www.engelvoelkers.com/de-de/muenchen/immobilien/",
     "broker_knight_frank_muenchen": "https://www.knightfrank.de/immobilien/muenchen",
     "broker_von_poll_muenchen": "https://www.von-poll.com/de/immobilien/muenchen",
-    "broker_immosmart_muenchen": "https://www.immosmart.de/immobilienangebote/",
     "broker_citigrund": "https://www.citigrund.de/immobilienangebote/",
     "broker_walser": "https://www.walser-immobiliengruppe.de/immobilien/",
     "broker_rohrer": "https://www.rohrer-immobilien.de/immobilien/",
@@ -28,9 +27,33 @@ BROKER_SOURCES: dict[str, str] = {
     "broker_bauwerk": "https://www.bauwerk.de/projekte/",
     "broker_pandion": "https://www.pandion.de/projekte/",
     "broker_ehret_klein": "https://ehret-klein.de/projekte/",
+    # additional small/early-discovery broker sources
+    "broker_immosmart_muenchen": "https://www.immosmart.de/immobilienangebote/",
+    "broker_immo_muenchen": "https://www.immo-muenchen.de/",
+    "broker_sis_immobilien": "https://www.sis-immobilien.de/immobilien/",
+    "broker_veltrup": "https://www.veltrup.de/immobilien/",
+    "broker_heinlein": "https://www.heinlein-immobilien.de/",
+    "broker_immobilientreff": "https://www.immobilientreff.de/",
+    "broker_pienzenauer": "https://www.pienzenauer.de/immobilien/",
+    "broker_schneider_prell": "https://www.schneider-prell.de/immobilien/",
+    "broker_immoquartier": "https://www.immoquartier.de/angebote/",
+    "broker_immoconcept_muenchen": "https://www.immoconcept-muenchen.de/",
 }
 
 _LINK_HINTS = ("immobil", "objekt", "projekt", "expose", "angebot", "wohnung", "haus", "kaufen")
+
+CLASSIFIED_DISCOVERY_SOURCES: dict[str, list[str]] = {
+    "kleinanzeigen": [
+        # Eigentumswohnung kaufen (München + Umland)
+        "https://www.kleinanzeigen.de/s-wohnung-kaufen/muenchen/c196l6411",
+        # Haus kaufen
+        "https://www.kleinanzeigen.de/s-haus-kaufen/muenchen/c208l6411",
+        # Grundstücke
+        "https://www.kleinanzeigen.de/s-grundstueck/muenchen/c207l6411",
+        # Fallback real estate root category
+        "https://www.kleinanzeigen.de/s-immobilien/muenchen/c195l6411",
+    ]
+}
 
 
 def _to_num(val) -> float | None:
@@ -234,8 +257,36 @@ def collect_broker_listings(source_name: str, base_url: str) -> list[dict]:
     return rows
 
 
+def collect_multi_seed_listings(source_name: str, seed_urls: list[str], max_total: int = 220) -> list[dict]:
+    rows: list[dict] = []
+    seen_keys: set[tuple[str, str]] = set()
+
+    for url in seed_urls:
+        try:
+            current = collect_broker_listings(source_name, url)
+        except Exception:
+            current = []
+
+        for r in current:
+            key = (r.get("source_listing_id") or "", r.get("url") or "")
+            if key in seen_keys:
+                continue
+            seen_keys.add(key)
+            rows.append(r)
+            if len(rows) >= max_total:
+                return rows
+    return rows
+
+
 def make_broker_collector(source_name: str, base_url: str):
     def _collector() -> list[dict]:
         return collect_broker_listings(source_name, base_url)
+
+    return _collector
+
+
+def make_multi_seed_collector(source_name: str, seed_urls: list[str]):
+    def _collector() -> list[dict]:
+        return collect_multi_seed_listings(source_name, seed_urls)
 
     return _collector

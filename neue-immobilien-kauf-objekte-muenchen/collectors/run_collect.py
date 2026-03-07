@@ -16,7 +16,12 @@ from collectors.ohne_makler import collect_ohne_makler_listings
 from collectors.wohnungsboerse import collect_wohnungsboerse_listings
 from collectors.sis import collect_sis_listings
 from collectors.planethome import collect_planethome_listings
-from collectors.brokers import BROKER_SOURCES, make_broker_collector
+from collectors.brokers import (
+    BROKER_SOURCES,
+    CLASSIFIED_DISCOVERY_SOURCES,
+    make_broker_collector,
+    make_multi_seed_collector,
+)
 from collectors.source_validator import validate_source
 from collectors.normalize import normalize_listing_row, dedupe_rows
 from app.scoring import recompute_scores
@@ -39,6 +44,10 @@ COLLECTOR_MAP = {
 
 for _name, _url in BROKER_SOURCES.items():
     COLLECTOR_MAP[_name] = (make_broker_collector(_name, _url), _url)
+
+for _name, _seed_urls in CLASSIFIED_DISCOVERY_SOURCES.items():
+    # use first URL as canonical base_url in Source table
+    COLLECTOR_MAP[_name] = (make_multi_seed_collector(_name, _seed_urls), _seed_urls[0])
 
 
 def _row_hash(row: dict) -> str:
@@ -109,6 +118,7 @@ def _capture_fixture(source_name: str, rows: list[dict]):
 
 def get_or_create_source(db, name: str, base_url: str) -> Source:
     is_broker = name.startswith("broker_")
+    is_secondary_discovery = is_broker or name in {"kleinanzeigen"}
     src = db.execute(select(Source).where(Source.name == name)).scalar_one_or_none()
     if not src:
         src = db.execute(select(Source).where(Source.base_url == base_url)).scalar_one_or_none()
@@ -124,12 +134,13 @@ def get_or_create_source(db, name: str, base_url: str) -> Source:
         name=name,
         base_url=base_url,
         kind="html",
-        discovery_method="broker_seed" if is_broker else "seed",
+        discovery_method="secondary_discovery" if is_secondary_discovery else "seed",
         robots_status="unknown",
         approved=(not approval_required),
         enabled=(not approval_required),
         health_status="disabled" if approval_required else "healthy",
-        rate_limit_seconds=7200 if is_broker else 8,
+        # Secondary broker/classified discovery sources should run less frequently.
+        rate_limit_seconds=7200 if is_broker else (3600 if name == "kleinanzeigen" else 8),
     )
     db.add(src)
     db.commit()
