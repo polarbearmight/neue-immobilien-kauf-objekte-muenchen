@@ -13,6 +13,7 @@ const nav = [
   ["Clusters", "/clusters"],
   ["Off-Market", "/off-market"],
   ["Districts", "/districts"],
+  ["District Debug", "/district-debug"],
   ["Geo Heatmap", "/geo"],
   ["Map", "/map"],
   ["Sources", "/sources"],
