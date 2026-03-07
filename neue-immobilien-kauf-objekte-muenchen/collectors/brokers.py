@@ -48,6 +48,7 @@ SOURCE_DENY_URL_PATTERNS: dict[str, tuple[str, ...]] = {
     "broker_sis_immobilien": ("/ratgeber", "/aktuelles", "/service", "/karriere", "/unternehmen"),
     "broker_engel_voelkers_muenchen": ("/webinar", "/immobilienbewertung", "/karriere", "/ueber", "/blog"),
     "broker_immo_muenchen": ("/immobilienzentrum", "/service", "/kontakt", "/impressum", "/datenschutz"),
+    "broker_rohrer": ("/stadtteil/", "/immobilien-vermarktung", "/service", "/kontakt", "/impressum", "/datenschutz"),
 }
 
 CLASSIFIED_DISCOVERY_SOURCES: dict[str, list[str]] = {
@@ -175,7 +176,9 @@ def _is_probable_listing_detail(source_name: str, detail_url: str, title: str | 
     if any(x in l for x in SOURCE_DENY_URL_PATTERNS.get(source_name, ())):
         return False
 
-    t = (title or "").lower()
+    t = (title or "").lower().strip()
+    if t in {"error", "404", "403", "seite nicht gefunden"}:
+        return False
     if any(h in t for h in _NOISE_TITLE_HINTS):
         return False
 
