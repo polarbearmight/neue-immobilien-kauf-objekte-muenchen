@@ -35,12 +35,15 @@ class ListingOut(BaseModel):
     url: str
     title: str | None = None
     display_title: str | None = None
+    raw_title: str | None = None
     description: str | None = None
+    raw_description: str | None = None
     image_url: str | None = None
     image_hash: str | None = None
     district: str | None = None
     raw_district_text: str | None = None
     address: str | None = None
+    city: str | None = None
     postal_code: str | None = None
     latitude: float | None = None
     longitude: float | None = None
@@ -64,6 +67,8 @@ class ListingOut(BaseModel):
     badges: str | None = None
     score_explain: str | None = None
     ai_flags: str | None = None
+    quality_flags: str | None = None
+    source_payload_debug: str | None = None
     cluster_id: str | None = None
     rooms: float | None = None
     posted_at: datetime | None = None

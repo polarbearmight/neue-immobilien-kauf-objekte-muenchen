@@ -22,10 +22,18 @@ def ensure_schema():
         cols = {c["name"] for c in insp.get_columns("listings")}
         if "description" not in cols:
             conn.execute(text("ALTER TABLE listings ADD COLUMN description VARCHAR(2048)"))
+        if "display_title" not in cols:
+            conn.execute(text("ALTER TABLE listings ADD COLUMN display_title VARCHAR(512)"))
+        if "raw_title" not in cols:
+            conn.execute(text("ALTER TABLE listings ADD COLUMN raw_title VARCHAR(512)"))
+        if "raw_description" not in cols:
+            conn.execute(text("ALTER TABLE listings ADD COLUMN raw_description VARCHAR(2048)"))
         if "postal_code" not in cols:
             conn.execute(text("ALTER TABLE listings ADD COLUMN postal_code VARCHAR(16)"))
         if "raw_district_text" not in cols:
             conn.execute(text("ALTER TABLE listings ADD COLUMN raw_district_text VARCHAR(256)"))
+        if "city" not in cols:
+            conn.execute(text("ALTER TABLE listings ADD COLUMN city VARCHAR(128)"))
         if "latitude" not in cols:
             conn.execute(text("ALTER TABLE listings ADD COLUMN latitude FLOAT"))
         if "longitude" not in cols:
@@ -68,6 +76,10 @@ def ensure_schema():
             conn.execute(text("ALTER TABLE listings ADD COLUMN score_explain VARCHAR(2048)"))
         if "ai_flags" not in cols:
             conn.execute(text("ALTER TABLE listings ADD COLUMN ai_flags VARCHAR(1024)"))
+        if "quality_flags" not in cols:
+            conn.execute(text("ALTER TABLE listings ADD COLUMN quality_flags VARCHAR(1024)"))
+        if "source_payload_debug" not in cols:
+            conn.execute(text("ALTER TABLE listings ADD COLUMN source_payload_debug VARCHAR(4096)"))
         if "cluster_id" not in cols:
             conn.execute(text("ALTER TABLE listings ADD COLUMN cluster_id VARCHAR(64)"))
         if "raw_hash" not in cols:

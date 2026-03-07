@@ -14,7 +14,7 @@ export default async function BrandNewPage() {
       <div className="space-y-2">
         {listings.map((l) => (
           <div key={`${l.source}-${l.source_listing_id}`} className="rounded-xl border p-3 text-sm">
-            <p className="font-medium">{l.title || "Ohne Titel"}</p>
+            <p className="font-medium">{l.display_title || l.title || "Ohne Titel"}</p>
             <p className="text-muted-foreground">{ageLabel(l.first_seen_at)} · {l.district || "-"} · {l.source}</p>
             <a href={l.url} target="_blank" rel="noreferrer" className="mt-2 inline-block text-xs underline">Open</a>
           </div>

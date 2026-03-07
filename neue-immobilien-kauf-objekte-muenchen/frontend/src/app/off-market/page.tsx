@@ -48,7 +48,7 @@ export default function OffMarketPage() {
                 {badges.length > 3 ? <span className="text-[10px] text-muted-foreground">+{badges.length - 3}</span> : null}
               </div>
               <p className="mb-1 text-lg font-semibold">Off-Market {Math.round(l.off_market_score || 0)}</p>
-              <p className="font-medium">{l.title || "Ohne Titel"}</p>
+              <p className="font-medium">{l.display_title || l.title || "Ohne Titel"}</p>
               <p className="text-muted-foreground">{l.district || "-"} · {l.area_sqm || "-"} m² · {l.rooms || "-"} Zi.</p>
               <p className="mt-2">{eur(l.price_eur)} · {eur(l.price_per_sqm)}/m²</p>
               <p className="mt-2 text-xs text-muted-foreground">Exclusivity {Math.round(l.exclusivity_score || 0)} · Source popularity {Math.round(l.source_popularity_score || 0)}</p>

@@ -18,7 +18,7 @@ export default async function ClustersPage() {
             <p className="mb-2 text-xs text-muted-foreground">Seen on: {(c.sources || []).join(", ") || "-"}</p>
             {c.canonical ? (
               <p className="mb-2 text-xs">
-                Canonical: <a href={c.canonical.url} target="_blank" rel="noreferrer" className="underline">{c.canonical.title || "Ohne Titel"}</a>
+                Canonical: <a href={c.canonical.url} target="_blank" rel="noreferrer" className="underline">{c.canonical.display_title || c.canonical.title || "Ohne Titel"}</a>
               </p>
             ) : null}
             <ul className="space-y-1 text-muted-foreground">
@@ -27,7 +27,7 @@ export default async function ClustersPage() {
                 const isCanonical = c.canonical_listing_id != null && m.id === c.canonical_listing_id;
                 return (
                   <li key={key}>
-                    {m.source}: <a href={m.url} target="_blank" rel="noreferrer" className="underline">{m.title || "Ohne Titel"}</a>
+                    {m.source}: <a href={m.url} target="_blank" rel="noreferrer" className="underline">{m.display_title || m.title || "Ohne Titel"}</a>
                     {isCanonical ? <span className="ml-2 rounded border px-1 py-0.5 text-[10px]">canonical</span> : null}
                   </li>
                 );

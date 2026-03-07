@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+import json
 import re
 from datetime import datetime, timezone
 from urllib.parse import urlparse
 
 from app.location_resolver import resolve_location
+from app.title_normalization import make_display_title, normalize_title
+from app.field_normalization import compute_ppsqm, normalize_area, normalize_posted_at, normalize_price, normalize_rooms
+from app.listing_validator import quality_flags
 
 REAL_ESTATE_HINTS = (
     "wohnung",
@@ -123,18 +127,21 @@ def normalize_listing_row(row: dict) -> dict | None:
     if not source or not url or not sid or not is_probable_listing_url(url):
         return None
 
-    title = (row.get("title") or "").strip()[:512] or None
-    description = (row.get("description") or "").strip()[:2048] or None
-    if not is_real_estate_text(title, description, url):
+    raw_title = (row.get("raw_title") or row.get("title") or "").strip()[:512] or None
+    raw_description = (row.get("raw_description") or row.get("description") or "").strip()[:2048] or None
+
+    title = normalize_title(raw_title)
+    description = raw_description
+    if not is_real_estate_text(title or raw_title, description, url):
         return None
 
-    price = to_num(row.get("price_eur"))
-    area = to_num(row.get("area_sqm"))
-    rooms = to_num(row.get("rooms"))
+    price = normalize_price(to_num(row.get("price_eur")))
+    area = normalize_area(to_num(row.get("area_sqm")))
+    rooms = normalize_rooms(to_num(row.get("rooms")))
     ppsqm = to_num(row.get("price_per_sqm"))
 
-    if ppsqm is None and price and area and area > 0:
-        ppsqm = round(price / area, 2)
+    if ppsqm is None:
+        ppsqm = compute_ppsqm(price, area)
 
     title_low = (title or "").lower().strip()
     if title_low in GENERIC_TITLE_HINTS and not (price or area or rooms or address):
@@ -158,8 +165,8 @@ def normalize_listing_row(row: dict) -> dict | None:
     if rooms is not None and (rooms < 0.5 or rooms > 20):
         return None
 
-    district = normalize_location(row.get("district"))
-    address = normalize_location(row.get("address"))
+    district = normalize_location(row.get("district") or row.get("raw_district_text"))
+    address = normalize_location(row.get("address") or row.get("raw_address"))
     city = normalize_location(row.get("city"))
     image_url = (row.get("image_url") or "").strip() or None
 
@@ -177,17 +184,24 @@ def normalize_listing_row(row: dict) -> dict | None:
     })
 
     now = datetime.now(timezone.utc)
-    return {
+    final_district = loc.get("district") or district
+    display_title = make_display_title(title, final_district, area, rooms)
+
+    normalized = {
         "source": source,
         "source_listing_id": sid,
         "url": url,
         "title": title,
+        "display_title": display_title,
+        "raw_title": raw_title,
         "description": description,
+        "raw_description": raw_description,
         "image_url": image_url,
         "image_hash": row.get("image_hash"),
         "address": address,
-        "district": loc.get("district") or district,
-        "raw_district_text": district,
+        "city": city,
+        "district": final_district,
+        "raw_district_text": row.get("raw_district_text") or district,
         "postal_code": loc.get("postal_code"),
         "latitude": loc.get("latitude"),
         "longitude": loc.get("longitude"),
@@ -197,10 +211,18 @@ def normalize_listing_row(row: dict) -> dict | None:
         "area_sqm": area,
         "rooms": rooms,
         "price_per_sqm": ppsqm,
-        "posted_at": row.get("posted_at"),
+        "posted_at": normalize_posted_at(row.get("posted_at")),
         "first_seen_at": row.get("first_seen_at") or now,
         "last_seen_at": row.get("last_seen_at") or now,
+        "source_payload_debug": json.dumps({
+            "structured_data_json": row.get("structured_data_json") or row.get("json_ld"),
+            "raw_address": row.get("raw_address") or row.get("address"),
+            "raw_district_text": row.get("raw_district_text") or row.get("district"),
+            "city": row.get("city"),
+        }, ensure_ascii=False)[:3900],
     }
+    normalized["quality_flags"] = json.dumps(quality_flags(normalized), ensure_ascii=False)
+    return normalized
 
 
 def _secondary_key(row: dict) -> tuple:

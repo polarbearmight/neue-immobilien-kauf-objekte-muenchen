@@ -20,6 +20,7 @@ type DistrictMetric = {
 type MarkerRow = {
   id: number;
   title?: string;
+  display_title?: string;
   district?: string;
   source: string;
   url: string;
@@ -190,7 +191,7 @@ export default function MapPage() {
                   <LCircleMarker key={m.id} center={[m.latitude!, m.longitude!]} radius={5} pathOptions={{ color: markerColor(m), fillOpacity: 0.8 }} eventHandlers={{ click: () => { setSelectedMarker(m); setSelectedDistrict(m.district || null); } }}>
                     <LPopup>
                       <div className="text-xs">
-                        <p><strong>{m.title || "Listing"}</strong></p>
+                        <p><strong>{m.display_title || m.title || "Listing"}</strong></p>
                         <p>{m.district || "München"} · {m.source}</p>
                         <p>Score {Math.round(m.deal_score || 0)} · Off-market {Math.round(m.off_market_score || 0)}</p>
                         <a href={m.url} target="_blank" rel="noreferrer">Open</a>
@@ -207,7 +208,7 @@ export default function MapPage() {
           {selectedMarker ? (
             <div className="space-y-1 text-xs">
               <p className="font-semibold">Selected Listing</p>
-              <p>{selectedMarker.title || "Listing"}</p>
+              <p>{selectedMarker.display_title || selectedMarker.title || "Listing"}</p>
               <p>{selectedMarker.district || "München"} · {selectedMarker.source}</p>
               <p>Preis: {selectedMarker.price_eur ? `${Math.round(selectedMarker.price_eur).toLocaleString("de-DE")} €` : "-"}</p>
               <p>Size: {selectedMarker.area_sqm || "-"} m² · Rooms: {selectedMarker.rooms || "-"}</p>
@@ -261,7 +262,7 @@ export default function MapPage() {
           <div className="space-y-1 text-xs max-h-[280px] overflow-auto">
             {selectedDistrictListings.slice(0, 10).map((l) => (
               <a key={l.id} href={l.url} target="_blank" rel="noreferrer" className="block rounded border px-2 py-1">
-                <p className="font-medium">{l.title || "Listing"}</p>
+                <p className="font-medium">{l.display_title || l.title || "Listing"}</p>
                 <p>{l.district || "München"} · {l.source}</p>
                 <p>€/m² {l.price_per_sqm ? Math.round(l.price_per_sqm) : "-"} · Score {Math.round(l.deal_score || 0)}</p>
               </a>
