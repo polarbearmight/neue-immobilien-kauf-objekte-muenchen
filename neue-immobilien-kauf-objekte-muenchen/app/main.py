@@ -110,11 +110,11 @@ def _major_targets() -> list[str]:
     return [x for x in COLLECTOR_MAP.keys() if not _is_secondary(x)]
 
 
-def _start_scan_thread(targets: list[str], scan_type: str) -> bool:
+def _start_scan_thread(targets: list[str], scan_type: str, force: bool = False) -> bool:
     with scan_lock:
         if scan_state["running"]:
             return False
-    t = threading.Thread(target=_run_scan_background, args=(targets, scan_type), daemon=True)
+    t = threading.Thread(target=_run_scan_background, args=(targets, scan_type, force), daemon=True)
     t.start()
     return True
 
@@ -133,10 +133,10 @@ def _auto_scan_loop():
                     secondary_due = now - scheduler_state["secondary_last_run_ts"] >= scheduler_state["secondary_interval_seconds"]
 
                     if major_due:
-                        if _start_scan_thread(_major_targets(), "major-auto"):
+                        if _start_scan_thread(_major_targets(), "major-auto", force=False):
                             scheduler_state["major_last_run_ts"] = now
                     elif secondary_due:
-                        if _start_scan_thread(_secondary_targets(), "secondary-auto"):
+                        if _start_scan_thread(_secondary_targets(), "secondary-auto", force=False):
                             scheduler_state["secondary_last_run_ts"] = now
         except Exception:
             pass
@@ -144,7 +144,7 @@ def _auto_scan_loop():
         time.sleep(30)
 
 
-def _run_scan_background(targets: list[str], scan_type: str = "custom"):
+def _run_scan_background(targets: list[str], scan_type: str = "custom", force: bool = False):
     with scan_lock:
         scan_state["running"] = True
         scan_state["started_at"] = utc_now().isoformat()
@@ -165,7 +165,7 @@ def _run_scan_background(targets: list[str], scan_type: str = "custom"):
             with scan_lock:
                 scan_state["current_source"] = name
             try:
-                result = run_one_source_isolated(name, dry_run=False, force=False, capture_fixture=False)
+                result = run_one_source_isolated(name, dry_run=False, force=force, capture_fixture=False)
                 if result.get("status") == "ok":
                     successful_sources += 1
                 with scan_lock:
@@ -527,7 +527,7 @@ def api_scan_run(db: Session = Depends(get_db)):
     if not targets:
         return JSONResponse(status_code=400, content={"ok": False, "error": "no_major_collectors_registered"})
 
-    _start_scan_thread(targets, "major-manual")
+    _start_scan_thread(targets, "major-manual", force=True)
     scheduler_state["major_last_run_ts"] = time.time()
     return {"ok": True, "already_running": False, "targets": targets, "scan": _scan_status_payload()}
 
@@ -543,7 +543,7 @@ def api_scan_run_all(db: Session = Depends(get_db)):
     if not targets:
         return JSONResponse(status_code=400, content={"ok": False, "error": "no_collectors_registered"})
 
-    _start_scan_thread(targets, "all-manual")
+    _start_scan_thread(targets, "all-manual", force=True)
     return {"ok": True, "already_running": False, "targets": targets, "scan": _scan_status_payload()}
 
 
@@ -557,7 +557,7 @@ def api_scan_run_major(db: Session = Depends(get_db)):
     if not targets:
         return JSONResponse(status_code=400, content={"ok": False, "error": "no_major_collectors_registered"})
 
-    _start_scan_thread(targets, "major-manual")
+    _start_scan_thread(targets, "major-manual", force=True)
     scheduler_state["major_last_run_ts"] = time.time()
     return {"ok": True, "already_running": False, "targets": targets, "scan": _scan_status_payload()}
 
@@ -572,7 +572,7 @@ def api_scan_run_secondary(db: Session = Depends(get_db)):
     if not targets:
         return JSONResponse(status_code=400, content={"ok": False, "error": "no_secondary_collectors_registered"})
 
-    _start_scan_thread(targets, "secondary-manual")
+    _start_scan_thread(targets, "secondary-manual", force=True)
     scheduler_state["secondary_last_run_ts"] = time.time()
     return {"ok": True, "already_running": False, "targets": targets, "scan": _scan_status_payload()}
 
@@ -587,7 +587,7 @@ def api_scan_run_brokers(db: Session = Depends(get_db)):
     if not targets:
         return JSONResponse(status_code=400, content={"ok": False, "error": "no_broker_collectors_registered"})
 
-    _start_scan_thread(targets, "brokers-manual")
+    _start_scan_thread(targets, "brokers-manual", force=True)
     return {"ok": True, "already_running": False, "targets": targets, "scan": _scan_status_payload()}
 
 
