@@ -141,10 +141,11 @@ export default function Page() {
     };
   }, []);
 
-  const startScan = async () => {
+  const startScan = async (kind: "major" | "secondary" | "all" = "major") => {
     setScanNotice(null);
+    const endpoint = kind === "secondary" ? "/api/scan/run-secondary" : kind === "all" ? "/api/scan/run-all" : "/api/scan/run";
     try {
-      const res = await fetch(`${API_URL}/api/scan/run`, { method: "POST" });
+      const res = await fetch(`${API_URL}${endpoint}`, { method: "POST" });
       const data = await res.json();
       if (!res.ok) {
         setScanNotice("Scan Failed");
@@ -209,10 +210,19 @@ export default function Page() {
           </button>
           <button
             className="rounded border px-2 py-1 text-xs"
-            onClick={startScan}
+            onClick={() => startScan("major")}
             disabled={scan?.running}
+            title="Primary portals"
           >
-            {scan?.running ? "Scanning..." : scan?.status === "done" ? "Scan Complete" : scan?.status === "error" ? "Scan Failed" : "Scan Sources"}
+            {scan?.running ? "Scanning..." : "Scan Major"}
+          </button>
+          <button
+            className="rounded border px-2 py-1 text-xs"
+            onClick={() => startScan("secondary")}
+            disabled={scan?.running}
+            title="Broker + classifieds + auctions"
+          >
+            Scan Secondary
           </button>
           <button
             className="rounded border px-2 py-1 text-xs"

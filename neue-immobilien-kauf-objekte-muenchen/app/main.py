@@ -1,6 +1,8 @@
 from datetime import timedelta
+import os
 import re
 import threading
+import time
 
 from fastapi import Depends, FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -40,6 +42,13 @@ app.add_middleware(
 Base.metadata.create_all(bind=engine)
 ensure_schema()
 
+
+@app.on_event("startup")
+def _startup_scheduler():
+    if scheduler_state.get("enabled", True):
+        t = threading.Thread(target=_auto_scan_loop, daemon=True)
+        t.start()
+
 scan_lock = threading.Lock()
 scan_state = {
     "running": False,
@@ -53,6 +62,15 @@ scan_state = {
     "error_count": 0,
     "status": "idle",
     "coverage": [],
+    "scan_type": None,
+}
+
+scheduler_state = {
+    "major_last_run_ts": 0.0,
+    "secondary_last_run_ts": 0.0,
+    "enabled": os.getenv("AUTO_SCAN_ENABLED", "true").lower() in ("1", "true", "yes"),
+    "major_interval_seconds": int(os.getenv("AUTO_SCAN_MAJOR_INTERVAL_SECONDS", str(2 * 3600))),
+    "secondary_interval_seconds": int(os.getenv("AUTO_SCAN_SECONDARY_INTERVAL_SECONDS", str(4 * 3600))),
 }
 
 
@@ -69,18 +87,64 @@ def _scan_status_payload() -> dict:
         "error_count": scan_state["error_count"],
         "status": scan_state["status"],
         "coverage": list(scan_state["coverage"]),
+        "scan_type": scan_state.get("scan_type"),
     }
+
+
+SECONDARY_EXACT = {"kleinanzeigen"}
+
+
+def _is_secondary(name: str) -> bool:
+    return name.startswith("broker_") or name.startswith("auction_") or name in SECONDARY_EXACT
 
 
 def _broker_targets() -> list[str]:
     return [x for x in COLLECTOR_MAP.keys() if x.startswith("broker_")]
 
 
+def _secondary_targets() -> list[str]:
+    return [x for x in COLLECTOR_MAP.keys() if _is_secondary(x)]
+
+
 def _major_targets() -> list[str]:
-    return [x for x in COLLECTOR_MAP.keys() if not x.startswith("broker_")]
+    return [x for x in COLLECTOR_MAP.keys() if not _is_secondary(x)]
 
 
-def _run_scan_background(targets: list[str]):
+def _start_scan_thread(targets: list[str], scan_type: str) -> bool:
+    with scan_lock:
+        if scan_state["running"]:
+            return False
+    t = threading.Thread(target=_run_scan_background, args=(targets, scan_type), daemon=True)
+    t.start()
+    return True
+
+
+def _auto_scan_loop():
+    # background scheduler: major every 2h, secondary every 4h (configurable via env)
+    while True:
+        try:
+            if scheduler_state.get("enabled", True):
+                now = time.time()
+                with scan_lock:
+                    busy = scan_state["running"]
+
+                if not busy:
+                    major_due = now - scheduler_state["major_last_run_ts"] >= scheduler_state["major_interval_seconds"]
+                    secondary_due = now - scheduler_state["secondary_last_run_ts"] >= scheduler_state["secondary_interval_seconds"]
+
+                    if major_due:
+                        if _start_scan_thread(_major_targets(), "major-auto"):
+                            scheduler_state["major_last_run_ts"] = now
+                    elif secondary_due:
+                        if _start_scan_thread(_secondary_targets(), "secondary-auto"):
+                            scheduler_state["secondary_last_run_ts"] = now
+        except Exception:
+            pass
+
+        time.sleep(30)
+
+
+def _run_scan_background(targets: list[str], scan_type: str = "custom"):
     with scan_lock:
         scan_state["running"] = True
         scan_state["started_at"] = utc_now().isoformat()
@@ -93,6 +157,7 @@ def _run_scan_background(targets: list[str]):
         scan_state["error_count"] = 0
         scan_state["status"] = "running"
         scan_state["coverage"] = []
+        scan_state["scan_type"] = scan_type
 
     successful_sources = 0
     try:
@@ -205,6 +270,8 @@ def root():
             "/api/collect/run",
             "/api/scan/run",
             "/api/scan/run-major",
+            "/api/scan/run-secondary",
+            "/api/scan/run-all",
             "/api/scan/run-brokers",
             "/api/scan/status",
             "/api/scan/coverage",
@@ -460,8 +527,8 @@ def api_scan_run(db: Session = Depends(get_db)):
     if not targets:
         return JSONResponse(status_code=400, content={"ok": False, "error": "no_major_collectors_registered"})
 
-    t = threading.Thread(target=_run_scan_background, args=(targets,), daemon=True)
-    t.start()
+    _start_scan_thread(targets, "major-manual")
+    scheduler_state["major_last_run_ts"] = time.time()
     return {"ok": True, "already_running": False, "targets": targets, "scan": _scan_status_payload()}
 
 
@@ -476,8 +543,7 @@ def api_scan_run_all(db: Session = Depends(get_db)):
     if not targets:
         return JSONResponse(status_code=400, content={"ok": False, "error": "no_collectors_registered"})
 
-    t = threading.Thread(target=_run_scan_background, args=(targets,), daemon=True)
-    t.start()
+    _start_scan_thread(targets, "all-manual")
     return {"ok": True, "already_running": False, "targets": targets, "scan": _scan_status_payload()}
 
 
@@ -491,8 +557,23 @@ def api_scan_run_major(db: Session = Depends(get_db)):
     if not targets:
         return JSONResponse(status_code=400, content={"ok": False, "error": "no_major_collectors_registered"})
 
-    t = threading.Thread(target=_run_scan_background, args=(targets,), daemon=True)
-    t.start()
+    _start_scan_thread(targets, "major-manual")
+    scheduler_state["major_last_run_ts"] = time.time()
+    return {"ok": True, "already_running": False, "targets": targets, "scan": _scan_status_payload()}
+
+
+@app.post("/api/scan/run-secondary")
+def api_scan_run_secondary(db: Session = Depends(get_db)):
+    with scan_lock:
+        if scan_state["running"]:
+            return {"ok": True, "already_running": True, "scan": _scan_status_payload()}
+
+    targets = _secondary_targets()
+    if not targets:
+        return JSONResponse(status_code=400, content={"ok": False, "error": "no_secondary_collectors_registered"})
+
+    _start_scan_thread(targets, "secondary-manual")
+    scheduler_state["secondary_last_run_ts"] = time.time()
     return {"ok": True, "already_running": False, "targets": targets, "scan": _scan_status_payload()}
 
 
@@ -506,15 +587,24 @@ def api_scan_run_brokers(db: Session = Depends(get_db)):
     if not targets:
         return JSONResponse(status_code=400, content={"ok": False, "error": "no_broker_collectors_registered"})
 
-    t = threading.Thread(target=_run_scan_background, args=(targets,), daemon=True)
-    t.start()
+    _start_scan_thread(targets, "brokers-manual")
     return {"ok": True, "already_running": False, "targets": targets, "scan": _scan_status_payload()}
 
 
 @app.get("/api/scan/status")
 def api_scan_status():
     with scan_lock:
-        return {"ok": True, "scan": _scan_status_payload()}
+        return {
+            "ok": True,
+            "scan": _scan_status_payload(),
+            "scheduler": {
+                "enabled": scheduler_state["enabled"],
+                "major_interval_seconds": scheduler_state["major_interval_seconds"],
+                "secondary_interval_seconds": scheduler_state["secondary_interval_seconds"],
+                "major_last_run_ts": scheduler_state["major_last_run_ts"],
+                "secondary_last_run_ts": scheduler_state["secondary_last_run_ts"],
+            },
+        }
 
 
 @app.get("/api/scan/coverage")
