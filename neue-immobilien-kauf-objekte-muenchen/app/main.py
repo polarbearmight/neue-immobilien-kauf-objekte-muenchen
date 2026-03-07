@@ -135,7 +135,10 @@ def _run_scan_background(targets: list[str]):
             db.close()
 
         with scan_lock:
-            scan_state["status"] = "done" if successful_sources > 0 else "error"
+            # "skipped" runs (e.g. rate-limited) are not failures.
+            # Mark error only when we had hard errors and no successful source.
+            had_errors = scan_state["error_count"] > 0
+            scan_state["status"] = "error" if (had_errors and successful_sources == 0) else "done"
     except Exception:
         with scan_lock:
             scan_state["status"] = "error"
