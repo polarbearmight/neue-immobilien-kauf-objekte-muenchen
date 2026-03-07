@@ -34,6 +34,7 @@ class ListingOut(BaseModel):
     source_listing_id: str
     url: str
     title: str | None = None
+    display_title: str | None = None
     description: str | None = None
     image_url: str | None = None
     image_hash: str | None = None
@@ -67,5 +68,7 @@ class ListingOut(BaseModel):
     rooms: float | None = None
     posted_at: datetime | None = None
     first_seen_at: datetime
+    last_seen_at: datetime | None = None
+    is_active: bool | None = None
 
     model_config = ConfigDict(from_attributes=True)

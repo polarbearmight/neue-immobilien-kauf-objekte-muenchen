@@ -267,6 +267,7 @@ def root():
             "/api/geo/summary",
             "/api/geo/listings",
             "/api/location/coverage",
+            "/api/source-quality",
             "/api/collect/run",
             "/api/scan/run",
             "/api/scan/run-major",
@@ -973,6 +974,54 @@ def api_district_debug(limit: int = Query(200, ge=1, le=2000), source: str | Non
         }
         for r in rows
     ]
+
+
+@app.get("/api/source-quality")
+def api_source_quality(db: Session = Depends(get_db)):
+    rows = db.execute(select(Listing).where(Listing.is_active.is_(True))).scalars().all()
+    by_source: dict[str, dict] = {}
+
+    for r in rows:
+        s = r.source or "unknown"
+        b = by_source.setdefault(
+            s,
+            {
+                "count": 0,
+                "missing_title": 0,
+                "missing_district": 0,
+                "missing_postal_code": 0,
+                "missing_address": 0,
+                "missing_price": 0,
+                "missing_area": 0,
+                "missing_rooms": 0,
+                "missing_coords": 0,
+                "invalid_url": 0,
+                "unknown_location": 0,
+            },
+        )
+        b["count"] += 1
+        if not (r.title and r.title.strip()):
+            b["missing_title"] += 1
+        if not (r.district and r.district.strip()):
+            b["missing_district"] += 1
+        if not (r.postal_code and str(r.postal_code).strip()):
+            b["missing_postal_code"] += 1
+        if not (r.address and r.address.strip()):
+            b["missing_address"] += 1
+        if r.price_eur is None:
+            b["missing_price"] += 1
+        if r.area_sqm is None:
+            b["missing_area"] += 1
+        if r.rooms is None:
+            b["missing_rooms"] += 1
+        if r.latitude is None or r.longitude is None:
+            b["missing_coords"] += 1
+        if not (r.url and (r.url.startswith("http://") or r.url.startswith("https://"))):
+            b["invalid_url"] += 1
+        if (r.district_source or "") in {"unknown", "fallback"}:
+            b["unknown_location"] += 1
+
+    return {"total_active": len(rows), "by_source": by_source}
 
 
 @app.get("/api/district-quality")
