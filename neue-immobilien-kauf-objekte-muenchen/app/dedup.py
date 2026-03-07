@@ -6,7 +6,6 @@ from collections import defaultdict
 from difflib import SequenceMatcher
 from app.models import Listing
 
-
 _non_alnum = re.compile(r"[^a-z0-9 ]+")
 _postal_re = re.compile(r"\b(8\d{4})\b")
 
@@ -32,52 +31,134 @@ def _title_similarity(a: Listing, b: Listing) -> float:
     return SequenceMatcher(None, ta, tb).ratio()
 
 
-def _is_probable_duplicate(a: Listing, b: Listing) -> bool:
-    if a.source == b.source:
+def _rel_diff(a: float | None, b: float | None) -> float | None:
+    if a is None or b is None:
+        return None
+    den = max(abs(a), abs(b), 1.0)
+    return abs(a - b) / den
+
+
+def _geo_close(a: Listing, b: Listing) -> bool:
+    if a.latitude is None or a.longitude is None or b.latitude is None or b.longitude is None:
         return False
+    # rough threshold suitable for same property block (about <= ~180m)
+    return abs(float(a.latitude) - float(b.latitude)) <= 0.0016 and abs(float(a.longitude) - float(b.longitude)) <= 0.0022
+
+
+def _duplicate_score(a: Listing, b: Listing) -> float:
+    score = 0.0
 
     aa = _norm(a.address)
     ba = _norm(b.address)
-    if aa and ba and aa == ba:
-        return True
+    if aa and ba:
+        if aa == ba:
+            score += 4.0
+        elif aa in ba or ba in aa:
+            score += 2.4
+
+    pa = a.postal_code or _postal(a.address or a.district)
+    pb = b.postal_code or _postal(b.address or b.district)
+    if pa and pb:
+        if pa == pb:
+            score += 1.2
+        else:
+            return -1.0
 
     da = _norm(a.district)
     db = _norm(b.district)
-    pa = _postal(a.address or a.district)
-    pb = _postal(b.address or b.district)
-    if pa and pb and pa != pb:
+    if da and db:
+        if da == db:
+            score += 0.8
+        elif not (pa and pb and pa == pb):
+            return -1.0
+
+    if _geo_close(a, b):
+        score += 3.0
+
+    rd_price = _rel_diff(float(a.price_eur) if a.price_eur is not None else None, float(b.price_eur) if b.price_eur is not None else None)
+    if rd_price is not None:
+        if rd_price <= 0.07:
+            score += 1.5
+        elif rd_price <= 0.14:
+            score += 0.8
+        elif rd_price >= 0.35:
+            score -= 1.0
+
+    rd_area = _rel_diff(float(a.area_sqm) if a.area_sqm is not None else None, float(b.area_sqm) if b.area_sqm is not None else None)
+    if rd_area is not None:
+        if rd_area <= 0.06:
+            score += 1.2
+        elif rd_area <= 0.14:
+            score += 0.6
+        elif rd_area >= 0.3:
+            score -= 0.8
+
+    rd_rooms = _rel_diff(float(a.rooms) if a.rooms is not None else None, float(b.rooms) if b.rooms is not None else None)
+    if rd_rooms is not None and rd_rooms <= 0.2:
+        score += 0.4
+
+    ts = _title_similarity(a, b)
+    if ts >= 0.8:
+        score += 1.6
+    elif ts >= 0.65:
+        score += 0.9
+
+    # image hash overlap is a strong signal when available
+    if a.image_hash and b.image_hash and a.image_hash == b.image_hash:
+        score += 2.0
+
+    return score
+
+
+def _is_probable_duplicate(a: Listing, b: Listing) -> bool:
+    # must support same-source duplicates too (relists/reposts)
+    score = _duplicate_score(a, b)
+    if score < 0:
         return False
 
-    if da and db and da != db and not (pa and pb and pa == pb):
-        return False
-
-    area_ok = (a.area_sqm is not None and b.area_sqm is not None and abs(a.area_sqm - b.area_sqm) <= 7.5)
-    price_ok = (a.price_eur is not None and b.price_eur is not None and abs(a.price_eur - b.price_eur) <= 50000)
-    title_ok = _title_similarity(a, b) >= 0.62
-
-    if area_ok and price_ok and title_ok:
+    # strong rules, independent from title-only matches
+    if _geo_close(a, b) and score >= 3.5:
+        return True
+    if score >= 5.2:
         return True
 
     return False
 
 
 def _cluster_sig(items: list[Listing]) -> str:
-    seeds = sorted([
-        _norm(items[0].district),
-        str(int(round((items[0].area_sqm or 0) / 5.0) * 5)),
-        str(int(round((items[0].price_eur or 0) / 10000.0) * 10000)),
-    ])
+    c = sorted(
+        items,
+        key=lambda x: (
+            x.price_eur is None,
+            x.price_eur or 0,
+            x.area_sqm is None,
+            x.area_sqm or 0,
+            x.first_seen_at,
+        ),
+    )[0]
+    seeds = [
+        _norm(c.address) or _norm(c.district),
+        c.postal_code or _postal(c.address or c.district) or "",
+        str(int(round((c.area_sqm or 0) / 5.0) * 5)),
+        str(int(round((c.price_eur or 0) / 10000.0) * 10000)),
+    ]
     raw = "|".join(seeds)
     return hashlib.md5(raw.encode("utf-8")).hexdigest()[:12]
 
 
 def assign_clusters(rows: list[Listing]) -> int:
-    by_district = defaultdict(list)
+    # clear stale cluster ids first; rebuild from scratch for consistency
     for r in rows:
-        by_district[_norm(r.district) or "unknown"].append(r)
+        r.cluster_id = None
+
+    by_bucket: dict[str, list[Listing]] = defaultdict(list)
+    for r in rows:
+        postal = r.postal_code or _postal(r.address or r.district)
+        district = _norm(r.district) or "unknown"
+        key = postal or district
+        by_bucket[key].append(r)
 
     parent = {id(r): id(r) for r in rows}
-    ref = {id(r): r for r in rows}
 
     def find(x):
         while parent[x] != x:
@@ -90,19 +171,19 @@ def assign_clusters(rows: list[Listing]) -> int:
         if ra != rb:
             parent[rb] = ra
 
-    for group in by_district.values():
-        s = sorted(group, key=lambda x: (x.price_eur or 0))
+    for group in by_bucket.values():
+        s = sorted(group, key=lambda x: (x.price_eur or 0, x.area_sqm or 0))
         n = len(s)
         for i in range(n):
             a = s[i]
             for j in range(i + 1, n):
                 b = s[j]
-                if a.price_eur is not None and b.price_eur is not None and (b.price_eur - a.price_eur) > 120000:
+                if a.price_eur is not None and b.price_eur is not None and (b.price_eur - a.price_eur) > 200000:
                     break
                 if _is_probable_duplicate(a, b):
                     union(id(a), id(b))
 
-    comps = defaultdict(list)
+    comps: dict[int, list[Listing]] = defaultdict(list)
     for r in rows:
         comps[find(id(r))].append(r)
 
