@@ -269,6 +269,7 @@ def root():
             "/api/location/coverage",
             "/api/source-review",
             "/api/source-quality",
+            "/api/source-debug",
             "/api/collect/run",
             "/api/scan/run",
             "/api/scan/run-major",
@@ -1037,6 +1038,37 @@ def api_source_review(db: Session = Depends(get_db)):
     return {"total_active": len(rows), "by_source": out}
 
 
+@app.get("/api/source-debug")
+def api_source_debug(limit: int = Query(300, ge=1, le=2000), source: str | None = None, db: Session = Depends(get_db)):
+    q = select(Listing).where(Listing.is_active.is_(True)).order_by(desc(Listing.first_seen_at)).limit(limit)
+    if source:
+        q = select(Listing).where(Listing.is_active.is_(True), Listing.source == source.strip().lower()).order_by(desc(Listing.first_seen_at)).limit(limit)
+    rows = db.execute(q).scalars().all()
+    return [
+        {
+            "id": r.id,
+            "source": r.source,
+            "raw_title": r.raw_title,
+            "display_title": r.display_title,
+            "raw_address": r.address,
+            "raw_district_text": r.raw_district_text,
+            "postal_code": r.postal_code,
+            "district": r.district,
+            "district_source": r.district_source,
+            "location_confidence": r.location_confidence,
+            "price_eur": r.price_eur,
+            "area_sqm": r.area_sqm,
+            "rooms": r.rooms,
+            "price_per_sqm": r.price_per_sqm,
+            "cluster_id": r.cluster_id,
+            "geo_status": r.geo_status,
+            "quality_flags": r.quality_flags,
+            "url": r.url,
+        }
+        for r in rows
+    ]
+
+
 @app.get("/api/source-quality")
 def api_source_quality(db: Session = Depends(get_db)):
     rows = db.execute(select(Listing).where(Listing.is_active.is_(True))).scalars().all()
@@ -1058,10 +1090,11 @@ def api_source_quality(db: Session = Depends(get_db)):
                 "missing_coords": 0,
                 "invalid_url": 0,
                 "unknown_location": 0,
+                "clustered": 0,
             },
         )
         b["count"] += 1
-        if not (r.title and r.title.strip()):
+        if not (r.display_title and r.display_title.strip()):
             b["missing_title"] += 1
         if not (r.district and r.district.strip()):
             b["missing_district"] += 1
@@ -1081,8 +1114,36 @@ def api_source_quality(db: Session = Depends(get_db)):
             b["invalid_url"] += 1
         if (r.district_source or "") in {"unknown", "fallback"}:
             b["unknown_location"] += 1
+        if r.cluster_id:
+            b["clustered"] += 1
 
-    return {"total_active": len(rows), "by_source": by_source}
+    # attach parser error counts from recent runs
+    source_rows = db.execute(select(Source)).scalars().all()
+    id_to_name = {s.id: s.name for s in source_rows}
+    run_rows = db.execute(select(SourceRun)).scalars().all()
+    parse_by_name: dict[str, int] = {}
+    for rr in run_rows:
+        n = id_to_name.get(rr.source_id)
+        if not n:
+            continue
+        parse_by_name[n] = parse_by_name.get(n, 0) + int(rr.parse_errors or 0)
+
+    out = {}
+    for s, v in by_source.items():
+        c = max(1, v["count"])
+        out[s] = {
+            **v,
+            "district_assigned_pct": round((v["count"] - v["missing_district"]) * 100.0 / c, 2),
+            "postal_pct": round((v["count"] - v["missing_postal_code"]) * 100.0 / c, 2),
+            "valid_coords_pct": round((v["count"] - v["missing_coords"]) * 100.0 / c, 2),
+            "usable_title_pct": round((v["count"] - v["missing_title"]) * 100.0 / c, 2),
+            "usable_price_pct": round((v["count"] - v["missing_price"]) * 100.0 / c, 2),
+            "usable_sqm_pct": round((v["count"] - v["missing_area"]) * 100.0 / c, 2),
+            "duplicate_clustered_pct": round(v["clustered"] * 100.0 / c, 2),
+            "unmapped_pct": round(v["unknown_location"] * 100.0 / c, 2),
+            "parse_error_count": int(parse_by_name.get(s, 0)),
+        }
+    return {"total_active": len(rows), "by_source": out}
 
 
 @app.get("/api/district-quality")
