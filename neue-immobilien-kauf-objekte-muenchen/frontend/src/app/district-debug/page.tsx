@@ -29,6 +29,7 @@ export default function DistrictDebugPage() {
   const [quality, setQuality] = useState<DistrictQuality | null>(null);
   const [source, setSource] = useState<string>("all");
   const [minConfidence, setMinConfidence] = useState<number>(0);
+  const [onlyProblems, setOnlyProblems] = useState<boolean>(false);
 
   const load = async () => {
     const q = new URLSearchParams({ limit: "500" });
@@ -54,8 +55,15 @@ export default function DistrictDebugPage() {
   );
 
   const filtered = useMemo(() => {
-    return rows.filter((r) => (r.location_confidence || 0) >= minConfidence);
-  }, [rows, minConfidence]);
+    return rows.filter((r) => {
+      const conf = r.location_confidence || 0;
+      if (conf < minConfidence) return false;
+      if (onlyProblems) {
+        return (r.district_source === "unknown" || conf < 40 || (r.district || "") === "München");
+      }
+      return true;
+    });
+  }, [rows, minConfidence, onlyProblems]);
 
   return (
     <div className="space-y-4">
@@ -72,7 +80,7 @@ export default function DistrictDebugPage() {
         </div>
       ) : null}
 
-      <div className="grid gap-3 rounded-xl border p-3 text-sm md:grid-cols-3">
+      <div className="grid gap-3 rounded-xl border p-3 text-sm md:grid-cols-4">
         <label>
           <span className="mb-1 block text-muted-foreground">Source</span>
           <select className="w-full rounded border px-2 py-1" value={source} onChange={(e) => setSource(e.target.value)}>
@@ -86,6 +94,11 @@ export default function DistrictDebugPage() {
           <span className="mb-1 block text-muted-foreground">Min confidence</span>
           <input className="w-full" type="range" min={0} max={100} value={minConfidence} onChange={(e) => setMinConfidence(Number(e.target.value || 0))} />
           <span className="text-xs text-muted-foreground">{minConfidence}</span>
+        </label>
+
+        <label className="flex items-end gap-2 pb-1">
+          <input type="checkbox" checked={onlyProblems} onChange={(e) => setOnlyProblems(e.target.checked)} />
+          <span>Only problem cases</span>
         </label>
 
         <div className="flex items-end">
