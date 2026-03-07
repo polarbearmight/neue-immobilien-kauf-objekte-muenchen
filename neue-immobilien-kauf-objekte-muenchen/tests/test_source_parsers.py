@@ -1,6 +1,14 @@
 from collectors import sz, immowelt, ohne_makler, wohnungsboerse, sis, planethome
 
 
+REQUIRED_SOURCE_SHAPE_KEYS = {"source", "source_listing_id", "url", "title", "price_eur", "area_sqm", "rooms"}
+
+
+def assert_source_shape(row: dict):
+    for k in REQUIRED_SOURCE_SHAPE_KEYS:
+        assert k in row
+
+
 class DummyResp:
     def __init__(self, payload):
         self._payload = payload
@@ -22,6 +30,7 @@ def test_sz_filters_non_listing_links(monkeypatch):
     rows = sz.collect_sz_listings()
     assert len(rows) == 1
     assert rows[0]["url"].endswith("/objekt/abc-1")
+    assert_source_shape(rows[0])
 
 
 def test_immowelt_extracts_expose_only(monkeypatch):
@@ -35,6 +44,7 @@ def test_immowelt_extracts_expose_only(monkeypatch):
     rows = immowelt.collect_immowelt_listings()
     assert len(rows) == 1
     assert rows[0]["source_listing_id"] == "123"
+    assert_source_shape(rows[0])
 
 
 def test_ohne_makler_keeps_numeric_detail_urls(monkeypatch):
@@ -47,6 +57,7 @@ def test_ohne_makler_keeps_numeric_detail_urls(monkeypatch):
     rows = ohne_makler.collect_ohne_makler_listings()
     assert len(rows) == 1
     assert rows[0]["source_listing_id"] == "123456"
+    assert_source_shape(rows[0])
 
 
 def test_wohnungsboerse_keeps_immodetail_only(monkeypatch):
@@ -58,6 +69,7 @@ def test_wohnungsboerse_keeps_immodetail_only(monkeypatch):
     monkeypatch.setattr(wohnungsboerse.SafeCollector, "get", lambda *a, **k: html)
     rows = wohnungsboerse.collect_wohnungsboerse_listings()
     assert len(rows) == 1
+    assert_source_shape(rows[0])
 
 
 def test_sis_collects_detail_pages(monkeypatch):
@@ -73,6 +85,7 @@ def test_sis_collects_detail_pages(monkeypatch):
     rows = sis.collect_sis_listings()
     assert len(rows) == 1
     assert rows[0]["district"] == "München"
+    assert_source_shape(rows[0])
 
 
 def test_planethome_graphql_parses_only_purchase_munich(monkeypatch):
@@ -121,3 +134,4 @@ def test_planethome_graphql_parses_only_purchase_munich(monkeypatch):
     rows = planethome.collect_planethome_listings()
     assert len(rows) == 1
     assert rows[0]["district"] == "München"
+    assert_source_shape(rows[0])
