@@ -33,6 +33,13 @@ NOISE_HINTS = (
     "about",
 )
 
+GENERIC_TITLE_HINTS = {
+    "wohnung zum kauf",
+    "haus zum kauf",
+    "immobilie zum kauf",
+    "kaufobjekt",
+}
+
 
 def normalize_source_name(source: str | None) -> str | None:
     if not source:
@@ -89,6 +96,9 @@ def normalize_location(text: str | None) -> str | None:
 def is_probable_listing_url(url: str | None) -> bool:
     if not url:
         return False
+    p = urlparse(url)
+    if p.scheme not in ("http", "https"):
+        return False
     lower = url.lower()
     if any(x in lower for x in ("/impressum", "/datenschutz", "mailto:", "javascript:")):
         return False
@@ -107,6 +117,8 @@ def is_real_estate_text(title: str | None, description: str | None, url: str | N
 def normalize_listing_row(row: dict) -> dict | None:
     source = normalize_source_name(row.get("source"))
     url = (row.get("url") or "").strip()
+    if url and not urlparse(url).scheme and "." in url and " " not in url:
+        url = "https://" + url
     sid = (row.get("source_listing_id") or "").strip()
     if not source or not url or not sid or not is_probable_listing_url(url):
         return None
@@ -123,6 +135,20 @@ def normalize_listing_row(row: dict) -> dict | None:
 
     if ppsqm is None and price and area and area > 0:
         ppsqm = round(price / area, 2)
+
+    title_low = (title or "").lower().strip()
+    if title_low in GENERIC_TITLE_HINTS and not (price or area or rooms or address):
+        return None
+
+    # require at least 2 quality signals to reduce noisy rows
+    quality_signals = 0
+    quality_signals += 1 if price is not None else 0
+    quality_signals += 1 if area is not None else 0
+    quality_signals += 1 if rooms is not None else 0
+    quality_signals += 1 if (title and len(title) >= 12) else 0
+    quality_signals += 1 if (description and len(description) >= 80) else 0
+    if quality_signals < 2:
+        return None
 
     # guard rails against nav/noise rows with absurd values
     if price is not None and (price < 50000 or price > 20000000):

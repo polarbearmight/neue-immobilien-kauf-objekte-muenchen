@@ -195,7 +195,16 @@ def _parse_detail(source_name: str, detail_url: str, html: str) -> dict | None:
     soup = BeautifulSoup(html, "html.parser")
     ld = _extract_json_ld(soup)
 
-    title = (ld.get("name") if isinstance(ld, dict) else None) or (soup.title.get_text(strip=True) if soup.title else None)
+    canonical_href = None
+    canon = soup.select_one('link[rel="canonical"]')
+    if canon and canon.get("href"):
+        canonical_href = canon.get("href").strip()
+
+    title = (
+        (ld.get("name") if isinstance(ld, dict) else None)
+        or (soup.select_one('meta[property="og:title"]') or {}).get("content")
+        or (soup.title.get_text(strip=True) if soup.title else None)
+    )
 
     body_text = soup.get_text(" ", strip=True)
 
@@ -233,19 +242,26 @@ def _parse_detail(source_name: str, detail_url: str, html: str) -> dict | None:
         m = re.search(r"(\d+[\.,]?\d*)\s*(Zimmer)", body_text, flags=re.IGNORECASE)
         rooms = _to_num(m.group(1)) if m else None
 
+    if title:
+        title = re.sub(r"\s*[|\-–:]\s*(Immobilien|Makler|München|Munich).*$", "", title, flags=re.IGNORECASE).strip()
+
+    final_url = detail_url
+    if canonical_href:
+        final_url = urljoin(detail_url, canonical_href)
+
     if not title:
         return None
-    if not _is_probable_listing_detail(source_name, detail_url, title, body_text, has_offer_like_ld):
+    if not _is_probable_listing_detail(source_name, final_url, title, body_text, has_offer_like_ld):
         return None
 
-    sid = hashlib.sha1(detail_url.encode("utf-8")).hexdigest()[:20]
+    sid = hashlib.sha1(final_url.encode("utf-8")).hexdigest()[:20]
     ppsqm = round(price / area, 2) if price and area and area > 0 else None
     now = utc_now()
 
     return {
         "source": source_name,
         "source_listing_id": sid,
-        "url": detail_url,
+        "url": final_url,
         "title": title[:300],
         "description": body_text[:800],
         "address": address,
