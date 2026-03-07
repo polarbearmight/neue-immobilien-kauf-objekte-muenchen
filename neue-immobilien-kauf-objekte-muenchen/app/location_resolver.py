@@ -87,6 +87,40 @@ def _extract_postal(*texts: str | None) -> str | None:
     return None
 
 
+def _extract_address_parts(address: str | None) -> dict[str, str | None]:
+    txt = (address or "").strip()
+    if not txt:
+        return {"street": None, "postal": None, "city": None, "district_alias": None}
+
+    postal = _extract_postal(txt)
+    city = "München" if "münchen" in txt.lower() or "munchen" in txt.lower() else None
+    district_alias = _find_alias_in_text(txt)
+
+    # lightweight street extraction for patterns like "Leopoldstraße 45, 80802 München"
+    street = None
+    m = re.search(r"([A-Za-zÄÖÜäöüß\-\. ]+\s+\d+[a-zA-Z]?)", txt)
+    if m:
+        street = " ".join(m.group(1).split())
+
+    return {
+        "street": street,
+        "postal": postal,
+        "city": city,
+        "district_alias": district_alias,
+    }
+
+
+def _is_munich_context(postal: str | None, city: str | None, district: str | None) -> bool:
+    city_norm = _norm(city)
+    if postal in POSTAL_CODE_DISTRICTS:
+        return True
+    if city_norm in {"muenchen", "munchen"}:
+        return True
+    if district and district in DISTRICT_ALIASES.values():
+        return True
+    return False
+
+
 def _find_alias_in_text(*texts: str | None) -> str | None:
     hay = " | ".join(_norm(t) for t in texts if t)
     if not hay:
@@ -198,6 +232,7 @@ def resolve_location(fields: dict[str, Any]) -> dict[str, Any]:
     city = fields.get("city")
     district_raw = fields.get("district_raw")
 
+    addr_parts = _extract_address_parts(address)
     ld_fields = _extract_jsonld_fields(fields.get("structured_data_json") or fields.get("json_ld"))
 
     lat = _parse_float(fields.get("latitude"))
@@ -227,7 +262,7 @@ def resolve_location(fields: dict[str, Any]) -> dict[str, Any]:
         }
 
     # 2) postal code -> district lookup
-    postal = _extract_postal(postal_code, str(ld_fields.get("postal") or ""), address)
+    postal = _extract_postal(postal_code, str(ld_fields.get("postal") or ""), addr_parts.get("postal"), address)
     if postal and postal in POSTAL_CODE_DISTRICTS:
         d, conf = POSTAL_CODE_DISTRICTS[postal]
         return {
@@ -240,26 +275,39 @@ def resolve_location(fields: dict[str, Any]) -> dict[str, Any]:
         }
 
     # 3) structured data address fields
-    by_ld = _find_alias_in_text(ld_fields.get("district_raw"), ld_fields.get("street"), ld_fields.get("city"), str(ld_fields.get("postal") or ""))
-    if by_ld:
-        return {
-            "district": by_ld,
-            "postal_code": postal,
-            "latitude": lat,
-            "longitude": lon,
-            "location_confidence": 78,
-            "district_source": "structured_data",
-        }
+    ld_postal = _extract_postal(str(ld_fields.get("postal") or ""))
+    ld_city = ld_fields.get("city")
+    by_ld = _find_alias_in_text(ld_fields.get("district_raw"), ld_fields.get("street"), ld_city, str(ld_fields.get("postal") or ""))
+    if _is_munich_context(ld_postal, ld_city, by_ld):
+        if ld_postal and ld_postal in POSTAL_CODE_DISTRICTS:
+            d, conf = POSTAL_CODE_DISTRICTS[ld_postal]
+            return {
+                "district": d,
+                "postal_code": ld_postal,
+                "latitude": lat,
+                "longitude": lon,
+                "location_confidence": conf,
+                "district_source": "structured_data_postal_code",
+            }
+        if by_ld:
+            return {
+                "district": by_ld,
+                "postal_code": postal,
+                "latitude": lat,
+                "longitude": lon,
+                "location_confidence": 78,
+                "district_source": "structured_data",
+            }
 
     # 4) explicit address fields
-    by_addr = _find_alias_in_text(address, district_raw, city)
+    by_addr = _find_alias_in_text(address, district_raw, city, addr_parts.get("street"), addr_parts.get("district_alias"))
     if by_addr:
         return {
             "district": by_addr,
             "postal_code": postal,
             "latitude": lat,
             "longitude": lon,
-            "location_confidence": 70,
+            "location_confidence": 65 if not postal else 72,
             "district_source": "address",
         }
 
