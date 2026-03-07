@@ -5,10 +5,12 @@ import { API_URL } from "@/lib/api";
 
 type Source = { id: number; name: string; health_status: string; reliability_score?: number; approved: boolean; enabled: boolean; last_error?: string };
 type SourceRun = { id: number; started_at: string; status: string; new_count: number; updated_count: number; notes?: string };
+type DistrictQuality = { total: number; assigned_pct: number; coordinates_pct: number; postal_code_pct: number; title_only_pct: number; unknown_pct: number };
 
 export default function SourcesPage() {
   const [sources, setSources] = useState<Source[]>([]);
   const [runsBySource, setRunsBySource] = useState<Record<number, SourceRun[]>>({});
+  const [quality, setQuality] = useState<DistrictQuality | null>(null);
 
   const load = async () => {
     const r = await fetch(`${API_URL}/api/sources`, { cache: "no-store" });
@@ -27,6 +29,13 @@ export default function SourcesPage() {
       })
     );
     setRunsBySource(Object.fromEntries(entries));
+
+    try {
+      const qr = await fetch(`${API_URL}/api/district-quality`, { cache: "no-store" });
+      setQuality(await qr.json());
+    } catch {
+      setQuality(null);
+    }
   };
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -45,6 +54,18 @@ export default function SourcesPage() {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold tracking-tight">Sources</h1>
+
+      {quality ? (
+        <div className="grid gap-3 rounded-xl border p-3 text-xs md:grid-cols-3 xl:grid-cols-6">
+          <p>Total: <strong>{quality.total}</strong></p>
+          <p>Assigned: <strong>{quality.assigned_pct}%</strong></p>
+          <p>Coordinates: <strong>{quality.coordinates_pct}%</strong></p>
+          <p>Postal code: <strong>{quality.postal_code_pct}%</strong></p>
+          <p>Title only: <strong>{quality.title_only_pct}%</strong></p>
+          <p>Unknown: <strong>{quality.unknown_pct}%</strong></p>
+        </div>
+      ) : null}
+
       <div className="space-y-2">
         {sources.map((s) => (
           <div key={s.id} className="rounded-lg border p-3 text-sm">
