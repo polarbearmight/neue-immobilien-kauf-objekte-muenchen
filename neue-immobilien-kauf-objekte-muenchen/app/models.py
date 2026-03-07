@@ -85,11 +85,15 @@ class Listing(Base):
     source_listing_id: Mapped[str] = mapped_column(String(128), index=True)
     url: Mapped[str] = mapped_column(String(1024), unique=True)
     title: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    display_title: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    raw_title: Mapped[str | None] = mapped_column(String(512), nullable=True)
     description: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    raw_description: Mapped[str | None] = mapped_column(String(2048), nullable=True)
     image_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     image_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     raw_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     address: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    city: Mapped[str | None] = mapped_column(String(128), nullable=True)
     district: Mapped[str | None] = mapped_column(String(128), nullable=True)
     raw_district_text: Mapped[str | None] = mapped_column(String(256), nullable=True)
     postal_code: Mapped[str | None] = mapped_column(String(16), nullable=True, index=True)
@@ -116,19 +120,13 @@ class Listing(Base):
     badges: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     score_explain: Mapped[str | None] = mapped_column(String(2048), nullable=True)
     ai_flags: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    quality_flags: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    source_payload_debug: Mapped[str | None] = mapped_column(String(4096), nullable=True)
     cluster_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     posted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
     last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, index=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
-
-    @property
-    def display_title(self) -> str:
-        if self.title and self.title.strip():
-            return self.title.strip()
-        if self.address and self.address.strip():
-            return self.address.strip()
-        return f"{self.source} #{self.source_listing_id}"
 
 
 class SourceState(Base):

@@ -42,7 +42,7 @@ export default function PriceDropsPage() {
       <div className="grid gap-3 md:grid-cols-2">
         {items.map((l) => (
           <div key={`${l.source}-${l.source_listing_id}`} className="rounded-xl border p-4 text-sm">
-            <p className="font-medium">{l.title || "Ohne Titel"}</p>
+            <p className="font-medium">{l.display_title || l.title || "Ohne Titel"}</p>
             <p className="text-muted-foreground">{l.district || "-"} · {l.source}</p>
             <p className="mt-2">Neu: <span className="font-semibold">{eur(l.price_eur)}</span> · {eur(l.price_per_sqm)}/m²</p>
             <p>Alt: {eur(l.prev_price_eur)} {l.drop_pct ? <span className="ml-1 rounded border border-green-300 bg-green-50 px-1 py-0.5 text-xs text-green-700">-{l.drop_pct.toFixed(1)}%</span> : null}</p>

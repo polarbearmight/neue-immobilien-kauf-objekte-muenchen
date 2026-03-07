@@ -222,10 +222,14 @@ def upsert_rows(db, rows: list[dict], source_name: str) -> tuple[int, int, int]:
             existing.is_active = True
             existing.raw_hash = row_hash
             existing.title = row.get("title") or existing.title
+            existing.display_title = row.get("display_title") or existing.display_title
+            existing.raw_title = row.get("raw_title") or existing.raw_title
             existing.description = row.get("description") or existing.description
+            existing.raw_description = row.get("raw_description") or existing.raw_description
             existing.image_url = row.get("image_url") or existing.image_url
             existing.image_hash = row.get("image_hash") or existing.image_hash
             existing.address = row.get("address") or existing.address
+            existing.city = row.get("city") or existing.city
             existing.raw_district_text = row.get("raw_district_text") or existing.raw_district_text
             existing.district = row.get("district") or existing.district
             existing.postal_code = row.get("postal_code") or existing.postal_code
@@ -237,6 +241,8 @@ def upsert_rows(db, rows: list[dict], source_name: str) -> tuple[int, int, int]:
             existing.area_sqm = row.get("area_sqm") if row.get("area_sqm") is not None else existing.area_sqm
             existing.rooms = row.get("rooms") if row.get("rooms") is not None else existing.rooms
             existing.price_per_sqm = row.get("price_per_sqm") if row.get("price_per_sqm") is not None else existing.price_per_sqm
+            existing.quality_flags = row.get("quality_flags") or existing.quality_flags
+            existing.source_payload_debug = row.get("source_payload_debug") or existing.source_payload_debug
             existing.posted_at = row.get("posted_at") or existing.posted_at
             existing.url = row.get("url") or existing.url
 

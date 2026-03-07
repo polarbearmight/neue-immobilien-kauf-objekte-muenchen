@@ -6,9 +6,13 @@ export type Listing = {
   source_listing_id: string;
   url: string;
   title?: string;
+  display_title?: string;
+  raw_title?: string;
   description?: string;
+  raw_description?: string;
   district?: string;
   address?: string;
+  city?: string;
   postal_code?: string;
   latitude?: number;
   longitude?: number;

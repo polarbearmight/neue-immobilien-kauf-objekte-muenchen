@@ -60,7 +60,7 @@ export default function DealsPage() {
                 {h.length > 3 ? <span className="text-[10px] text-muted-foreground">+{h.length - 3}</span> : null}
               </div>
               <p className="mb-1 text-lg font-semibold">Score {Math.round(l.deal_score || 0)}{l.investment_score != null ? ` · Inv ${Math.round(l.investment_score)}` : ""}</p>
-              <p className="font-medium">{l.title || "Ohne Titel"}</p>
+              <p className="font-medium">{l.display_title || l.title || "Ohne Titel"}</p>
               <p className="text-muted-foreground">{l.district || "-"} · {l.area_sqm || "-"} m² · {l.rooms || "-"} Zi.</p>
               <p className="mt-2">{eur(l.price_eur)} · {eur(l.price_per_sqm)}/m²</p>
               <div className="mt-2 flex gap-2">

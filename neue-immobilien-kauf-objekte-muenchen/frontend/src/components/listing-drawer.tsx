@@ -72,7 +72,7 @@ export function ListingDrawer({ listing, onClose }: { listing: Listing | null; o
         </div>
 
         <div className="space-y-4 text-sm">
-          <p className="text-base font-semibold">{l.title || "Ohne Titel"}</p>
+          <p className="text-base font-semibold">{l.display_title || l.title || "Ohne Titel"}</p>
           <p className="text-muted-foreground">{l.district || "-"} · {l.source}</p>
           <a href={l.url} target="_blank" rel="noreferrer" className="block truncate text-xs text-blue-600 underline underline-offset-2">{l.url}</a>
           <div className="flex flex-wrap gap-1">

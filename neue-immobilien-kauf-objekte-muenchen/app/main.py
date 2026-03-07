@@ -267,6 +267,7 @@ def root():
             "/api/geo/summary",
             "/api/geo/listings",
             "/api/location/coverage",
+            "/api/source-review",
             "/api/source-quality",
             "/api/collect/run",
             "/api/scan/run",
@@ -974,6 +975,66 @@ def api_district_debug(limit: int = Query(200, ge=1, le=2000), source: str | Non
         }
         for r in rows
     ]
+
+
+@app.get("/api/source-review")
+def api_source_review(db: Session = Depends(get_db)):
+    rows = db.execute(select(Listing).where(Listing.is_active.is_(True))).scalars().all()
+    by_source: dict[str, dict] = {}
+
+    for r in rows:
+        s = r.source or "unknown"
+        b = by_source.setdefault(
+            s,
+            {
+                "count": 0,
+                "title_ok": 0,
+                "address_ok": 0,
+                "postal_ok": 0,
+                "district_ok": 0,
+                "coords_ok": 0,
+                "rooms_ok": 0,
+                "area_ok": 0,
+                "price_ok": 0,
+                "stable_id_ok": 0,
+                "posted_at_ok": 0,
+                "structured_data_present": 0,
+                "link_ok": 0,
+            },
+        )
+        b["count"] += 1
+        b["title_ok"] += 1 if (r.title and r.title.strip()) else 0
+        b["address_ok"] += 1 if (r.address and r.address.strip()) else 0
+        b["postal_ok"] += 1 if (r.postal_code and str(r.postal_code).strip()) else 0
+        b["district_ok"] += 1 if (r.district and r.district.strip()) else 0
+        b["coords_ok"] += 1 if (r.latitude is not None and r.longitude is not None) else 0
+        b["rooms_ok"] += 1 if (r.rooms is not None) else 0
+        b["area_ok"] += 1 if (r.area_sqm is not None) else 0
+        b["price_ok"] += 1 if (r.price_eur is not None) else 0
+        b["stable_id_ok"] += 1 if (r.source_listing_id and len(str(r.source_listing_id)) >= 8) else 0
+        b["posted_at_ok"] += 1 if (r.posted_at is not None) else 0
+        b["structured_data_present"] += 1 if (r.source_payload_debug and "structured_data_json" in r.source_payload_debug) else 0
+        b["link_ok"] += 1 if (r.url and (r.url.startswith("http://") or r.url.startswith("https://"))) else 0
+
+    # percentages
+    out = {}
+    for s, v in by_source.items():
+        c = max(1, v["count"])
+        out[s] = {
+            **v,
+            "title_ok_pct": round(v["title_ok"] * 100.0 / c, 2),
+            "address_ok_pct": round(v["address_ok"] * 100.0 / c, 2),
+            "postal_ok_pct": round(v["postal_ok"] * 100.0 / c, 2),
+            "district_ok_pct": round(v["district_ok"] * 100.0 / c, 2),
+            "coords_ok_pct": round(v["coords_ok"] * 100.0 / c, 2),
+            "rooms_ok_pct": round(v["rooms_ok"] * 100.0 / c, 2),
+            "area_ok_pct": round(v["area_ok"] * 100.0 / c, 2),
+            "price_ok_pct": round(v["price_ok"] * 100.0 / c, 2),
+            "posted_at_ok_pct": round(v["posted_at_ok"] * 100.0 / c, 2),
+            "structured_data_present_pct": round(v["structured_data_present"] * 100.0 / c, 2),
+            "link_ok_pct": round(v["link_ok"] * 100.0 / c, 2),
+        }
+    return {"total_active": len(rows), "by_source": out}
 
 
 @app.get("/api/source-quality")

@@ -213,6 +213,8 @@ def _parse_detail(source_name: str, detail_url: str, html: str) -> dict | None:
     rooms = None
     address = None
     district = None
+    postal = None
+    city = None
     lat = None
     lon = None
 
@@ -227,8 +229,9 @@ def _parse_detail(source_name: str, detail_url: str, html: str) -> dict | None:
         street = addr.get("streetAddress") if isinstance(addr, dict) else None
         postal = addr.get("postalCode") if isinstance(addr, dict) else None
         locality = addr.get("addressLocality") if isinstance(addr, dict) else None
+        city = locality
         address = " ".join([x for x in [street, postal, locality] if x]) or None
-        district = _guess_district_from_text(" ".join([str(street or ""), str(locality or ""), str(title or "")]))
+        district = _guess_district_from_text(" ".join([str(street or ""), str(locality or "")]))
         geo = ld.get("geo") if isinstance(ld.get("geo"), dict) else {}
         lat = _to_num(geo.get("latitude"))
         lon = _to_num(geo.get("longitude"))
@@ -262,9 +265,15 @@ def _parse_detail(source_name: str, detail_url: str, html: str) -> dict | None:
         "source": source_name,
         "source_listing_id": sid,
         "url": final_url,
+        "raw_title": title[:300],
         "title": title[:300],
+        "raw_description": body_text[:1200],
         "description": body_text[:800],
+        "raw_address": address,
         "address": address,
+        "city": city,
+        "postal_code": postal,
+        "raw_district_text": district,
         "district": district or "München",
         "price_eur": price,
         "area_sqm": area,
@@ -272,7 +281,9 @@ def _parse_detail(source_name: str, detail_url: str, html: str) -> dict | None:
         "price_per_sqm": ppsqm,
         "latitude": lat,
         "longitude": lon,
+        "structured_data_json": ld if isinstance(ld, dict) else None,
         "json_ld": ld if isinstance(ld, dict) else None,
+        "source_payload_debug": {"detail_url": detail_url, "canonical_url": final_url},
         "first_seen_at": now,
         "last_seen_at": now,
     }
