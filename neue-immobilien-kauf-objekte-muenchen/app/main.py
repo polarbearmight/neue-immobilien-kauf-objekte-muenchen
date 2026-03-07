@@ -451,6 +451,23 @@ def api_collect_run(source: str = Query("all"), dry_run: bool = Query(False)):
 
 @app.post("/api/scan/run")
 def api_scan_run(db: Session = Depends(get_db)):
+    """Default scan: major sources only (fast primary sweep)."""
+    with scan_lock:
+        if scan_state["running"]:
+            return {"ok": True, "already_running": True, "scan": _scan_status_payload()}
+
+    targets = _major_targets()
+    if not targets:
+        return JSONResponse(status_code=400, content={"ok": False, "error": "no_major_collectors_registered"})
+
+    t = threading.Thread(target=_run_scan_background, args=(targets,), daemon=True)
+    t.start()
+    return {"ok": True, "already_running": False, "targets": targets, "scan": _scan_status_payload()}
+
+
+@app.post("/api/scan/run-all")
+def api_scan_run_all(db: Session = Depends(get_db)):
+    """Full scan across all registered collectors (explicitly requested only)."""
     with scan_lock:
         if scan_state["running"]:
             return {"ok": True, "already_running": True, "scan": _scan_status_payload()}
