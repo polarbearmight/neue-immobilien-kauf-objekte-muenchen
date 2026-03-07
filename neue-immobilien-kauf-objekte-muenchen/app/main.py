@@ -721,6 +721,26 @@ def api_off_market(
     return rows
 
 
+@app.post("/api/clusters/rebuild")
+def api_clusters_rebuild(include_inactive: bool = False, db: Session = Depends(get_db)):
+    q = select(Listing)
+    if not include_inactive:
+        q = q.where(Listing.is_active.is_(True))
+    rows = db.execute(q).scalars().all()
+    changed = assign_clusters(rows)
+    db.commit()
+
+    clustered_rows = [r for r in rows if r.cluster_id]
+    clusters = len({r.cluster_id for r in clustered_rows})
+    return {
+        "ok": True,
+        "rows_processed": len(rows),
+        "listings_clustered": len(clustered_rows),
+        "clusters": clusters,
+        "cluster_members_changed": changed,
+    }
+
+
 @app.get("/api/clusters")
 def api_clusters(limit: int = Query(200, ge=1, le=2000), db: Session = Depends(get_db)):
     rows = db.execute(select(Listing).where(Listing.cluster_id.is_not(None)).order_by(desc(Listing.first_seen_at)).limit(limit)).scalars().all()

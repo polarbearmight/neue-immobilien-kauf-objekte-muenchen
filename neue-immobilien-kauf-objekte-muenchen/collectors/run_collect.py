@@ -561,10 +561,11 @@ def main():
     try:
         located = recompute_locations(db)
         scored = recompute_scores(db)
-        rows = db.execute(select(Listing).where(Listing.deal_score.is_not(None))).scalars().all()
+        rows = db.execute(select(Listing).where(Listing.is_active.is_(True))).scalars().all()
         for r in rows:
-            flags, _explain = analyze_listing(r)
-            r.ai_flags = serialize_flags(flags)
+            if r.deal_score is not None:
+                flags, _explain = analyze_listing(r)
+                r.ai_flags = serialize_flags(flags)
         clustered = assign_clusters(rows)
         rel = compute_reliability(db)
         sources = db.execute(select(Source)).scalars().all()
