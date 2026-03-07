@@ -5,6 +5,7 @@ import os
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError, as_completed
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from urllib.parse import urlparse
 from sqlalchemy import select
 
 from app.db import SessionLocal, Base, engine, ensure_schema
@@ -46,12 +47,17 @@ COLLECTOR_MAP = {
 for _name, _url in BROKER_SOURCES.items():
     COLLECTOR_MAP[_name] = (make_broker_collector(_name, _url), _url)
 
+def _canonical_base(url: str) -> str:
+    p = urlparse(url)
+    return f"{p.scheme}://{p.netloc}" if p.scheme and p.netloc else url
+
+
 for _name, _seed_urls in CLASSIFIED_DISCOVERY_SOURCES.items():
-    # use first URL as canonical base_url in Source table
-    COLLECTOR_MAP[_name] = (make_multi_seed_collector(_name, _seed_urls), _seed_urls[0])
+    # canonical base_url should stay on host root so existing seed rows are reused/migrated
+    COLLECTOR_MAP[_name] = (make_multi_seed_collector(_name, _seed_urls), _canonical_base(_seed_urls[0]))
 
 for _name, _seed_urls in AUCTION_DISCOVERY_SOURCES.items():
-    COLLECTOR_MAP[_name] = (make_multi_seed_collector(_name, _seed_urls), _seed_urls[0])
+    COLLECTOR_MAP[_name] = (make_multi_seed_collector(_name, _seed_urls), _canonical_base(_seed_urls[0]))
 
 
 DEVELOPER_PROJECT_SOURCES = {
