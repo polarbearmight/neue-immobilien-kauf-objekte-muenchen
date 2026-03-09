@@ -302,7 +302,7 @@ def resolve_location(fields: dict[str, Any]) -> dict[str, Any]:
         }
 
     # 2) postal code -> district lookup
-    postal = _extract_postal(postal_code, str(ld_fields.get("postal") or ""), addr_parts.get("postal"), address)
+    postal = _extract_postal(postal_code, str(ld_fields.get("postal") or ""), addr_parts.get("postal"), district_raw, address)
     if postal and postal in POSTAL_CODE_DISTRICTS:
         d, _conf = POSTAL_CODE_DISTRICTS[postal]
         return {

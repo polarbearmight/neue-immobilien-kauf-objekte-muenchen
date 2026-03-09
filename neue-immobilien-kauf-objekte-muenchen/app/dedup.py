@@ -39,10 +39,14 @@ def _rel_diff(a: float | None, b: float | None) -> float | None:
 
 
 def _geo_close(a: Listing, b: Listing) -> bool:
-    if a.latitude is None or a.longitude is None or b.latitude is None or b.longitude is None:
+    alat = getattr(a, "latitude", None)
+    alon = getattr(a, "longitude", None)
+    blat = getattr(b, "latitude", None)
+    blon = getattr(b, "longitude", None)
+    if alat is None or alon is None or blat is None or blon is None:
         return False
     # rough threshold suitable for same property block (about <= ~180m)
-    return abs(float(a.latitude) - float(b.latitude)) <= 0.0016 and abs(float(a.longitude) - float(b.longitude)) <= 0.0022
+    return abs(float(alat) - float(blat)) <= 0.0016 and abs(float(alon) - float(blon)) <= 0.0022
 
 
 def _duplicate_score(a: Listing, b: Listing) -> float:
@@ -56,8 +60,8 @@ def _duplicate_score(a: Listing, b: Listing) -> float:
         elif aa in ba or ba in aa:
             score += 2.4
 
-    pa = a.postal_code or _postal(a.address or a.district)
-    pb = b.postal_code or _postal(b.address or b.district)
+    pa = getattr(a, "postal_code", None) or _postal(getattr(a, "address", None) or getattr(a, "district", None))
+    pb = getattr(b, "postal_code", None) or _postal(getattr(b, "address", None) or getattr(b, "district", None))
     if pa and pb:
         if pa == pb:
             score += 1.2
@@ -75,7 +79,9 @@ def _duplicate_score(a: Listing, b: Listing) -> float:
     if _geo_close(a, b):
         score += 3.0
 
-    rd_price = _rel_diff(float(a.price_eur) if a.price_eur is not None else None, float(b.price_eur) if b.price_eur is not None else None)
+    a_price = getattr(a, "price_eur", None)
+    b_price = getattr(b, "price_eur", None)
+    rd_price = _rel_diff(float(a_price) if a_price is not None else None, float(b_price) if b_price is not None else None)
     if rd_price is not None:
         if rd_price <= 0.07:
             score += 1.5
@@ -84,7 +90,9 @@ def _duplicate_score(a: Listing, b: Listing) -> float:
         elif rd_price >= 0.35:
             score -= 1.0
 
-    rd_area = _rel_diff(float(a.area_sqm) if a.area_sqm is not None else None, float(b.area_sqm) if b.area_sqm is not None else None)
+    a_area = getattr(a, "area_sqm", None)
+    b_area = getattr(b, "area_sqm", None)
+    rd_area = _rel_diff(float(a_area) if a_area is not None else None, float(b_area) if b_area is not None else None)
     if rd_area is not None:
         if rd_area <= 0.06:
             score += 1.2
@@ -93,7 +101,9 @@ def _duplicate_score(a: Listing, b: Listing) -> float:
         elif rd_area >= 0.3:
             score -= 0.8
 
-    rd_rooms = _rel_diff(float(a.rooms) if a.rooms is not None else None, float(b.rooms) if b.rooms is not None else None)
+    a_rooms = getattr(a, "rooms", None)
+    b_rooms = getattr(b, "rooms", None)
+    rd_rooms = _rel_diff(float(a_rooms) if a_rooms is not None else None, float(b_rooms) if b_rooms is not None else None)
     if rd_rooms is not None and rd_rooms <= 0.2:
         score += 0.4
 
@@ -104,14 +114,18 @@ def _duplicate_score(a: Listing, b: Listing) -> float:
         score += 0.9
 
     # image hash overlap is a strong signal when available
-    if a.image_hash and b.image_hash and a.image_hash == b.image_hash:
+    a_img = getattr(a, "image_hash", None)
+    b_img = getattr(b, "image_hash", None)
+    if a_img and b_img and a_img == b_img:
         score += 2.0
 
     return score
 
 
 def _is_probable_duplicate(a: Listing, b: Listing) -> bool:
-    # must support same-source duplicates too (relists/reposts)
+    # keep clusters cross-source to avoid over-merging reposts from same source
+    if getattr(a, "source", None) == getattr(b, "source", None):
+        return False
     score = _duplicate_score(a, b)
     if score < 0:
         return False
@@ -136,11 +150,16 @@ def _cluster_sig(items: list[Listing]) -> str:
             x.first_seen_at,
         ),
     )[0]
+    c_address = getattr(c, "address", None)
+    c_district = getattr(c, "district", None)
+    c_postal = getattr(c, "postal_code", None)
+    c_area = getattr(c, "area_sqm", None) or 0
+    c_price = getattr(c, "price_eur", None) or 0
     seeds = [
-        _norm(c.address) or _norm(c.district),
-        c.postal_code or _postal(c.address or c.district) or "",
-        str(int(round((c.area_sqm or 0) / 5.0) * 5)),
-        str(int(round((c.price_eur or 0) / 10000.0) * 10000)),
+        _norm(c_address) or _norm(c_district),
+        c_postal or _postal(c_address or c_district) or "",
+        str(int(round((c_area) / 5.0) * 5)),
+        str(int(round((c_price) / 10000.0) * 10000)),
     ]
     raw = "|".join(seeds)
     return hashlib.md5(raw.encode("utf-8")).hexdigest()[:12]
@@ -153,8 +172,8 @@ def assign_clusters(rows: list[Listing]) -> int:
 
     by_bucket: dict[str, list[Listing]] = defaultdict(list)
     for r in rows:
-        postal = r.postal_code or _postal(r.address or r.district)
-        district = _norm(r.district) or "unknown"
+        postal = getattr(r, "postal_code", None) or _postal(getattr(r, "address", None) or getattr(r, "district", None))
+        district = _norm(getattr(r, "district", None)) or "unknown"
         key = postal or district
         by_bucket[key].append(r)
 

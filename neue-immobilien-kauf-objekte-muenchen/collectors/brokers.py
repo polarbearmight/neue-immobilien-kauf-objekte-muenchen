@@ -139,7 +139,9 @@ def _guess_district_from_text(text: str) -> str | None:
     return None
 
 
-def _extract_listing_links(source_name: str, base_url: str, html: str, max_links: int = 120) -> list[str]:
+def _extract_listing_links(base_url: str, html: str, max_links: int = 120, source_name: str | None = None) -> list[str]:
+    # backward compatible signature for tests/older calls
+    source_name = source_name or ""
     soup = BeautifulSoup(html, "html.parser")
     out: list[str] = []
     seen: set[str] = set()
@@ -308,7 +310,7 @@ def collect_broker_listings(source_name: str, base_url: str) -> list[dict]:
         print(f"WARN {source_name} overview error: {e}")
         return []
 
-    links = _extract_listing_links(source_name, base_url, html, max_links=150)
+    links = _extract_listing_links(base_url, html, max_links=150, source_name=source_name)
     rows: list[dict] = []
     max_detail = 60
 

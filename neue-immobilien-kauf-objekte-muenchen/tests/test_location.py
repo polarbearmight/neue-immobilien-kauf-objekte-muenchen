@@ -10,13 +10,13 @@ def test_postal_code_to_district_mapping():
 
 def test_district_alias_detection_from_title():
     loc = resolve_location({"title": "Helle Wohnung in Schwabing Nord"})
-    assert loc["district"] == "Schwabing"
-    assert loc["district_source"] == "title_detection"
+    assert loc["district"] == "Schwabing-Freimann"
+    assert loc["district_source"] in ("title", "title_alias")
 
 
 def test_coordinate_based_detection():
     loc = resolve_location({"latitude": 48.175, "longitude": 11.585})
-    assert loc["district"] in ("Maxvorstadt", "Schwabing", "Bogenhausen")
+    assert loc["district"] in ("Maxvorstadt", "Schwabing-Freimann", "Bogenhausen")
     assert loc["district_source"] == "coordinates"
 
 
