@@ -72,6 +72,24 @@ def test_wohnungsboerse_keeps_immodetail_only(monkeypatch):
     assert_source_shape(rows[0])
 
 
+def test_wohnungsboerse_prefers_title_numbers_over_parent_teaser(monkeypatch):
+    html = """
+    <div>
+      <span>Teaser: 550.000 € 77 m² 3 Zi</span>
+      <a href='/immodetail-k/123/88888'>
+        NEU Penthouse Kaufpreis 2.980.000 € Zimmer 5 Zi. Fläche 254 m²
+      </a>
+    </div>
+    """
+    monkeypatch.setattr(wohnungsboerse.SafeCollector, "assert_allowed", lambda *a, **k: None)
+    monkeypatch.setattr(wohnungsboerse.SafeCollector, "get", lambda *a, **k: html)
+    rows = wohnungsboerse.collect_wohnungsboerse_listings()
+    assert len(rows) == 1
+    assert rows[0]["price_eur"] == 2980000.0
+    assert rows[0]["area_sqm"] == 254.0
+    assert rows[0]["rooms"] == 5.0
+
+
 def test_sis_collects_detail_pages(monkeypatch):
     list_html = "<a href='https://www.sis.de/immobilie/test-1'>x</a>"
     detail_html = "<h1>Wohnung München</h1><p>800.000 € 80 m² 3 Zimmer 80331 München</p>"
