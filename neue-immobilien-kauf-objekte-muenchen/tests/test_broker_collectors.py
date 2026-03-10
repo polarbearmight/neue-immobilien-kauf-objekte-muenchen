@@ -50,3 +50,17 @@ def test_parse_detail_kleinanzeigen_requires_price():
     """
     row = _parse_detail("kleinanzeigen", "https://www.kleinanzeigen.de/s-anzeige/hub/111-196-6411", html)
     assert row is None
+
+
+def test_parse_detail_kleinanzeigen_extracts_district_from_body():
+    html = """
+    <html><head><title>Hochwertige DHH mit KfW-40-Effizienzhaus und Erstbezug!</title></head>
+    <body>
+      Hochwertige DHH mit KfW-40-Effizienzhaus und Erstbezug! in München - Trudering-Riem |
+      Doppelhaushälfte kaufen | kleinanzeigen.de Kaufpreis 1.234.000 €
+    </body></html>
+    """
+    row = _parse_detail("kleinanzeigen", "https://www.kleinanzeigen.de/s-anzeige/foo/3222576545-208-16390", html)
+    assert row is not None
+    assert row["district"] == "Trudering-Riem"
+    assert row["price_eur"] == 1234000.0

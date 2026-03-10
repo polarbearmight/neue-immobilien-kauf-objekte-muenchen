@@ -153,6 +153,20 @@ def _guess_district_from_text(text: str) -> str | None:
     return None
 
 
+def _extract_kleinanzeigen_district(text: str) -> str | None:
+    if not text:
+        return None
+    # Examples:
+    # "... in München - Trudering-Riem | ..."
+    # "... in München - Thalk.Obersendl.-Forsten-Fürstenr.-Solln | ..."
+    m = re.search(r"in\s+m[üu]nchen\s*-\s*([^|\n]+)", text, flags=re.IGNORECASE)
+    if not m:
+        return None
+    raw = m.group(1).strip(" -\t")
+    raw = re.sub(r"\s{2,}", " ", raw)
+    return raw or None
+
+
 def _extract_listing_links(base_url: str, html: str, max_links: int = 120, source_name: str | None = None) -> list[str]:
     # backward compatible signature for tests/older calls
     source_name = source_name or ""
@@ -270,6 +284,9 @@ def _parse_detail(source_name: str, detail_url: str, html: str) -> dict | None:
         geo = ld.get("geo") if isinstance(ld.get("geo"), dict) else {}
         lat = _to_num(geo.get("latitude"))
         lon = _to_num(geo.get("longitude"))
+
+    if source_name == "kleinanzeigen" and district is None:
+        district = _extract_kleinanzeigen_district(body_text)
 
     if price is None:
         price = _extract_price_from_text(body_text)
