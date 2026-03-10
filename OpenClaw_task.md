@@ -58,7 +58,7 @@
 
 ## In Progress / Next
 - [ ] Verify Kleinanzeigen scan quality after next live scan run (price coverage + district extraction on fresh data)
-- [ ] Add one-click "Run source now" action on Sources page for `kleinanzeigen` with status feedback
+- [x] Add one-click "Run source now" action on Sources page for `kleinanzeigen` with status feedback
 
 ---
 
