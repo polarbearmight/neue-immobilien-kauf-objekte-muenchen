@@ -29,6 +29,19 @@ def _extract_numbers(text: str):
     return price, area, rooms, ppsqm
 
 
+def _extract_best_numbers(title_text: str, context_text: str):
+    # Prefer title-level parsing first: card/container text can contain repeated teaser values
+    # from unrelated modules and would otherwise poison all listings with identical numbers.
+    p_title, a_title, r_title, pp_title = _extract_numbers(title_text)
+    p_ctx, a_ctx, r_ctx, pp_ctx = _extract_numbers(context_text)
+
+    price = p_title if p_title is not None else p_ctx
+    area = a_title if a_title is not None else a_ctx
+    rooms = r_title if r_title is not None else r_ctx
+    ppsqm = pp_title if pp_title is not None else pp_ctx
+    return price, area, rooms, ppsqm
+
+
 def collect_wohnungsboerse_listings() -> list[dict]:
     c = SafeCollector()
     c.assert_allowed("https://www.wohnungsboerse.net/robots.txt", "/Bayern/Muenchen/Eigentumswohnung")
@@ -64,7 +77,7 @@ def collect_wohnungsboerse_listings() -> list[dict]:
         text = (parent.get_text(" ", strip=True) if parent else a.get_text(" ", strip=True))[:2000]
         title = a.get_text(" ", strip=True)[:300] or None
 
-        price, area, rooms, ppsqm = _extract_numbers(text)
+        price, area, rooms, ppsqm = _extract_best_numbers(title or "", text)
 
         img = None
         if parent:
