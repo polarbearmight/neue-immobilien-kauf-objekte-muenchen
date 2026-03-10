@@ -6,7 +6,7 @@ _Learn about the person you're helping. Update this as you go._
 - **What to call them:** Marius
 - **Pronouns:** _(optional)_
 - **Timezone:** UTC
-- **Notes:** Bedient den Assistenten über Telegram. Fokus: Research- und Coding-Aufgaben. Nur auf Telegram-Nachrichten von User-ID 5675079514 reagieren. Keine Kommunikation über andere Kanäle (keine Mail/SMS/etc.). Telegram-Gruppe `-1003739925004` mit Topics: Topic 2 → Fitness, Topic 3 → Journal. Nachrichten aus diesen Topics von User 5675079514 automatisch in Repo `Marius_Privat` im passenden Ordner speichern.
+- **Notes:** Bedient den Assistenten über Telegram. Fokus: Research- und Coding-Aufgaben. Nur auf Telegram-Nachrichten von User-ID 5675079514 reagieren. Keine Kommunikation über andere Kanäle (keine Mail/SMS/etc.). Telegram-Gruppe `-1003739925004` mit Topics: Topic 2 → Fitness, Topic 3 → Journal. Nachrichten aus diesen Topics von User 5675079514 automatisch in Repo `Marius_Privat` im passenden Ordner speichern. Private Notizen/Archiv gehören ebenfalls nach `Marius_Privat` (Ordner `memory`).
 
 ## Context
 
