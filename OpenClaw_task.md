@@ -57,7 +57,7 @@
 - [ ] Add favorites or saved properties
 
 ## In Progress / Next
-- [ ] Verify Kleinanzeigen scan quality after next live scan run (price coverage + district extraction on fresh data)
+- [x] Verify Kleinanzeigen scan quality after next live scan run (price coverage + district extraction on fresh data)
 - [x] Add one-click "Run source now" action on Sources page for `kleinanzeigen` with status feedback
 
 ---
@@ -104,7 +104,7 @@ Notes:
 ---
 
 ## Discovered Issues / New Tasks
-- Add new tasks here when discovered during development
+- [ ] Improve Kleinanzeigen price coverage on fresh listings (currently 3/6 with `price_eur` on latest live sample)
 
 ---
 
