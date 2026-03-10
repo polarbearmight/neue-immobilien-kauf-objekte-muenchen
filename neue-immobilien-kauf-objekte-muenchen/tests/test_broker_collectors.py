@@ -14,6 +14,19 @@ def test_extract_broker_links_filters_noise():
     assert not any("impressum" in x for x in links)
 
 
+def test_extract_kleinanzeigen_links_only_keeps_detail_buy_urls():
+    html = """
+    <html><body>
+      <a href='/s-immobilien/muenchen/c195l6411'>Hub</a>
+      <a href='/s-anzeige/top-wohnung/12345-196-6411'>Buy Wohnung</a>
+      <a href='/s-anzeige/wg-zimmer/77777-199-6411'>WG</a>
+    </body></html>
+    """
+    links = _extract_listing_links("https://www.kleinanzeigen.de/s-immobilien/muenchen/c195l6411", html, source_name="kleinanzeigen")
+    assert len(links) == 1
+    assert links[0].endswith('/s-anzeige/top-wohnung/12345-196-6411')
+
+
 def test_parse_detail_prefers_json_ld():
     html = """
     <html><head><title>Objekt</title>
@@ -28,3 +41,12 @@ def test_parse_detail_prefers_json_ld():
     assert row["price_eur"] == 990000.0
     assert row["area_sqm"] == 89.0
     assert row["rooms"] == 3.0
+
+
+def test_parse_detail_kleinanzeigen_requires_price():
+    html = """
+    <html><head><title>Kleinanzeigen für Immobilien | kleinanzeigen.de</title></head>
+    <body>Kleinanzeigen für Immobilien in München</body></html>
+    """
+    row = _parse_detail("kleinanzeigen", "https://www.kleinanzeigen.de/s-anzeige/hub/111-196-6411", html)
+    assert row is None
