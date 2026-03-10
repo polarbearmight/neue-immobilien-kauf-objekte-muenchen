@@ -13,6 +13,8 @@ export default function SourcesPage() {
   const [runsBySource, setRunsBySource] = useState<Record<number, SourceRun[]>>({});
   const [quality, setQuality] = useState<DistrictQuality | null>(null);
   const [sourceQuality, setSourceQuality] = useState<Record<string, SourceQualityRow>>({});
+  const [runningSourceName, setRunningSourceName] = useState<string | null>(null);
+  const [runNotice, setRunNotice] = useState<string | null>(null);
 
   const load = async () => {
     const r = await fetch(`${API_URL}/api/sources`, { cache: "no-store" });
@@ -46,7 +48,6 @@ export default function SourcesPage() {
     }
   };
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); }, []);
 
   const selfTest = async (id: number) => {
@@ -59,9 +60,34 @@ export default function SourcesPage() {
     load();
   };
 
+  const runSourceNow = async (sourceName: string) => {
+    setRunningSourceName(sourceName);
+    setRunNotice(null);
+    try {
+      const res = await fetch(`${API_URL}/api/collect/run?source=${encodeURIComponent(sourceName)}`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok || data?.ok === false) {
+        setRunNotice(`Run failed for ${sourceName}`);
+        return;
+      }
+      const summary = Array.isArray(data?.summary) ? data.summary[0] : null;
+      if (summary?.status === "ok") {
+        setRunNotice(`${sourceName} run finished: +${summary.new ?? 0} new / ~${summary.updated ?? 0} updated`);
+      } else {
+        setRunNotice(`${sourceName} run finished with status: ${summary?.status ?? "unknown"}`);
+      }
+      await load();
+    } catch {
+      setRunNotice(`Run failed for ${sourceName}`);
+    } finally {
+      setRunningSourceName(null);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold tracking-tight">Sources</h1>
+      {runNotice ? <p className="text-xs text-muted-foreground">{runNotice}</p> : null}
 
       {quality ? (
         <div className="grid gap-3 rounded-xl border p-3 text-xs md:grid-cols-3 xl:grid-cols-6">
@@ -106,6 +132,16 @@ export default function SourcesPage() {
               </div>
               <div className="flex gap-2">
                 <button className="rounded border px-2 py-1" onClick={() => selfTest(s.id)}>Self-test</button>
+                {s.name === "kleinanzeigen" ? (
+                  <button
+                    className="rounded border px-2 py-1"
+                    onClick={() => runSourceNow(s.name)}
+                    disabled={runningSourceName === s.name}
+                    title="Runs only this source immediately"
+                  >
+                    {runningSourceName === s.name ? "Running…" : "Run source now"}
+                  </button>
+                ) : null}
                 <button className="rounded border px-2 py-1" onClick={async () => { await fetch(`${API_URL}/api/sources/${s.id}/approve?approved=${String(!s.approved)}`, { method: "POST" }); load(); }}>{s.approved ? "Unapprove" : "Approve"}</button>
                 <button className="rounded border px-2 py-1" onClick={() => toggle(s.id, !s.enabled)}>{s.enabled ? "Disable" : "Enable"}</button>
               </div>
