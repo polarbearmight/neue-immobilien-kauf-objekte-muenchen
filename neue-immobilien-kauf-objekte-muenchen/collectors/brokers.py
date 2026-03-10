@@ -97,6 +97,20 @@ def _to_num(val) -> float | None:
         return None
 
 
+def _extract_price_from_text(text: str) -> float | None:
+    if not text:
+        return None
+    patterns = [
+        r"kaufpreis\s*[:]?\s*([\d\.,]{3,})\s*(?:€|eur)",
+        r"([\d\.,]{3,})\s*(?:€|eur)",
+    ]
+    for p in patterns:
+        m = re.search(p, text, flags=re.IGNORECASE)
+        if m:
+            return _to_num(m.group(1))
+    return None
+
+
 def _flatten_json_ld(obj) -> list[dict]:
     out: list[dict] = []
     if isinstance(obj, dict):
@@ -142,6 +156,7 @@ def _guess_district_from_text(text: str) -> str | None:
 def _extract_listing_links(base_url: str, html: str, max_links: int = 120, source_name: str | None = None) -> list[str]:
     # backward compatible signature for tests/older calls
     source_name = source_name or ""
+    source_name_l = source_name.lower()
     soup = BeautifulSoup(html, "html.parser")
     out: list[str] = []
     seen: set[str] = set()
@@ -157,6 +172,12 @@ def _extract_listing_links(base_url: str, html: str, max_links: int = 120, sourc
         if parsed.netloc != urlparse(base_url).netloc:
             continue
         l = u.lower()
+        if source_name_l == "kleinanzeigen":
+            # keep only detail pages from buy categories to avoid category hubs/rentals/noise
+            if "/s-anzeige/" not in l:
+                continue
+            if not re.search(r"/s-anzeige/.+/\d+-(196|207|208)-\d+", l):
+                continue
         if any(x in l for x in ("impressum", "datenschutz", "kontakt", "karriere", "jobs", "news")):
             continue
         if any(x in l for x in SOURCE_DENY_URL_PATTERNS.get(source_name, ())):
@@ -173,7 +194,7 @@ def _extract_listing_links(base_url: str, html: str, max_links: int = 120, sourc
     return out
 
 
-def _is_probable_listing_detail(source_name: str, detail_url: str, title: str | None, body_text: str, has_offer_like_ld: bool) -> bool:
+def _is_probable_listing_detail(source_name: str, detail_url: str, title: str | None, body_text: str, has_offer_like_ld: bool, price: float | None = None) -> bool:
     l = (detail_url or "").lower()
     if any(x in l for x in SOURCE_DENY_URL_PATTERNS.get(source_name, ())):
         return False
@@ -183,6 +204,18 @@ def _is_probable_listing_detail(source_name: str, detail_url: str, title: str | 
         return False
     if any(h in t for h in _NOISE_TITLE_HINTS):
         return False
+
+    if source_name == "kleinanzeigen":
+        if "/s-anzeige/" not in l:
+            return False
+        # keep only buy categories; exclude rent/WG/holiday/etc.
+        if not re.search(r"/s-anzeige/.+/\d+-(196|207|208)-\d+", l):
+            return False
+        if t.startswith("kleinanzeigen für immobilien"):
+            return False
+        # For dashboard quality we skip entries without a numeric sale price.
+        if price is None:
+            return False
 
     if has_offer_like_ld:
         return True
@@ -239,7 +272,7 @@ def _parse_detail(source_name: str, detail_url: str, html: str) -> dict | None:
         lon = _to_num(geo.get("longitude"))
 
     if price is None:
-        price = _to_num(body_text)
+        price = _extract_price_from_text(body_text)
     if area is None:
         m = re.search(r"(\d+[\.,]?\d*)\s*(m²|qm)", body_text, flags=re.IGNORECASE)
         area = _to_num(m.group(1)) if m else None
@@ -256,7 +289,7 @@ def _parse_detail(source_name: str, detail_url: str, html: str) -> dict | None:
 
     if not title:
         return None
-    if not _is_probable_listing_detail(source_name, final_url, title, body_text, has_offer_like_ld):
+    if not _is_probable_listing_detail(source_name, final_url, title, body_text, has_offer_like_ld, price=price):
         return None
 
     sid = hashlib.sha1(final_url.encode("utf-8")).hexdigest()[:20]
