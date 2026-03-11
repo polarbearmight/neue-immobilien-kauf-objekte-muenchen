@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useReactTable, getCoreRowModel, flexRender, createColumnHelper } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Listing } from "@/lib/api";
@@ -11,6 +11,39 @@ const eurPerSqm = (v?: number | null) => (v == null ? "-" : `${new Intl.NumberFo
 const columnHelper = createColumnHelper<Listing>();
 
 export function ListingTable({ rows, onDetails }: { rows: Listing[]; onDetails: (l: Listing) => void }) {
+  const [sortKey, setSortKey] = useState<"area_sqm" | "price_eur" | "price_per_sqm" | "deal_score" | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
+  const toggleSort = (key: "area_sqm" | "price_eur" | "price_per_sqm" | "deal_score") => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+      return;
+    }
+    setSortKey(key);
+    setSortDir(key === "area_sqm" ? "asc" : "desc");
+  };
+
+  const sortedRows = useMemo(() => {
+    if (!sortKey) return rows;
+    const getValue = (x: Listing): number => {
+      if (sortKey === "area_sqm") return Number(x.area_sqm ?? -Infinity);
+      if (sortKey === "price_eur") return Number(x.price_eur ?? -Infinity);
+      if (sortKey === "price_per_sqm") return Number(x.price_per_sqm ?? -Infinity);
+      return Number(x.deal_score ?? -Infinity);
+    };
+    const arr = [...rows];
+    arr.sort((a, b) => {
+      const cmp = getValue(a) - getValue(b);
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+    return arr;
+  }, [rows, sortKey, sortDir]);
+
+  const sortIndicator = (key: "area_sqm" | "price_eur" | "price_per_sqm" | "deal_score") => {
+    if (sortKey !== key) return "↕";
+    return sortDir === "asc" ? "↑" : "↓";
+  };
+
   const gridTemplate = "220px minmax(260px, 1.5fr) 220px 70px 90px 130px 120px 80px 140px";
   const columns = useMemo(
     () => [
@@ -39,10 +72,22 @@ export function ListingTable({ rows, onDetails }: { rows: Listing[]; onDetails: 
         },
       }),
       columnHelper.accessor("rooms", { header: "Rooms", cell: (info) => info.getValue() ?? "-" }),
-      columnHelper.accessor("area_sqm", { header: "Size", cell: (info) => (info.getValue() ? `${info.getValue()} m²` : "-") }),
-      columnHelper.accessor("price_eur", { header: "Price", cell: (info) => eur(info.getValue()) }),
-      columnHelper.accessor("price_per_sqm", { header: "€/m²", cell: (info) => eurPerSqm(info.getValue()) }),
-      columnHelper.accessor("deal_score", { header: "Score", cell: (info) => Math.round(info.getValue() || 0) }),
+      columnHelper.accessor("area_sqm", {
+        header: () => <button className="text-left" onClick={() => toggleSort("area_sqm")}>Size {sortIndicator("area_sqm")}</button>,
+        cell: (info) => (info.getValue() ? `${info.getValue()} m²` : "-"),
+      }),
+      columnHelper.accessor("price_eur", {
+        header: () => <button className="text-left" onClick={() => toggleSort("price_eur")}>Price {sortIndicator("price_eur")}</button>,
+        cell: (info) => eur(info.getValue()),
+      }),
+      columnHelper.accessor("price_per_sqm", {
+        header: () => <button className="text-left" onClick={() => toggleSort("price_per_sqm")}>€/m² {sortIndicator("price_per_sqm")}</button>,
+        cell: (info) => eurPerSqm(info.getValue()),
+      }),
+      columnHelper.accessor("deal_score", {
+        header: () => <button className="text-left" onClick={() => toggleSort("deal_score")}>Score {sortIndicator("deal_score")}</button>,
+        cell: (info) => Math.round(info.getValue() || 0),
+      }),
       columnHelper.display({
         id: "actions",
         header: "",
@@ -63,10 +108,10 @@ export function ListingTable({ rows, onDetails }: { rows: Listing[]; onDetails: 
         ),
       }),
     ],
-    [onDetails]
+    [onDetails, sortKey, sortDir]
   );
 
-  const table = useReactTable({ data: rows, columns, getCoreRowModel: getCoreRowModel() });
+  const table = useReactTable({ data: sortedRows, columns, getCoreRowModel: getCoreRowModel() });
   const parentRef = useRef<HTMLDivElement>(null);
   const rowVirtualizer = useVirtualizer({ count: table.getRowModel().rows.length, getScrollElement: () => parentRef.current, estimateSize: () => 48, overscan: 10 });
   const virtualRows = rowVirtualizer.getVirtualItems();
