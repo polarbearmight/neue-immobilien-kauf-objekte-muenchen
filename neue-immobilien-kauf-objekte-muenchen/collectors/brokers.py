@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 from urllib.parse import urljoin, urlparse
 
@@ -45,7 +46,7 @@ _NOISE_TITLE_HINTS = ("bewertung", "webinar", "ratgeber", "karriere", "service",
 
 # Source fetch profiles: html first, optional script-json fallback for dynamic pages
 SOURCE_FETCH_MODE: dict[str, str] = {
-    "kleinanzeigen": "html+script_json",
+    "kleinanzeigen": "html+script_json+browser",
 }
 
 SOURCE_DENY_URL_PATTERNS: dict[str, tuple[str, ...]] = {
@@ -204,6 +205,73 @@ def _extract_links_from_script_json(base_url: str, html: str, source_name: str |
     return out
 
 
+def _extract_links_from_browser_render(base_url: str, source_name: str | None = None, limit: int = 180) -> list[str]:
+    """Optional browser-render fallback for heavily dynamic pages.
+
+    Requires:
+    - ENABLE_BROWSER_RENDER_FALLBACK=1
+    - playwright installed + browser binaries
+    """
+    if os.getenv("ENABLE_BROWSER_RENDER_FALLBACK", "0").lower() not in ("1", "true", "yes"):
+        return []
+
+    try:
+        from playwright.sync_api import sync_playwright  # type: ignore
+    except Exception:
+        return []
+
+    source_name_l = (source_name or "").lower()
+    out: list[str] = []
+    seen: set[str] = set()
+
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page()
+            page.goto(base_url, wait_until="domcontentloaded", timeout=45000)
+
+            # soft infinite-scroll attempt
+            for _ in range(4):
+                page.mouse.wheel(0, 4000)
+                page.wait_for_timeout(700)
+
+            html = page.content()
+            browser.close()
+
+        candidates = _extract_links_from_script_json(base_url, html, source_name=source_name, limit=limit)
+        if not candidates:
+            # generic anchor fallback from rendered dom (html-only pass)
+            soup = BeautifulSoup(html, "html.parser")
+            for a in soup.select("a[href]"):
+                href = (a.get("href") or "").strip()
+                if not href:
+                    continue
+                u = urljoin(base_url, href)
+                parsed = urlparse(u)
+                if not parsed.scheme.startswith("http"):
+                    continue
+                if parsed.netloc != urlparse(base_url).netloc:
+                    continue
+                candidates.append(u)
+                if len(candidates) >= limit:
+                    break
+
+        for u in candidates:
+            if u in seen:
+                continue
+            l = u.lower()
+            if source_name_l == "kleinanzeigen" and not re.search(r"/s-anzeige/.+/\d+-(196|207|208)-\d+", l):
+                continue
+            seen.add(u)
+            out.append(u)
+            if len(out) >= limit:
+                break
+    except Exception:
+        return []
+
+    return out
+
+
 def _extract_listing_links(base_url: str, html: str, max_links: int = 120, source_name: str | None = None) -> list[str]:
     # backward compatible signature for tests/older calls
     source_name = source_name or ""
@@ -246,6 +314,15 @@ def _extract_listing_links(base_url: str, html: str, max_links: int = 120, sourc
     mode = SOURCE_FETCH_MODE.get(source_name_l, "html")
     if "script_json" in mode and len(out) < max_links:
         for u in _extract_links_from_script_json(base_url, html, source_name=source_name, limit=max_links):
+            if u in seen:
+                continue
+            seen.add(u)
+            out.append(u)
+            if len(out) >= max_links:
+                break
+
+    if "browser" in mode and len(out) < max_links:
+        for u in _extract_links_from_browser_render(base_url, source_name=source_name, limit=max_links):
             if u in seen:
                 continue
             seen.add(u)
