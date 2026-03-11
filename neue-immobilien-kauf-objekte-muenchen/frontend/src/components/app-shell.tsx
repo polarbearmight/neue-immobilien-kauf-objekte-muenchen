@@ -13,15 +13,15 @@ const nav = [
   ["Clusters", "/clusters"],
   ["Off-Market", "/off-market"],
   ["Districts", "/districts"],
-  ["District Debug", "/district-debug"],
-  ["Source Debug", "/source-debug"],
-  ["Duplicate Debug", "/duplicate-debug"],
-  ["Geo Debug", "/geo-debug"],
   ["Geo Heatmap", "/geo"],
   ["Map", "/map"],
   ["Sources", "/sources"],
   ["Watchlist", "/watchlist"],
   ["Settings", "/settings"],
+  ["District Debug", "/district-debug"],
+  ["Source Debug", "/source-debug"],
+  ["Duplicate Debug", "/duplicate-debug"],
+  ["Geo Debug", "/geo-debug"],
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
