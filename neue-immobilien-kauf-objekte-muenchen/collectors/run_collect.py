@@ -249,7 +249,12 @@ def upsert_rows(db, rows: list[dict], source_name: str) -> tuple[int, int, int]:
             existing.price_eur = row.get("price_eur") if row.get("price_eur") is not None else existing.price_eur
             existing.area_sqm = row.get("area_sqm") if row.get("area_sqm") is not None else existing.area_sqm
             existing.rooms = row.get("rooms") if row.get("rooms") is not None else existing.rooms
-            existing.price_per_sqm = row.get("price_per_sqm") if row.get("price_per_sqm") is not None else existing.price_per_sqm
+            # allow explicit reset to None when normalization removed implausible ppsqm
+            if "price_per_sqm" in row:
+                existing.price_per_sqm = row.get("price_per_sqm")
+            # safety: without price we do not keep stale €/m²
+            if existing.price_eur is None:
+                existing.price_per_sqm = None
             existing.quality_flags = row.get("quality_flags") or existing.quality_flags
             existing.source_payload_debug = row.get("source_payload_debug") or existing.source_payload_debug
             existing.posted_at = row.get("posted_at") or existing.posted_at

@@ -141,8 +141,16 @@ def normalize_listing_row(row: dict) -> dict | None:
     rooms = normalize_rooms(to_num(row.get("rooms")))
     ppsqm = to_num(row.get("price_per_sqm"))
 
+    # If normalized price is missing/invalid, ignore upstream €/m² to avoid false ultra-deals.
+    if price is None:
+        ppsqm = None
+
     if ppsqm is None:
         ppsqm = compute_ppsqm(price, area)
+
+    # sanity bounds for Munich buy-market ppsqm
+    if ppsqm is not None and (ppsqm < 1000 or ppsqm > 100000):
+        ppsqm = None
 
     district = normalize_location(row.get("district") or row.get("raw_district_text"))
     address = normalize_location(row.get("address") or row.get("raw_address"))

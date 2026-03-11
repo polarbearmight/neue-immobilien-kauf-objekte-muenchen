@@ -111,9 +111,13 @@ def _to_num(val) -> float | None:
         return None
 
 
-def _extract_price_from_text(text: str) -> float | None:
+def _extract_price_from_text(text: str, strict_kaufpreis: bool = False) -> float | None:
     if not text:
         return None
+    if strict_kaufpreis:
+        m = re.search(r"kaufpreis\s*[:]?\s*([\d\.,]{3,})\s*(?:€|eur)", text, flags=re.IGNORECASE)
+        return _to_num(m.group(1)) if m else None
+
     patterns = [
         r"kaufpreis\s*[:]?\s*([\d\.,]{3,})\s*(?:€|eur)",
         r"([\d\.,]{3,})\s*(?:€|eur)",
@@ -456,7 +460,7 @@ def _parse_detail(source_name: str, detail_url: str, html: str) -> dict | None:
         district = _extract_kleinanzeigen_district(body_text)
 
     if price is None:
-        price = _extract_price_from_text(body_text)
+        price = _extract_price_from_text(body_text, strict_kaufpreis=(source_name == "kleinanzeigen"))
     if area is None:
         m = re.search(r"(\d+[\.,]?\d*)\s*(m²|qm)", body_text, flags=re.IGNORECASE)
         area = _to_num(m.group(1)) if m else None
