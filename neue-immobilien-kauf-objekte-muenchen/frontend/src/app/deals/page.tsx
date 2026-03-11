@@ -10,6 +10,8 @@ export default function DealsPage() {
   const [minScore, setMinScore] = useState(85);
   const [sortBy, setSortBy] = useState<"score" | "investment">("score");
   const [listings, setListings] = useState<Listing[]>([]);
+  const [savingIds, setSavingIds] = useState<Record<number, boolean>>({});
+  const [savedIds, setSavedIds] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
     const load = async () => {
@@ -28,6 +30,20 @@ export default function DealsPage() {
     rows.sort((a, b) => (b.deal_score || 0) - (a.deal_score || 0));
     return rows;
   }, [listings, sortBy]);
+
+  const saveToWatchlist = async (listingId?: number) => {
+    if (!listingId) return;
+    setSavingIds((prev) => ({ ...prev, [listingId]: true }));
+    try {
+      const res = await fetch(`${API_URL}/api/watchlist/${listingId}`, { method: "POST" });
+      if (!res.ok) throw new Error("watchlist_save_failed");
+      setSavedIds((prev) => ({ ...prev, [listingId]: true }));
+    } catch {
+      // keep silent in UI for now
+    } finally {
+      setSavingIds((prev) => ({ ...prev, [listingId]: false }));
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -65,6 +81,13 @@ export default function DealsPage() {
               <p className="mt-2">{eur(l.price_eur)} · {eur(l.price_per_sqm)}/m²</p>
               <div className="mt-2 flex gap-2">
                 <a href={l.url} target="_blank" rel="noreferrer" className="rounded border px-2 py-1 text-xs">Open</a>
+                <button
+                  className="rounded border px-2 py-1 text-xs"
+                  onClick={() => saveToWatchlist(l.id)}
+                  disabled={!l.id || !!savingIds[l.id]}
+                >
+                  {l.id && savingIds[l.id] ? "Saving..." : l.id && savedIds[l.id] ? "Saved" : "Save to Watchlist"}
+                </button>
               </div>
             </div>
           );
