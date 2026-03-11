@@ -131,6 +131,26 @@ def _is_probable_duplicate(a: Listing, b: Listing) -> bool:
     # keep clusters cross-source to avoid over-merging reposts from same source
     if getattr(a, "source", None) == getattr(b, "source", None):
         return False
+
+    # explicit fallback: identical normalized title plus very similar key facts
+    # (important for cross-portal syndication where address/postal/coords may be missing on one side)
+    ta = _norm(getattr(a, "title", None))
+    tb = _norm(getattr(b, "title", None))
+    if ta and tb and ta == tb:
+        a_area = getattr(a, "area_sqm", None)
+        b_area = getattr(b, "area_sqm", None)
+        a_rooms = getattr(a, "rooms", None)
+        b_rooms = getattr(b, "rooms", None)
+        a_price = getattr(a, "price_eur", None)
+        b_price = getattr(b, "price_eur", None)
+
+        area_close = (a_area is not None and b_area is not None and abs(float(a_area) - float(b_area)) <= 2.5)
+        rooms_close = (a_rooms is not None and b_rooms is not None and abs(float(a_rooms) - float(b_rooms)) <= 0.5)
+        price_close = (a_price is not None and b_price is not None and _rel_diff(float(a_price), float(b_price)) <= 0.08)
+
+        if area_close and (price_close or rooms_close or a_price is None or b_price is None):
+            return True
+
     score = _duplicate_score(a, b)
     if score < 0:
         return False
