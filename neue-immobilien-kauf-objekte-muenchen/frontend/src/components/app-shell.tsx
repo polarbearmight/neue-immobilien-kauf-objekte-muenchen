@@ -20,6 +20,7 @@ const nav = [
   ["Geo Heatmap", "/geo"],
   ["Map", "/map"],
   ["Sources", "/sources"],
+  ["Watchlist", "/watchlist"],
   ["Settings", "/settings"],
 ] as const;
 
