@@ -14,7 +14,7 @@ from collectors.base import AccessBlockedError, SafeCollector
 BROKER_SOURCES: dict[str, str] = {
     "broker_aigner": "https://www.aigner-immobilien.de/immobilien/",
     "broker_riedel": "https://www.riedel-immobilien.de/angebote/kauf/",
-    "broker_duken_wangenheim": "https://www.duken-wangenheim.de/immobilien/",
+    "broker_duken_wangenheim": "https://www.wangenheim.de/",
     "broker_graf": "https://www.grafimmo.de/immobilien/",
     "broker_dahler_muenchen": "https://www.dahlercompany.com/de/immobilie-kaufen/wohnimmobilien/bayern/muenchen",
     "broker_engel_voelkers_muenchen": "https://www.engelvoelkers.com/de/de/immobilien/res/kaufen/immobilien/bayern/muenchen",
@@ -33,12 +33,12 @@ BROKER_SOURCES: dict[str, str] = {
     "broker_immo_muenchen": "https://www.immo-muenchen.de/",
     "broker_sis_immobilien": "https://www.sis-immobilien.de/immobilien/",
     "broker_veltrup": "https://www.veltrup.de/immobilien/",
-    "broker_heinlein": "https://heinlein-immobilien.de/",
+    "broker_heinlein": "https://heinlein-immo.de/",
     "broker_immobilientreff": "https://www.immobilientreff.de/",
     "broker_pienzenauer": "https://www.pienzenauer.de/immobilien/",
     "broker_schneider_prell": "https://www.schneider-prell.de/immobilien/",
     "broker_immoquartier": "https://www.immoquartier.de/",
-    "broker_immoconcept_muenchen": "https://immoconcept-muenchen.de/",
+    "broker_immoconcept_muenchen": "https://alexander-klatt.de/immobilien/",
 }
 
 _LINK_HINTS = ("immobil", "objekt", "projekt", "expose", "angebot", "wohnung", "haus", "kaufen")
