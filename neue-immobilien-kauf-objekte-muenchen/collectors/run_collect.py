@@ -160,6 +160,9 @@ def get_or_create_source(db, name: str, base_url: str) -> Source:
         if src.name != name:
             src.name = name
             changed = True
+        if src.base_url != base_url:
+            src.base_url = base_url
+            changed = True
         if src.discovery_method != discovery_method:
             src.discovery_method = discovery_method
             changed = True
@@ -315,6 +318,7 @@ def _collector_timeout_for_source(source_name: str) -> int:
         "kleinanzeigen": int(os.getenv("COLLECTOR_TIMEOUT_KLEINANZEIGEN", "300")),
         "broker_engel_voelkers_muenchen": int(os.getenv("COLLECTOR_TIMEOUT_ENGEL", "240")),
         "broker_schneider_prell": int(os.getenv("COLLECTOR_TIMEOUT_SCHNEIDER_PRELL", "180")),
+        "broker_riedel": int(os.getenv("COLLECTOR_TIMEOUT_RIEDEL", "240")),
     }
     return overrides.get(source_name, default_timeout)
 
