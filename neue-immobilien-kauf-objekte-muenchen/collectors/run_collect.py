@@ -21,6 +21,7 @@ from collectors.brokers import (
     AUCTION_DISCOVERY_SOURCES,
     BROKER_SOURCES,
     CLASSIFIED_DISCOVERY_SOURCES,
+    SOURCE_FETCH_MODE,
     make_broker_collector,
     make_multi_seed_collector,
 )
@@ -497,6 +498,7 @@ def run_one_source(db, source_name: str, dry_run: bool = False, force: bool = Fa
     return {
         "source": source_name,
         "status": run.status,
+        "fetch_mode": SOURCE_FETCH_MODE.get(source_name, "html"),
         "new": new_count,
         "updated": updated_count,
         "raw_found": raw_count,
