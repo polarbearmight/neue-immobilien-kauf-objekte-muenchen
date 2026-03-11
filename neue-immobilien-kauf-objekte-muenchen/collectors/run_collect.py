@@ -313,6 +313,8 @@ def _collector_timeout_for_source(source_name: str) -> int:
     # heavier dynamic/classified sources typically need more wall time
     overrides = {
         "kleinanzeigen": int(os.getenv("COLLECTOR_TIMEOUT_KLEINANZEIGEN", "300")),
+        "broker_engel_voelkers_muenchen": int(os.getenv("COLLECTOR_TIMEOUT_ENGEL", "240")),
+        "broker_schneider_prell": int(os.getenv("COLLECTOR_TIMEOUT_SCHNEIDER_PRELL", "180")),
     }
     return overrides.get(source_name, default_timeout)
 
@@ -359,15 +361,15 @@ def _apply_stop_early(db, source_name: str, rows: list[dict]) -> tuple[list[dict
     return kept, known_count
 
 
-def _coverage_warning(db, src: Source, raw_count: int, normalized_count: int, total_volume: int) -> str | None:
+def _coverage_warning(db, src: Source, raw_count: int, effective_normalized_count: int, total_volume: int) -> str | None:
     min_raw = int(os.getenv("COVERAGE_WARN_MIN_RAW", "20"))
     drop_ratio = float(os.getenv("COVERAGE_WARN_DROP_RATIO", "0.4"))
     min_norm_ratio = float(os.getenv("COVERAGE_WARN_MIN_NORM_RATIO", "0.35"))
 
     # basic quality warning for current run
-    norm_ratio = (normalized_count / raw_count) if raw_count else 1.0
+    norm_ratio = (effective_normalized_count / raw_count) if raw_count else 1.0
     if raw_count >= min_raw and norm_ratio < min_norm_ratio:
-        return f"coverage_warn: low_norm_ratio={norm_ratio:.2f} raw={raw_count} normalized={normalized_count}"
+        return f"coverage_warn: low_norm_ratio={norm_ratio:.2f} raw={raw_count} effective_normalized={effective_normalized_count}"
 
     # drop vs recent median volume (new+updated+skipped_known)
     prev = db.execute(
@@ -489,7 +491,14 @@ def run_one_source(db, source_name: str, dry_run: bool = False, force: bool = Fa
     run.skipped_known_count = skipped_known_count + known_precheck_count
     run.finished_at = datetime.now(timezone.utc)
     total_volume = run.new_count + run.updated_count + run.skipped_known_count
-    warn = _coverage_warning(db, src, raw_count=raw_count, normalized_count=len(rows), total_volume=total_volume)
+    effective_normalized_count = len(rows) + known_precheck_count
+    warn = _coverage_warning(
+        db,
+        src,
+        raw_count=raw_count,
+        effective_normalized_count=effective_normalized_count,
+        total_volume=total_volume,
+    )
     if run.status == "ok":
         run.notes = warn or validation.notes
 
