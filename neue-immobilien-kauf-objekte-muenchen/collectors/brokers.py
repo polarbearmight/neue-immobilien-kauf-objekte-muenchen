@@ -43,6 +43,11 @@ BROKER_SOURCES: dict[str, str] = {
 _LINK_HINTS = ("immobil", "objekt", "projekt", "expose", "angebot", "wohnung", "haus", "kaufen")
 _NOISE_TITLE_HINTS = ("bewertung", "webinar", "ratgeber", "karriere", "service", "kontakt", "impressum", "datenschutz")
 
+# Source fetch profiles: html first, optional script-json fallback for dynamic pages
+SOURCE_FETCH_MODE: dict[str, str] = {
+    "kleinanzeigen": "html+script_json",
+}
+
 SOURCE_DENY_URL_PATTERNS: dict[str, tuple[str, ...]] = {
     "broker_immobilientreff": ("/service", "/kontakt", "/impressum", "/datenschutz", "/ueber-uns"),
     "broker_sis_immobilien": ("/ratgeber", "/aktuelles", "/service", "/karriere", "/unternehmen"),
@@ -167,6 +172,38 @@ def _extract_kleinanzeigen_district(text: str) -> str | None:
     return raw or None
 
 
+def _extract_links_from_script_json(base_url: str, html: str, source_name: str | None = None, limit: int = 180) -> list[str]:
+    source_name_l = (source_name or "").lower()
+    out: list[str] = []
+    seen: set[str] = set()
+
+    # pull candidate hrefs from hydration/inline JSON blobs
+    raw_hrefs = re.findall(r'"(/s-anzeige/[^"]+)"', html)
+    raw_hrefs += re.findall(r'"(https?://[^"\s]+/s-anzeige/[^"\s]+)"', html)
+
+    for href in raw_hrefs:
+        u = urljoin(base_url, href)
+        parsed = urlparse(u)
+        if not parsed.scheme.startswith("http"):
+            continue
+        if parsed.netloc != urlparse(base_url).netloc:
+            continue
+        l = u.lower()
+        if source_name_l == "kleinanzeigen":
+            if "/s-anzeige/" not in l:
+                continue
+            if not re.search(r"/s-anzeige/.+/\d+-(196|207|208)-\d+", l):
+                continue
+        if u in seen:
+            continue
+        seen.add(u)
+        out.append(u)
+        if len(out) >= limit:
+            break
+
+    return out
+
+
 def _extract_listing_links(base_url: str, html: str, max_links: int = 120, source_name: str | None = None) -> list[str]:
     # backward compatible signature for tests/older calls
     source_name = source_name or ""
@@ -205,6 +242,17 @@ def _extract_listing_links(base_url: str, html: str, max_links: int = 120, sourc
         out.append(u)
         if len(out) >= max_links:
             break
+
+    mode = SOURCE_FETCH_MODE.get(source_name_l, "html")
+    if "script_json" in mode and len(out) < max_links:
+        for u in _extract_links_from_script_json(base_url, html, source_name=source_name, limit=max_links):
+            if u in seen:
+                continue
+            seen.add(u)
+            out.append(u)
+            if len(out) >= max_links:
+                break
+
     return out
 
 
