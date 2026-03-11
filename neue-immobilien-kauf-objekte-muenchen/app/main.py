@@ -270,6 +270,7 @@ def root():
             "/api/source-review",
             "/api/source-quality",
             "/api/source-debug",
+            "/api/sources/stale-audit",
             "/api/duplicate-debug",
             "/api/geo-debug",
             "/api/collect/run",
@@ -737,6 +738,87 @@ def api_source_self_test(source_id: int, db: Session = Depends(get_db)):
         "robots": result.robots,
         "http_status": result.http_status,
         "notes": result.notes,
+    }
+
+
+@app.get("/api/sources/stale-audit")
+def api_sources_stale_audit(
+    apply_disable: bool = False,
+    only_secondary: bool = True,
+    fail_streak_threshold: int = Query(3, ge=1, le=10),
+    db: Session = Depends(get_db),
+):
+    """Detect stale/broken sources (404, DNS/SSL issues, repeated fail streaks) and optionally disable them."""
+    rows = db.execute(select(Source).order_by(Source.name.asc())).scalars().all()
+    audited = []
+    disabled_count = 0
+
+    for s in rows:
+        if only_secondary and not _is_secondary(s.name):
+            continue
+
+        runs = db.execute(
+            select(SourceRun)
+            .where(SourceRun.source_id == s.id)
+            .order_by(desc(SourceRun.started_at))
+            .limit(6)
+        ).scalars().all()
+
+        fail_streak = 0
+        for r in runs:
+            if r.status == "ok":
+                break
+            fail_streak += 1
+
+        reason = None
+        status = "ok"
+        last_note = (runs[0].notes if runs else "") or (s.last_error or "")
+        note_low = last_note.lower()
+
+        if "404" in note_low or "not found" in note_low:
+            status = "stale_url"
+            reason = "404/not_found"
+        elif "name or service not known" in note_low or "dns" in note_low:
+            status = "stale_dns"
+            reason = "dns_resolution_failed"
+        elif "certificate verify failed" in note_low or "hostname mismatch" in note_low:
+            status = "stale_ssl"
+            reason = "ssl_hostname_mismatch"
+        elif fail_streak >= fail_streak_threshold:
+            status = "unstable"
+            reason = f"fail_streak_{fail_streak}"
+
+        changed = False
+        if apply_disable and status in {"stale_url", "stale_dns", "stale_ssl", "unstable"} and s.enabled:
+            s.enabled = False
+            s.health_status = "disabled"
+            s.updated_at = utc_now()
+            changed = True
+            disabled_count += 1
+
+        audited.append(
+            {
+                "id": s.id,
+                "name": s.name,
+                "enabled": s.enabled,
+                "health_status": s.health_status,
+                "status": status,
+                "reason": reason,
+                "fail_streak": fail_streak,
+                "last_note": last_note[:240] if last_note else None,
+                "changed": changed,
+            }
+        )
+
+    if apply_disable:
+        db.commit()
+
+    return {
+        "ok": True,
+        "apply_disable": apply_disable,
+        "only_secondary": only_secondary,
+        "disabled_count": disabled_count,
+        "rows": audited,
     }
 
 
