@@ -240,6 +240,35 @@ def _is_probable_listing_detail(source_name: str, detail_url: str, title: str | 
     return True
 
 
+def _extract_source_listing_id(final_url: str, body_text: str, ld: dict | None) -> str:
+    # Prefer stable source-native ids over URL hash when possible.
+    # 1) JSON-LD identifiers
+    if isinstance(ld, dict):
+        for key in ("@id", "identifier", "sku", "productID", "propertyID"):
+            v = ld.get(key)
+            if isinstance(v, (str, int, float)):
+                s = str(v).strip()
+                if len(s) >= 5 and len(s) <= 80:
+                    return s
+            if isinstance(v, dict) and v.get("value"):
+                s = str(v.get("value")).strip()
+                if len(s) >= 5 and len(s) <= 80:
+                    return s
+
+    # 2) URL trailing numeric token
+    m = re.search(r"/(\d{5,})(?:[/?#-]|$)", final_url)
+    if m:
+        return m.group(1)
+
+    # 3) Text hints like Objekt-ID
+    m = re.search(r"objekt(?:-|\s)?id\s*[:#]?\s*([A-Za-z0-9-]{5,50})", body_text, flags=re.IGNORECASE)
+    if m:
+        return m.group(1)
+
+    # 4) fallback: stable URL hash
+    return hashlib.sha1(final_url.encode("utf-8")).hexdigest()[:20]
+
+
 def _parse_detail(source_name: str, detail_url: str, html: str) -> dict | None:
     soup = BeautifulSoup(html, "html.parser")
     ld = _extract_json_ld(soup)
@@ -309,7 +338,7 @@ def _parse_detail(source_name: str, detail_url: str, html: str) -> dict | None:
     if not _is_probable_listing_detail(source_name, final_url, title, body_text, has_offer_like_ld, price=price):
         return None
 
-    sid = hashlib.sha1(final_url.encode("utf-8")).hexdigest()[:20]
+    sid = _extract_source_listing_id(final_url, body_text, ld if isinstance(ld, dict) else None)
     ppsqm = round(price / area, 2) if price and area and area > 0 else None
     now = utc_now()
 
@@ -398,6 +427,7 @@ def collect_broker_listings(source_name: str, base_url: str) -> list[dict]:
     detail_links: list[str] = []
     seen_links: set[str] = set()
 
+    pages_without_new_links = 0
     while pages_to_visit and len(seen_pages) < max_pages and len(detail_links) < 300:
         page_url = pages_to_visit.pop(0)
         if page_url in seen_pages:
@@ -414,6 +444,7 @@ def collect_broker_listings(source_name: str, base_url: str) -> list[dict]:
             continue
 
         links = _extract_listing_links(page_url, html, max_links=180, source_name=source_name)
+        before_count = len(detail_links)
         for u in links:
             if u in seen_links:
                 continue
@@ -422,9 +453,18 @@ def collect_broker_listings(source_name: str, base_url: str) -> list[dict]:
             if len(detail_links) >= 300:
                 break
 
+        if len(detail_links) == before_count:
+            pages_without_new_links += 1
+        else:
+            pages_without_new_links = 0
+
         for p in _extract_pagination_links(page_url, html, source_name=source_name):
             if p not in seen_pages and p not in pages_to_visit and len(seen_pages) + len(pages_to_visit) < max_pages:
                 pages_to_visit.append(p)
+
+        # stop early when additional pagination no longer yields new listing links
+        if pages_without_new_links >= 2:
+            break
 
     for url in detail_links[:max_detail]:
         try:
