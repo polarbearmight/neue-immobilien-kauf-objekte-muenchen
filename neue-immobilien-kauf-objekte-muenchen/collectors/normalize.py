@@ -144,6 +144,10 @@ def normalize_listing_row(row: dict) -> dict | None:
     if ppsqm is None:
         ppsqm = compute_ppsqm(price, area)
 
+    district = normalize_location(row.get("district") or row.get("raw_district_text"))
+    address = normalize_location(row.get("address") or row.get("raw_address"))
+    city = normalize_location(row.get("city"))
+
     title_low = (title or "").lower().strip()
     if title_low in GENERIC_TITLE_HINTS and not (price or area or rooms or address):
         return None
@@ -166,9 +170,6 @@ def normalize_listing_row(row: dict) -> dict | None:
     if rooms is not None and (rooms < 0.5 or rooms > 20):
         return None
 
-    district = normalize_location(row.get("district") or row.get("raw_district_text"))
-    address = normalize_location(row.get("address") or row.get("raw_address"))
-    city = normalize_location(row.get("city"))
     image_url = (row.get("image_url") or "").strip() or None
 
     loc = resolve_location({
@@ -227,13 +228,14 @@ def normalize_listing_row(row: dict) -> dict | None:
 
 
 def _secondary_key(row: dict) -> tuple:
-    source = (row.get("source") or "").strip().lower()
+    # cross-source duplicate guard (same object on multiple portals)
     title = (row.get("title") or "").strip().lower()
     district = (row.get("district") or "").strip().lower()
+    postal = str(row.get("postal_code") or "").strip()
     price = round(float(row.get("price_eur") or 0) / 1000.0) * 1000
     area = round(float(row.get("area_sqm") or 0), 1)
     rooms = round(float(row.get("rooms") or 0), 1)
-    return source, title, district, price, area, rooms
+    return title, district, postal, price, area, rooms
 
 
 def dedupe_rows(rows: list[dict]) -> list[dict]:

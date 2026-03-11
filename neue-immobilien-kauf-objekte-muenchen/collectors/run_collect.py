@@ -6,7 +6,7 @@ from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import urlparse
-from sqlalchemy import select
+from sqlalchemy import or_, select
 
 from app.db import SessionLocal, Base, engine, ensure_schema
 from app.models import Listing, ListingSnapshot, Source, SourceRun, SourceState
@@ -202,8 +202,10 @@ def upsert_rows(db, rows: list[dict], source_name: str) -> tuple[int, int, int]:
 
         existing = db.execute(
             select(Listing).where(
-                Listing.source == row["source"],
-                Listing.source_listing_id == sid,
+                or_(
+                    (Listing.source == row["source"]) & (Listing.source_listing_id == sid),
+                    Listing.url == row.get("url"),
+                )
             )
         ).scalar_one_or_none()
 
@@ -222,6 +224,8 @@ def upsert_rows(db, rows: list[dict], source_name: str) -> tuple[int, int, int]:
             existing.last_seen_at = now
             existing.is_active = True
             existing.raw_hash = row_hash
+            existing.source = row.get("source") or existing.source
+            existing.source_listing_id = row.get("source_listing_id") or existing.source_listing_id
             existing.title = row.get("title") or existing.title
             existing.display_title = row.get("display_title") or existing.display_title
             existing.raw_title = row.get("raw_title") or existing.raw_title
@@ -301,6 +305,15 @@ def _collect_with_timeout(collector, timeout_seconds: int) -> list[dict]:
     with ThreadPoolExecutor(max_workers=1) as ex:
         fut = ex.submit(collector)
         return fut.result(timeout=timeout_seconds)
+
+
+def _collector_timeout_for_source(source_name: str) -> int:
+    default_timeout = int(os.getenv("COLLECTOR_TIMEOUT_SECONDS", "120"))
+    # heavier dynamic/classified sources typically need more wall time
+    overrides = {
+        "kleinanzeigen": int(os.getenv("COLLECTOR_TIMEOUT_KLEINANZEIGEN", "300")),
+    }
+    return overrides.get(source_name, default_timeout)
 
 
 def _should_stop_early(scanned: int, known_count: int, known_streak: int) -> bool:
@@ -399,7 +412,7 @@ def run_one_source(db, source_name: str, dry_run: bool = False, force: bool = Fa
         run.status = "degraded"
         run.notes = f"validation blocked (best-effort continue): {validation.notes}"
 
-    timeout_seconds = int(os.getenv("COLLECTOR_TIMEOUT_SECONDS", "120"))
+    timeout_seconds = _collector_timeout_for_source(source_name)
     print(f"[collector:{source_name}] start (timeout={timeout_seconds}s)", flush=True)
     try:
         rows = _collect_with_timeout(collector, timeout_seconds=timeout_seconds)
