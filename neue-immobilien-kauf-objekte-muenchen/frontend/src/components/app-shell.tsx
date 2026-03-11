@@ -8,6 +8,7 @@ import type { ReactNode } from "react";
 const nav = [
   ["Dashboard", "/"],
   ["Deal Radar", "/deals"],
+  ["Watchlist", "/watchlist"],
   ["Brand New", "/brand-new"],
   ["Price Drops", "/price-drops"],
   ["Clusters", "/clusters"],
@@ -16,7 +17,6 @@ const nav = [
   ["Geo Heatmap", "/geo"],
   ["Map", "/map"],
   ["Sources", "/sources"],
-  ["Watchlist", "/watchlist"],
   ["Settings", "/settings"],
   ["District Debug", "/district-debug"],
   ["Source Debug", "/source-debug"],
