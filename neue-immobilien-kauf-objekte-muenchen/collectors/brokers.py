@@ -49,6 +49,14 @@ SOURCE_FETCH_MODE: dict[str, str] = {
     "kleinanzeigen": "html+script_json+browser",
 }
 
+SOURCE_BROWSER_PROFILE: dict[str, dict] = {
+    "kleinanzeigen": {
+        "scroll_rounds": 6,
+        "scroll_px": 5000,
+        "scroll_wait_ms": 850,
+    },
+}
+
 SOURCE_DENY_URL_PATTERNS: dict[str, tuple[str, ...]] = {
     "broker_immobilientreff": ("/service", "/kontakt", "/impressum", "/datenschutz", "/ueber-uns"),
     "broker_sis_immobilien": ("/ratgeber", "/aktuelles", "/service", "/karriere", "/unternehmen"),
@@ -224,16 +232,21 @@ def _extract_links_from_browser_render(base_url: str, source_name: str | None = 
     out: list[str] = []
     seen: set[str] = set()
 
+    profile = SOURCE_BROWSER_PROFILE.get(source_name_l, {})
+    scroll_rounds = int(profile.get("scroll_rounds", 4))
+    scroll_px = int(profile.get("scroll_px", 4000))
+    scroll_wait_ms = int(profile.get("scroll_wait_ms", 700))
+
     try:
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
             page = browser.new_page()
             page.goto(base_url, wait_until="domcontentloaded", timeout=45000)
 
-            # soft infinite-scroll attempt
-            for _ in range(4):
-                page.mouse.wheel(0, 4000)
-                page.wait_for_timeout(700)
+            # soft infinite-scroll attempt (source-profiled)
+            for _ in range(scroll_rounds):
+                page.mouse.wheel(0, scroll_px)
+                page.wait_for_timeout(scroll_wait_ms)
 
             html = page.content()
             browser.close()

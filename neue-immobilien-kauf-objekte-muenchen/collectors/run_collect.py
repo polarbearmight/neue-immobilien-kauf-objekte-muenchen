@@ -359,6 +359,34 @@ def _apply_stop_early(db, source_name: str, rows: list[dict]) -> tuple[list[dict
     return kept, known_count
 
 
+def _coverage_warning(db, src: Source, raw_count: int, normalized_count: int, total_volume: int) -> str | None:
+    min_raw = int(os.getenv("COVERAGE_WARN_MIN_RAW", "20"))
+    drop_ratio = float(os.getenv("COVERAGE_WARN_DROP_RATIO", "0.4"))
+    min_norm_ratio = float(os.getenv("COVERAGE_WARN_MIN_NORM_RATIO", "0.35"))
+
+    # basic quality warning for current run
+    norm_ratio = (normalized_count / raw_count) if raw_count else 1.0
+    if raw_count >= min_raw and norm_ratio < min_norm_ratio:
+        return f"coverage_warn: low_norm_ratio={norm_ratio:.2f} raw={raw_count} normalized={normalized_count}"
+
+    # drop vs recent median volume (new+updated+skipped_known)
+    prev = db.execute(
+        select(SourceRun)
+        .where(SourceRun.source_id == src.id)
+        .order_by(SourceRun.started_at.desc())
+        .limit(6)
+    ).scalars().all()
+    hist = [int((x.new_count or 0) + (x.updated_count or 0) + (x.skipped_known_count or 0)) for x in prev]
+    hist = [x for x in hist if x > 0]
+    if len(hist) >= 3 and total_volume > 0:
+        s = sorted(hist)
+        med = s[len(s) // 2]
+        if med >= min_raw and total_volume < med * (1.0 - drop_ratio):
+            return f"coverage_warn: volume_drop current={total_volume} median={med}"
+
+    return None
+
+
 def run_one_source(db, source_name: str, dry_run: bool = False, force: bool = False, capture_fixture: bool = False) -> dict:
     collector, base_url = COLLECTOR_MAP[source_name]
     src = get_or_create_source(db, source_name, base_url)
@@ -460,8 +488,10 @@ def run_one_source(db, source_name: str, dry_run: bool = False, force: bool = Fa
     run.updated_count = updated_count
     run.skipped_known_count = skipped_known_count + known_precheck_count
     run.finished_at = datetime.now(timezone.utc)
+    total_volume = run.new_count + run.updated_count + run.skipped_known_count
+    warn = _coverage_warning(db, src, raw_count=raw_count, normalized_count=len(rows), total_volume=total_volume)
     if run.status == "ok":
-        run.notes = validation.notes
+        run.notes = warn or validation.notes
 
     # Source health monitoring: mark unstable after repeated failures.
     recent = db.execute(
@@ -508,6 +538,7 @@ def run_one_source(db, source_name: str, dry_run: bool = False, force: bool = Fa
         "skipped_known": total_skipped_known,
         "parse_errors": run.parse_errors,
         "http_errors": run.http_errors,
+        "coverage_warning": warn,
     }
 
 
