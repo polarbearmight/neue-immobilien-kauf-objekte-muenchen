@@ -271,6 +271,7 @@ def root():
             "/api/source-quality",
             "/api/source-debug",
             "/api/sources/stale-audit",
+            "/api/sources/prune-zero-coverage",
             "/api/duplicate-debug",
             "/api/geo-debug",
             "/api/collect/run",
@@ -819,6 +820,75 @@ def api_sources_stale_audit(
         "only_secondary": only_secondary,
         "disabled_count": disabled_count,
         "rows": audited,
+    }
+
+
+@app.get("/api/sources/prune-zero-coverage")
+def api_sources_prune_zero_coverage(
+    apply_disable: bool = False,
+    only_secondary: bool = True,
+    min_runs: int = Query(4, ge=2, le=20),
+    db: Session = Depends(get_db),
+):
+    """Find sources with persistent zero coverage (raw_found/new/updated all zero) and optionally disable them."""
+    rows = db.execute(select(Source).order_by(Source.name.asc())).scalars().all()
+    out = []
+    disabled_count = 0
+
+    for s in rows:
+        if only_secondary and not _is_secondary(s.name):
+            continue
+
+        runs = db.execute(
+            select(SourceRun)
+            .where(SourceRun.source_id == s.id)
+            .order_by(desc(SourceRun.started_at))
+            .limit(min_runs)
+        ).scalars().all()
+
+        if len(runs) < min_runs:
+            continue
+
+        persistent_zero = True
+        for r in runs:
+            note = (r.notes or "").lower()
+            has_raw = "raw=0" not in note and "raw_found': 0" not in note
+            had_changes = (r.new_count or 0) > 0 or (r.updated_count or 0) > 0
+            if has_raw or had_changes:
+                persistent_zero = False
+                break
+
+        changed = False
+        if apply_disable and persistent_zero and s.enabled:
+            s.enabled = False
+            s.health_status = "disabled"
+            s.last_error = f"auto-pruned: zero coverage in last {min_runs} runs"
+            s.updated_at = utc_now()
+            changed = True
+            disabled_count += 1
+
+        out.append(
+            {
+                "id": s.id,
+                "name": s.name,
+                "enabled": s.enabled,
+                "health_status": s.health_status,
+                "persistent_zero": persistent_zero,
+                "runs_checked": len(runs),
+                "changed": changed,
+            }
+        )
+
+    if apply_disable:
+        db.commit()
+
+    return {
+        "ok": True,
+        "apply_disable": apply_disable,
+        "only_secondary": only_secondary,
+        "min_runs": min_runs,
+        "disabled_count": disabled_count,
+        "rows": out,
     }
 
 
