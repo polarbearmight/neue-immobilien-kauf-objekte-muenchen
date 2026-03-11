@@ -3,7 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import { useReactTable, getCoreRowModel, flexRender, createColumnHelper } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { Listing } from "@/lib/api";
+import { API_URL, Listing } from "@/lib/api";
 import { badgeToneClass, listingHighlightBadges, listingHighlightRowClass } from "@/lib/deal-highlights";
 
 const eur = (v?: number | null) => (v == null ? "-" : new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(v));
@@ -13,6 +13,8 @@ const columnHelper = createColumnHelper<Listing>();
 export function ListingTable({ rows, onDetails }: { rows: Listing[]; onDetails: (l: Listing) => void }) {
   const [sortKey, setSortKey] = useState<"area_sqm" | "price_eur" | "price_per_sqm" | "deal_score" | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [savingIds, setSavingIds] = useState<Record<number, boolean>>({});
+  const [savedIds, setSavedIds] = useState<Record<number, boolean>>({});
 
   const toggleSort = (key: "area_sqm" | "price_eur" | "price_per_sqm" | "deal_score") => {
     if (sortKey === key) {
@@ -44,7 +46,21 @@ export function ListingTable({ rows, onDetails }: { rows: Listing[]; onDetails: 
     return sortDir === "asc" ? "↑" : "↓";
   };
 
-  const gridTemplate = "220px minmax(260px, 1.5fr) 220px 70px 90px 130px 120px 80px 140px";
+  const saveToWatchlist = async (listingId?: number) => {
+    if (!listingId) return;
+    setSavingIds((prev) => ({ ...prev, [listingId]: true }));
+    try {
+      const res = await fetch(`${API_URL}/api/watchlist/${listingId}`, { method: "POST" });
+      if (!res.ok) throw new Error("watchlist_save_failed");
+      setSavedIds((prev) => ({ ...prev, [listingId]: true }));
+    } catch {
+      // silent for compact table UI
+    } finally {
+      setSavingIds((prev) => ({ ...prev, [listingId]: false }));
+    }
+  };
+
+  const gridTemplate = "220px minmax(260px, 1.5fr) 220px 70px 90px 130px 120px 80px 230px";
   const columns = useMemo(
     () => [
       columnHelper.display({
@@ -91,24 +107,34 @@ export function ListingTable({ rows, onDetails }: { rows: Listing[]; onDetails: 
       columnHelper.display({
         id: "actions",
         header: "",
-        cell: (info) => (
-          <div className="flex items-center gap-2">
-            <a
-              className="rounded border px-2 py-1 text-xs"
-              href={info.row.original.url}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Link
-            </a>
-            <button className="rounded border px-2 py-1 text-xs" onClick={() => onDetails(info.row.original)}>
-              Details
-            </button>
-          </div>
-        ),
+        cell: (info) => {
+          const listingId = info.row.original.id;
+          return (
+            <div className="flex items-center gap-2">
+              <a
+                className="rounded border px-2 py-1 text-xs"
+                href={info.row.original.url}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Link
+              </a>
+              <button className="rounded border px-2 py-1 text-xs" onClick={() => onDetails(info.row.original)}>
+                Details
+              </button>
+              <button
+                className="rounded border px-2 py-1 text-xs"
+                onClick={() => saveToWatchlist(listingId)}
+                disabled={!listingId || !!(listingId && savingIds[listingId])}
+              >
+                {listingId && savingIds[listingId] ? "Saving..." : listingId && savedIds[listingId] ? "Saved" : "Save"}
+              </button>
+            </div>
+          );
+        },
       }),
     ],
-    [onDetails, sortKey, sortDir]
+    [onDetails, sortKey, sortDir, savingIds, savedIds]
   );
 
   const table = useReactTable({ data: sortedRows, columns, getCoreRowModel: getCoreRowModel() });
