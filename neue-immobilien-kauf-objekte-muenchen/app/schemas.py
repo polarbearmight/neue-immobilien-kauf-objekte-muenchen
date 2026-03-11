@@ -30,6 +30,7 @@ class AlertRuleIn(BaseModel):
 
 
 class ListingOut(BaseModel):
+    id: int
     source: str
     source_listing_id: str
     url: str
