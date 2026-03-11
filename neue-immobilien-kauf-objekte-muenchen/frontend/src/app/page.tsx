@@ -264,51 +264,6 @@ export default function Page() {
 
       {scanNotice ? <p className="text-xs text-green-700">{scanNotice}</p> : null}
 
-      {scan?.coverage?.length ? (
-        <Card className="rounded-2xl">
-          <CardHeader><CardTitle className="text-sm">Scan Coverage</CardTitle></CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto text-xs">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b text-left text-muted-foreground">
-                    <th className="px-2 py-1">Source</th>
-                    <th className="px-2 py-1">Status</th>
-                    <th className="px-2 py-1">Raw</th>
-                    <th className="px-2 py-1">Normalized</th>
-                    <th className="px-2 py-1">Dropped</th>
-                    <th className="px-2 py-1">Dedupe</th>
-                    <th className="px-2 py-1">Known</th>
-                    <th className="px-2 py-1">New</th>
-                    <th className="px-2 py-1">Updated</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {scan.coverage.map((r) => {
-                    const raw = r.raw_found || 0;
-                    const dropped = r.dropped_invalid || 0;
-                    const warn = raw >= 10 && dropped / Math.max(1, raw) > 0.5;
-                    return (
-                      <tr key={r.source} className={`border-b ${warn ? "bg-amber-50" : ""}`}>
-                        <td className="px-2 py-1">{r.source}</td>
-                        <td className="px-2 py-1">{r.status}</td>
-                        <td className="px-2 py-1">{r.raw_found ?? "-"}</td>
-                        <td className="px-2 py-1">{r.normalized ?? "-"}</td>
-                        <td className="px-2 py-1">{r.dropped_invalid ?? "-"}</td>
-                        <td className="px-2 py-1">{r.dedupe_removed ?? "-"}</td>
-                        <td className="px-2 py-1">{r.skipped_known ?? "-"}</td>
-                        <td className="px-2 py-1">{r.new ?? "-"}</td>
-                        <td className="px-2 py-1">{r.updated ?? "-"}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      ) : null}
-
       <div className="grid gap-4 md:grid-cols-4">
         <Card className="rounded-2xl"><CardHeader><CardTitle className="text-sm">New last 7d</CardTitle></CardHeader><CardContent className="text-2xl font-semibold">{stats?.new_listings ?? 0}</CardContent></Card>
         <Card className="rounded-2xl"><CardHeader><CardTitle className="text-sm">Median/avg €/m²</CardTitle></CardHeader><CardContent className="text-2xl font-semibold">{eur(stats?.avg_price_per_sqm)}</CardContent></Card>
@@ -434,6 +389,51 @@ export default function Page() {
           </CardContent>
         </Card>
       </div>
+
+      {scan?.coverage?.length ? (
+        <Card className="rounded-2xl">
+          <CardHeader><CardTitle className="text-sm">Scan Coverage</CardTitle></CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto text-xs">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b text-left text-muted-foreground">
+                    <th className="px-2 py-1">Source</th>
+                    <th className="px-2 py-1">Status</th>
+                    <th className="px-2 py-1">Raw</th>
+                    <th className="px-2 py-1">Normalized</th>
+                    <th className="px-2 py-1">Dropped</th>
+                    <th className="px-2 py-1">Dedupe</th>
+                    <th className="px-2 py-1">Known</th>
+                    <th className="px-2 py-1">New</th>
+                    <th className="px-2 py-1">Updated</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {scan.coverage.map((r) => {
+                    const raw = r.raw_found || 0;
+                    const dropped = r.dropped_invalid || 0;
+                    const warn = raw >= 10 && dropped / Math.max(1, raw) > 0.5;
+                    return (
+                      <tr key={r.source} className={`border-b ${warn ? "bg-amber-50" : ""}`}>
+                        <td className="px-2 py-1">{r.source}</td>
+                        <td className="px-2 py-1">{r.status}</td>
+                        <td className="px-2 py-1">{r.raw_found ?? "-"}</td>
+                        <td className="px-2 py-1">{r.normalized ?? "-"}</td>
+                        <td className="px-2 py-1">{r.dropped_invalid ?? "-"}</td>
+                        <td className="px-2 py-1">{r.dedupe_removed ?? "-"}</td>
+                        <td className="px-2 py-1">{r.skipped_known ?? "-"}</td>
+                        <td className="px-2 py-1">{r.new ?? "-"}</td>
+                        <td className="px-2 py-1">{r.updated ?? "-"}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
       <ListingDrawer listing={selected} onClose={() => setSelected(null)} />
     </div>
   );
