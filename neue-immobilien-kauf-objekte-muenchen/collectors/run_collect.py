@@ -124,10 +124,11 @@ def ensure_seed_row(rows: list[dict]) -> list[dict]:
     if rows or not enable_seed:
         return rows
     now = datetime.now(timezone.utc)
+    stamp = now.strftime('%Y%m%d-%H%M%S')
     return [{
         "source": "seed",
-        "source_listing_id": f"seed-{now.strftime('%Y%m%d')}",
-        "url": "https://example.com/seed-listing",
+        "source_listing_id": f"seed-{stamp}",
+        "url": f"https://example.com/seed-listing?seed={stamp}",
         "title": "Seed-Datensatz (Collector lieferte aktuell keine Treffer)",
         "description": "Beispielobjekt zur UI-Demo, bis Live-Daten geladen sind.",
         "image_url": "https://placehold.co/420x260?text=Objektbild",

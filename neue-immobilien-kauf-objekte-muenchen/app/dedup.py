@@ -66,7 +66,10 @@ def _duplicate_score(a: Listing, b: Listing) -> float:
         if pa == pb:
             score += 1.2
         else:
-            return -1.0
+            # hard postal mismatch usually means different object,
+            # but allow a tiny chance for extraction noise if geo is very close
+            if not _geo_close(a, b):
+                return -1.0
 
     da = _norm(a.district)
     db = _norm(b.district)
@@ -74,7 +77,9 @@ def _duplicate_score(a: Listing, b: Listing) -> float:
         if da == db:
             score += 0.8
         elif not (pa and pb and pa == pb):
-            return -1.0
+            # different district strings are common across portals;
+            # do not immediately reject when we have other strong signals
+            score -= 0.2
 
     if _geo_close(a, b):
         score += 3.0
@@ -133,7 +138,7 @@ def _is_probable_duplicate(a: Listing, b: Listing) -> bool:
     # strong rules, independent from title-only matches
     if _geo_close(a, b) and score >= 3.5:
         return True
-    if score >= 5.2:
+    if score >= 4.8:
         return True
 
     return False

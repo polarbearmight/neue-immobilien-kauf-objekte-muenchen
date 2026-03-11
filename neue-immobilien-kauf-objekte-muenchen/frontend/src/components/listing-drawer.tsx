@@ -6,6 +6,13 @@ import { Button } from "@/components/ui/button";
 import { MiniBarChart } from "@/components/mini-bar-chart";
 
 const eur = (v?: number | null) => (v == null ? "-" : new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(v));
+const normalizeExternalUrl = (value?: string | null) => {
+  const raw = (value || "").trim();
+  if (!raw) return "";
+  if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
+  if (raw.startsWith("//")) return `https:${raw}`;
+  return `https://${raw}`;
+};
 
 type DetailedListing = Listing & { address?: string | null; posted_at?: string | null; score_explain?: string | null; ai_flags?: string | null };
 
@@ -52,6 +59,7 @@ export function ListingDrawer({ listing, onClose }: { listing: Listing | null; o
   }, [listing?.id]);
 
   const l = detail?.listing || listing;
+  const listingUrl = normalizeExternalUrl(l?.url);
   const snapshots = useMemo(() => detail?.price_history?.snapshots ?? [], [detail?.price_history?.snapshots]);
   const miniSeries = useMemo(
     () => snapshots.slice(-10).map((s) => ({ label: s.captured_at.slice(0, 10), value: Number(s.price_eur || 0) })),
@@ -74,7 +82,11 @@ export function ListingDrawer({ listing, onClose }: { listing: Listing | null; o
         <div className="space-y-4 text-sm">
           <p className="text-base font-semibold">{l.display_title || l.title || "Ohne Titel"}</p>
           <p className="text-muted-foreground">{l.district || "-"} · {l.source}</p>
-          <a href={l.url} target="_blank" rel="noreferrer" className="block truncate text-xs text-blue-600 underline underline-offset-2">{l.url}</a>
+          {listingUrl ? (
+            <a href={listingUrl} target="_blank" rel="noreferrer" className="block truncate text-xs text-blue-600 underline underline-offset-2">{listingUrl}</a>
+          ) : (
+            <p className="text-xs text-muted-foreground">Kein Link verfügbar</p>
+          )}
           <div className="flex flex-wrap gap-1">
             {badgeList.length ? badgeList.map((b) => <span key={b} className="rounded-full border px-2 py-0.5 text-xs">{b}</span>) : <span className="text-xs text-muted-foreground">No badges</span>}
           </div>
@@ -144,9 +156,19 @@ export function ListingDrawer({ listing, onClose }: { listing: Listing | null; o
             <details className="rounded border p-2" open>
               <summary className="cursor-pointer font-medium">Seen on</summary>
               <div className="mt-2 space-y-1 text-xs text-muted-foreground">
-                {detail?.cluster?.members.map((m) => (
-                  <p key={m.id}>{m.source} · {eur(m.price_eur)} · {m.title || "-"}{m.is_canonical ? " · canonical" : ""}</p>
-                ))}
+                {detail?.cluster?.members.map((m) => {
+                  const memberUrl = normalizeExternalUrl(m.url);
+                  return (
+                    <p key={m.id}>
+                      {m.source} · {eur(m.price_eur)} · {m.title || "-"}{m.is_canonical ? " · canonical" : ""}
+                      {memberUrl ? (
+                        <>
+                          {" "}· <a href={memberUrl} target="_blank" rel="noreferrer" className="text-blue-600 underline underline-offset-2">open</a>
+                        </>
+                      ) : null}
+                    </p>
+                  );
+                })}
               </div>
             </details>
           ) : null}
@@ -157,9 +179,9 @@ export function ListingDrawer({ listing, onClose }: { listing: Listing | null; o
           </details>
 
           <div className="sticky bottom-0 flex flex-wrap gap-2 border-t bg-background pt-3">
-            <a href={l.url} target="_blank" rel="noreferrer" className="inline-block rounded bg-black px-3 py-2 text-sm text-white hover:opacity-90">Open listing ↗</a>
+            {listingUrl ? <a href={listingUrl} target="_blank" rel="noreferrer" className="inline-block rounded bg-black px-3 py-2 text-sm text-white hover:opacity-90">Open listing ↗</a> : null}
             <button className="inline-block rounded border px-3 py-2 text-sm hover:bg-muted" onClick={async () => {
-              try { await navigator.clipboard.writeText(l.url); } catch {}
+              try { await navigator.clipboard.writeText(listingUrl || l.url || ""); } catch {}
             }}>Copy link</button>
             <button className="inline-block rounded border px-3 py-2 text-sm hover:bg-muted" onClick={async () => {
               if (!l.id) return;

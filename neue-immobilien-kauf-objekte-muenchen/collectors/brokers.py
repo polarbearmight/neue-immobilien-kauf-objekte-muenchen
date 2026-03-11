@@ -341,6 +341,45 @@ def _parse_detail(source_name: str, detail_url: str, html: str) -> dict | None:
     }
 
 
+def _extract_pagination_links(base_url: str, html: str, source_name: str | None = None) -> list[str]:
+    source_name = source_name or ""
+    soup = BeautifulSoup(html, "html.parser")
+    out: list[str] = []
+    seen: set[str] = set()
+
+    for a in soup.select("a[href]"):
+        href = (a.get("href") or "").strip()
+        if not href:
+            continue
+        u = urljoin(base_url, href)
+        parsed = urlparse(u)
+        if not parsed.scheme.startswith("http"):
+            continue
+        if parsed.netloc != urlparse(base_url).netloc:
+            continue
+
+        text = (a.get_text(" ", strip=True) or "").lower()
+        l = u.lower()
+        rel = " ".join((a.get("rel") or [])).lower()
+        if any(x in l for x in ("impressum", "datenschutz", "kontakt")):
+            continue
+
+        is_pagination = (
+            ("next" in rel)
+            or bool(re.search(r"([?&](page|p|seite)=\d+)|(/page/\d+)|(/seite/\d+)", l))
+            or text in {"next", "weiter", ">", "»"}
+            or bool(re.fullmatch(r"\d{1,3}", text))
+        )
+        if not is_pagination:
+            continue
+        if u in seen:
+            continue
+        seen.add(u)
+        out.append(u)
+
+    return out
+
+
 def collect_broker_listings(source_name: str, base_url: str) -> list[dict]:
     c = SafeCollector()
     domain = urlparse(base_url).scheme + "://" + urlparse(base_url).netloc
@@ -351,20 +390,43 @@ def collect_broker_listings(source_name: str, base_url: str) -> list[dict]:
         # do not hard-fail broker sources on robots parser issues
         pass
 
-    try:
-        html = c.get(base_url)
-    except AccessBlockedError as e:
-        print(f"WARN {source_name} blocked: {e}")
-        return []
-    except Exception as e:
-        print(f"WARN {source_name} overview error: {e}")
-        return []
-
-    links = _extract_listing_links(base_url, html, max_links=150, source_name=source_name)
     rows: list[dict] = []
-    max_detail = 60
+    max_detail = 120
+    max_pages = 6
+    pages_to_visit = [base_url]
+    seen_pages: set[str] = set()
+    detail_links: list[str] = []
+    seen_links: set[str] = set()
 
-    for url in links[:max_detail]:
+    while pages_to_visit and len(seen_pages) < max_pages and len(detail_links) < 300:
+        page_url = pages_to_visit.pop(0)
+        if page_url in seen_pages:
+            continue
+        seen_pages.add(page_url)
+
+        try:
+            html = c.get(page_url)
+        except AccessBlockedError as e:
+            print(f"WARN {source_name} blocked: {e}")
+            break
+        except Exception as e:
+            print(f"WARN {source_name} overview error: {e}")
+            continue
+
+        links = _extract_listing_links(page_url, html, max_links=180, source_name=source_name)
+        for u in links:
+            if u in seen_links:
+                continue
+            seen_links.add(u)
+            detail_links.append(u)
+            if len(detail_links) >= 300:
+                break
+
+        for p in _extract_pagination_links(page_url, html, source_name=source_name):
+            if p not in seen_pages and p not in pages_to_visit and len(seen_pages) + len(pages_to_visit) < max_pages:
+                pages_to_visit.append(p)
+
+    for url in detail_links[:max_detail]:
         try:
             detail_html = c.get(url)
         except Exception:
@@ -373,7 +435,7 @@ def collect_broker_listings(source_name: str, base_url: str) -> list[dict]:
         if item:
             rows.append(item)
 
-    print(f"INFO {source_name} parser: links={len(links)} rows={len(rows)}")
+    print(f"INFO {source_name} parser: pages={len(seen_pages)} links={len(detail_links)} rows={len(rows)}")
     return rows
 
 
