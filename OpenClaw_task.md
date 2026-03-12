@@ -59,6 +59,19 @@
 ## In Progress / Next
 - [x] Verify Kleinanzeigen scan quality after next live scan run (price coverage + district extraction on fresh data)
 - [x] Add one-click "Run source now" action on Sources page for `kleinanzeigen` with status feedback
+- [ ] alle aktiven Quellen prüfen
+- [ ] schauen, wo Datenqualität schlecht ist:
+- [ ] fehlende Preise
+- [ ] fehlende Fläche/Zimmer
+- [ ] falsche Districts
+- [ ] kaputte/rauscharme Listings
+- [ ] schwache Coverage
+- [ ] dann die Top 3 Probleme priorisieren
+- [ ] und wieder sauber über:
+- [ ] eigenen Branch
+- [ ] Fix
+- [ ] Merge in main
+- [ ] GitHub sync
 
 ---
 
