@@ -69,7 +69,7 @@ export default function WatchlistPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold tracking-tight">Watchlist</h1>
         <button className="rounded border px-3 py-1 text-sm" onClick={load}>
-          Refresh
+          Aktualisieren
         </button>
       </div>
 
@@ -92,10 +92,10 @@ export default function WatchlistPage() {
               <p className="text-muted-foreground">
                 {w.listing.district || "-"} · Score {Math.round(w.listing.deal_score || 0)} · {eur(w.listing.price_eur)} · {eur(w.listing.price_per_sqm)}/m²
               </p>
-              <p className="mt-1 text-xs text-muted-foreground">Source: {w.listing.source || "-"}</p>
+              <p className="mt-1 text-xs text-muted-foreground">Quelle: {w.listing.source || "-"}</p>
               <div className="mt-2 flex gap-2">
                 <a href={w.listing.url} target="_blank" rel="noreferrer" className="rounded border px-2 py-1 text-xs">
-                  Open
+                  Öffnen
                 </a>
               </div>
             </div>

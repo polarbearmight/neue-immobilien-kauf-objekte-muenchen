@@ -10,6 +10,8 @@ export default function SettingsPage() {
   const [rules, setRules] = useState<Rule[]>([]);
   const [watchlist, setWatchlist] = useState<Watch[]>([]);
   const [name, setName] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [notice, setNotice] = useState<string | null>(null);
   const [aiModifier, setAiModifier] = useState<boolean>(() => {
     if (typeof window === "undefined") return true;
     const raw = localStorage.getItem("deal-ui-settings");
@@ -33,12 +35,14 @@ export default function SettingsPage() {
   });
 
   const load = async () => {
+    setLoading(true);
     const [rr, wr] = await Promise.all([
       fetch(`${API_URL}/api/alert-rules`, { cache: "no-store" }),
       fetch(`${API_URL}/api/watchlist`, { cache: "no-store" }),
     ]);
     setRules(await rr.json());
     setWatchlist(await wr.json());
+    setLoading(false);
   };
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -46,6 +50,7 @@ export default function SettingsPage() {
 
   const savePrefs = () => {
     localStorage.setItem("deal-ui-settings", JSON.stringify({ brandNewHours, justListedHours, priceDrop, aiModifier }));
+    setNotice("UI preferences lokal gespeichert.");
   };
 
   const createRule = async () => {
@@ -56,14 +61,17 @@ export default function SettingsPage() {
       body: JSON.stringify({ name, enabled: true }),
     });
     setName("");
+    setNotice("Alert-Regel erstellt.");
     load();
   };
 
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
+      {notice ? <p className="rounded border px-3 py-2 text-sm text-muted-foreground">{notice}</p> : null}
 
       <div className="rounded-xl border p-4 text-sm space-y-3">
+        <p className="text-xs text-muted-foreground">Diese UI-Thresholds werden nur lokal im Browser gespeichert und ändern nicht die Backend-Logik.</p>
         <p className="font-medium">Thresholds (UI)</p>
         <label className="block">BRAND_NEW_HOURS: {brandNewHours}<input className="w-full" type="range" min={1} max={24} value={brandNewHours} onChange={(e) => setBrandNewHours(Number(e.target.value))} /></label>
         <label className="block">JUST_LISTED_HOURS: {justListedHours}<input className="w-full" type="range" min={1} max={12} value={justListedHours} onChange={(e) => setJustListedHours(Number(e.target.value))} /></label>
@@ -86,13 +94,13 @@ export default function SettingsPage() {
 
       <div className="rounded-xl border p-4">
         <p className="mb-2 text-sm font-medium">Watchlist</p>
-        <div className="space-y-2 text-sm">
+        {loading ? <p className="text-sm text-muted-foreground">Lade Watchlist…</p> : watchlist.length === 0 ? <p className="text-sm text-muted-foreground">Keine Watchlist-Einträge vorhanden.</p> : <div className="space-y-2 text-sm">
           {watchlist.map((w) => (
             <a key={w.id} href={w.listing.url} target="_blank" rel="noreferrer" className="block rounded border p-2 hover:bg-muted/40">
               {w.listing.title || "Ohne Titel"} · {w.listing.district || "-"} · Score {Math.round(w.listing.deal_score || 0)}
             </a>
           ))}
-        </div>
+        </div>}
       </div>
     </div>
   );

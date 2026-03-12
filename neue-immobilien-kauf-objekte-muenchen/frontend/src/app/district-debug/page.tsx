@@ -30,6 +30,7 @@ export default function DistrictDebugPage() {
   const [source, setSource] = useState<string>("all");
   const [minConfidence, setMinConfidence] = useState<number>(0);
   const [onlyProblems, setOnlyProblems] = useState<boolean>(false);
+  const [query, setQuery] = useState("");
 
   const load = async () => {
     const q = new URLSearchParams({ limit: "500" });
@@ -55,15 +56,15 @@ export default function DistrictDebugPage() {
   );
 
   const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
     return rows.filter((r) => {
       const conf = r.location_confidence || 0;
       if (conf < minConfidence) return false;
-      if (onlyProblems) {
-        return (r.district_source === "unknown" || conf < 40 || (r.district || "") === "München");
-      }
-      return true;
+      if (onlyProblems && !(r.district_source === "unknown" || conf < 40 || (r.district || "") === "München")) return false;
+      if (!q) return true;
+      return `${r.source} ${r.title || ""} ${r.raw_address || ""} ${r.raw_district_text || ""} ${r.district || ""} ${r.postal_code || ""}`.toLowerCase().includes(q);
     });
-  }, [rows, minConfidence, onlyProblems]);
+  }, [rows, minConfidence, onlyProblems, query]);
 
   return (
     <div className="space-y-4">
@@ -80,7 +81,7 @@ export default function DistrictDebugPage() {
         </div>
       ) : null}
 
-      <div className="grid gap-3 rounded-xl border p-3 text-sm md:grid-cols-4">
+      <div className="grid gap-3 rounded-xl border p-3 text-sm md:grid-cols-5">
         <label>
           <span className="mb-1 block text-muted-foreground">Source</span>
           <select className="w-full rounded border px-2 py-1" value={source} onChange={(e) => setSource(e.target.value)}>
@@ -96,13 +97,19 @@ export default function DistrictDebugPage() {
           <span className="text-xs text-muted-foreground">{minConfidence}</span>
         </label>
 
+        <label>
+          <span className="mb-1 block text-muted-foreground">Search</span>
+          <input className="w-full rounded border px-2 py-1" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Titel, District, Adresse…" />
+        </label>
+
         <label className="flex items-end gap-2 pb-1">
           <input type="checkbox" checked={onlyProblems} onChange={(e) => setOnlyProblems(e.target.checked)} />
           <span>Only problem cases</span>
         </label>
 
-        <div className="flex items-end">
+        <div className="flex items-end gap-3">
           <button className="rounded border px-3 py-1" onClick={load}>Refresh</button>
+          <span className="text-xs text-muted-foreground">{filtered.length} Treffer</span>
         </div>
       </div>
 

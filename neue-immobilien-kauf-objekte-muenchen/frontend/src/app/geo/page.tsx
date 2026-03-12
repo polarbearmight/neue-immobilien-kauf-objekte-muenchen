@@ -30,6 +30,17 @@ export default function GeoPage() {
   const [hotspots, setHotspots] = useState<DistrictRow[]>([]);
   const [summary, setSummary] = useState<{ total_listings?: number; districts?: number; top_deals?: number } | null>(null);
   const [cells, setCells] = useState<Array<{ cell: string; listing_count: number; top_deal_count: number }>>([]);
+  const [sources, setSources] = useState<string[]>(["all"]);
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/sources`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((rows) => {
+        const dynamicSources = Array.isArray(rows) ? rows.map((x: { name?: string }) => x.name).filter((v): v is string => Boolean(v)) : [];
+        setSources(["all", ...Array.from(new Set(dynamicSources)).sort((a, b) => a.localeCompare(b))]);
+      })
+      .catch(() => setSources(["all"]));
+  }, []);
 
   useEffect(() => {
     const q = new URLSearchParams({ window, min_score: String(minScore) });
@@ -50,7 +61,6 @@ export default function GeoPage() {
   }, [window, minScore, source, district]);
 
   const districts = useMemo(() => ["all", ...Array.from(new Set(rows.map((r) => r.district))).sort((a, b) => a.localeCompare(b))], [rows]);
-  const sources = ["all", "sz", "immowelt", "ohne_makler", "wohnungsboerse", "sis", "planethome"];
 
   const sortedRows = useMemo(() => {
     const x = [...rows];

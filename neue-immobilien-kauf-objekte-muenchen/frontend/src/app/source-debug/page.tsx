@@ -27,6 +27,8 @@ type Row = {
 export default function SourceDebugPage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [source, setSource] = useState("all");
+  const [query, setQuery] = useState("");
+  const [onlyProblems, setOnlyProblems] = useState(false);
 
   const load = async () => {
     const q = new URLSearchParams({ limit: "500" });
@@ -40,18 +42,35 @@ export default function SourceDebugPage() {
   }, [source]);
 
   const sources = useMemo(() => ["all", ...Array.from(new Set(rows.map((x) => x.source))).sort()], [rows]);
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return rows.filter((r) => {
+      if (onlyProblems && !(r.district_source === "unknown" || (r.location_confidence || 0) < 40 || Boolean(r.quality_flags))) return false;
+      if (!q) return true;
+      return `${r.source} ${r.raw_title || ""} ${r.display_title || ""} ${r.raw_address || ""} ${r.raw_district_text || ""} ${r.district || ""} ${r.postal_code || ""} ${r.quality_flags || ""}`.toLowerCase().includes(q);
+    });
+  }, [rows, query, onlyProblems]);
 
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold tracking-tight">Source Debug</h1>
-      <div className="rounded border p-3 text-sm">
+      <div className="rounded border p-3 text-sm flex flex-wrap items-end gap-3">
         <label>
-          Source
-          <select className="ml-2 rounded border px-2 py-1" value={source} onChange={(e) => setSource(e.target.value)}>
+          <span className="mb-1 block text-muted-foreground">Source</span>
+          <select className="rounded border px-2 py-1" value={source} onChange={(e) => setSource(e.target.value)}>
             {sources.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
         </label>
-        <button className="ml-3 rounded border px-2 py-1" onClick={load}>Refresh</button>
+        <label className="min-w-64 flex-1">
+          <span className="mb-1 block text-muted-foreground">Search</span>
+          <input className="w-full rounded border px-2 py-1" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Titel, Adresse, Flags…" />
+        </label>
+        <label className="flex items-center gap-2 pb-1">
+          <input type="checkbox" checked={onlyProblems} onChange={(e) => setOnlyProblems(e.target.checked)} />
+          <span>Only problem cases</span>
+        </label>
+        <button className="rounded border px-2 py-1" onClick={load}>Refresh</button>
+        <span className="text-xs text-muted-foreground">{filtered.length} Treffer</span>
       </div>
       <div className="overflow-x-auto rounded border">
         <table className="w-full text-xs">
@@ -65,7 +84,7 @@ export default function SourceDebugPage() {
             </tr>
           </thead>
           <tbody>
-            {rows.map((r) => (
+            {filtered.map((r) => (
               <tr key={r.id} className="border-b">
                 <td className="px-2 py-1">{r.source}</td>
                 <td className="px-2 py-1 max-w-[180px] truncate">{r.raw_title || "-"}</td>

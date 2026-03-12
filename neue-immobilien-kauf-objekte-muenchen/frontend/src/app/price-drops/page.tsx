@@ -9,9 +9,11 @@ type DropRow = Listing & { prev_price_eur?: number | null; drop_pct?: number | n
 
 export default function PriceDropsPage() {
   const [items, setItems] = useState<DropRow[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
+      setLoading(true);
       const res = await fetch(`${API_URL}/api/price-drops`, { cache: "no-store" });
       const listings: Listing[] = await res.json();
 
@@ -32,6 +34,7 @@ export default function PriceDropsPage() {
       );
 
       setItems(enriched);
+      setLoading(false);
     };
     load();
   }, []);
@@ -39,6 +42,11 @@ export default function PriceDropsPage() {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold tracking-tight">Price Drops</h1>
+      {loading ? (
+        <div className="rounded-xl border p-6 text-sm text-muted-foreground">Lade Preisänderungen…</div>
+      ) : items.length === 0 ? (
+        <div className="rounded-xl border p-6 text-sm text-muted-foreground">Keine Price Drops gefunden.</div>
+      ) : (
       <div className="grid gap-3 md:grid-cols-2">
         {items.map((l) => (
           <div key={`${l.source}-${l.source_listing_id}`} className="rounded-xl border p-4 text-sm">
@@ -50,6 +58,7 @@ export default function PriceDropsPage() {
           </div>
         ))}
       </div>
+      )}
     </div>
   );
 }

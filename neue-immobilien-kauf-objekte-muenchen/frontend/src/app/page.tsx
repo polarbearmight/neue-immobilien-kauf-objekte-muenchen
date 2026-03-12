@@ -59,6 +59,7 @@ export default function Page() {
   const [selectedDistricts, setSelectedDistricts] = useState<string[]>([]);
   const [allDistrictOptions, setAllDistrictOptions] = useState<string[]>([]);
   const [minScore, setMinScore] = useState(0);
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [priceMin, setPriceMin] = useState<number | "">("");
   const [priceMax, setPriceMax] = useState<number | "">("");
   const [query, setQuery] = useState("");
@@ -70,6 +71,7 @@ export default function Page() {
   const [scanNotice, setScanNotice] = useState<string | null>(null);
   const [refreshTick, setRefreshTick] = useState(0);
   const prevScanStatus = useRef<string | null>(null);
+  const listingsRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -79,6 +81,7 @@ export default function Page() {
       try {
         const params = new URLSearchParams({ bucket, sort, limit: "500", min_score: String(minScore) });
         if (source !== "all") params.set("source", source);
+        if (selectedDay) params.set("first_seen_date", selectedDay);
         if (selectedDistricts.length) params.set("districts", selectedDistricts.join(","));
         if (priceMin !== "") params.set("price_min", String(priceMin));
         if (priceMax !== "") params.set("price_max", String(priceMax));
@@ -105,7 +108,7 @@ export default function Page() {
     };
     load();
     return () => controller.abort();
-  }, [bucket, source, sort, selectedDistricts, minScore, priceMin, priceMax, refreshTick]);
+  }, [bucket, source, sort, selectedDistricts, minScore, priceMin, priceMax, selectedDay, refreshTick]);
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;
@@ -273,9 +276,38 @@ export default function Page() {
 
       {stats?.series?.length ? (
         <Card className="rounded-2xl">
-          <CardHeader><CardTitle className="text-lg">Listings per day (7d)</CardTitle></CardHeader>
+          <CardHeader>
+            <div className="flex items-center justify-between gap-3">
+              <CardTitle className="text-lg">Listings per day (7d)</CardTitle>
+              <div className="flex items-center gap-2 text-xs">
+                {selectedDay ? <span className="text-muted-foreground">Tag-Filter: {selectedDay}</span> : <span className="text-muted-foreground">Klick auf eine Säule</span>}
+                {selectedDay ? (
+                  <button className="rounded border px-2 py-1" onClick={() => setSelectedDay(null)}>
+                    Filter zurücksetzen
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          </CardHeader>
           <CardContent>
-            <MiniBarChart data={stats.series.map((s) => ({ label: s.date, value: s.count }))} />
+            <MiniBarChart
+              data={stats.series.map((s) => ({ label: s.date, value: s.count }))}
+              activeLabel={selectedDay}
+              onBarClick={(point) => {
+                setSelectedDay(point.label);
+                setBucket("all");
+                setSource("all");
+                setSelectedDistricts([]);
+                setMinScore(0);
+                setPriceMin("");
+                setPriceMax("");
+                setQuery("");
+                setSort("newest");
+                requestAnimationFrame(() => {
+                  listingsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                });
+              }}
+            />
           </CardContent>
         </Card>
       ) : null}
@@ -382,10 +414,15 @@ export default function Page() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-2xl">
-          <CardHeader><CardTitle className="text-lg">Listings ({filtered.length})</CardTitle></CardHeader>
+        <Card className="rounded-2xl" ref={listingsRef}>
+          <CardHeader>
+            <div className="flex items-center justify-between gap-3">
+              <CardTitle className="text-lg">Listings ({filtered.length})</CardTitle>
+              {selectedDay ? <span className="text-xs text-muted-foreground">Nur Einträge von {selectedDay} · andere Filter für diesen Drilldown zurückgesetzt</span> : null}
+            </div>
+          </CardHeader>
           <CardContent>
-            {loading ? <p className="text-sm text-muted-foreground">Lade…</p> : <ListingTable rows={filtered} onDetails={setSelected} />}
+            {loading ? <p className="text-sm text-muted-foreground">Lade…</p> : <ListingTable key={selectedDay || "all-days"} rows={filtered} onDetails={setSelected} />}
           </CardContent>
         </Card>
       </div>

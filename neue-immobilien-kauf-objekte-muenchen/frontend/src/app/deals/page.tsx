@@ -51,19 +51,24 @@ export default function DealsPage() {
         <h1 className="text-2xl font-semibold tracking-tight">Deal Radar</h1>
         <div className="flex items-end gap-3 text-sm">
           <div className="w-72">
-            <label className="mb-1 block text-muted-foreground">Min score: {minScore}</label>
+            <label className="mb-1 block text-muted-foreground">Mindest-Score: {minScore}</label>
             <input className="w-full" type="range" min={70} max={100} value={minScore} onChange={(e) => setMinScore(Number(e.target.value))} />
           </div>
           <div>
-            <label className="mb-1 block text-muted-foreground">Sort</label>
+            <label className="mb-1 block text-muted-foreground">Sortierung</label>
             <select className="rounded border px-2 py-1" value={sortBy} onChange={(e) => setSortBy(e.target.value as "score" | "investment") }>
               <option value="score">Score</option>
-              <option value="investment">Investment Score</option>
+              <option value="investment">Investment-Score</option>
             </select>
           </div>
         </div>
       </div>
 
+      {sortedListings.length === 0 ? (
+        <div className="rounded-xl border p-6 text-sm text-muted-foreground">
+          Keine Listings für den aktuellen Score-/Sortier-Filter gefunden.
+        </div>
+      ) : (
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {sortedListings.map((l) => {
           const h = listingHighlightBadges(l);
@@ -80,19 +85,20 @@ export default function DealsPage() {
               <p className="text-muted-foreground">{l.district || "-"} · {l.area_sqm || "-"} m² · {l.rooms || "-"} Zi.</p>
               <p className="mt-2">{eur(l.price_eur)} · {eur(l.price_per_sqm)}/m²</p>
               <div className="mt-2 flex gap-2">
-                <a href={l.url} target="_blank" rel="noreferrer" className="rounded border px-2 py-1 text-xs">Open</a>
+                <a href={l.url} target="_blank" rel="noreferrer" className="rounded border px-2 py-1 text-xs">Öffnen</a>
                 <button
                   className="rounded border px-2 py-1 text-xs"
                   onClick={() => saveToWatchlist(l.id)}
                   disabled={!l.id || !!savingIds[l.id]}
                 >
-                  {l.id && savingIds[l.id] ? "Saving..." : l.id && savedIds[l.id] ? "Saved" : "Save to Watchlist"}
+                  {l.id && savingIds[l.id] ? "Speichert…" : l.id && savedIds[l.id] ? "Gespeichert" : "Zur Watchlist"}
                 </button>
               </div>
             </div>
           );
         })}
       </div>
+      )}
     </div>
   );
 }

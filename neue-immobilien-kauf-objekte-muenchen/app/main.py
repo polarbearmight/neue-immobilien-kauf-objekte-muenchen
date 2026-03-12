@@ -312,6 +312,7 @@ def listings(
     districts: str | None = None,
     postal_code: str | None = None,
     source: str | None = None,
+    first_seen_date: str | None = Query(None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
     brand_new: bool = False,
     just_listed: bool = False,
     price_min: float | None = Query(None, ge=0),
@@ -347,6 +348,8 @@ def listings(
         q = q.where(Listing.postal_code == postal_code.strip())
     if source:
         q = q.where(Listing.source == source.strip().lower())
+    if first_seen_date:
+        q = q.where(func.date(Listing.first_seen_at) == first_seen_date)
 
     if price_min is not None:
         q = q.where(Listing.price_eur.is_not(None), Listing.price_eur >= price_min)

@@ -5,14 +5,17 @@ export default async function ClustersPage() {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold tracking-tight">Clusters</h1>
+      {clusters.length === 0 ? (
+        <div className="rounded-xl border p-6 text-sm text-muted-foreground">Keine Cluster gefunden.</div>
+      ) : (
       <div className="space-y-3">
         {clusters.map((c) => (
           <div key={c.cluster_id} className="rounded-xl border p-4 text-sm">
             <div className="mb-2 flex items-center justify-between gap-2">
               <p className="font-medium">Cluster {c.cluster_id} · {c.members_count} Listings · {c.sources?.length || 0} Quellen</p>
               <div className="flex gap-2">
-                <button className="rounded border px-2 py-1 text-xs" title="Manual override coming soon">Merge</button>
-                <button className="rounded border px-2 py-1 text-xs" title="Manual override coming soon">Split</button>
+                <button disabled className="cursor-not-allowed rounded border px-2 py-1 text-xs opacity-50" title="Manual override kommt später">Merge</button>
+                <button disabled className="cursor-not-allowed rounded border px-2 py-1 text-xs opacity-50" title="Manual override kommt später">Split</button>
               </div>
             </div>
             <p className="mb-2 text-xs text-muted-foreground">Seen on: {(c.sources || []).join(", ") || "-"}</p>
@@ -36,6 +39,7 @@ export default async function ClustersPage() {
           </div>
         ))}
       </div>
+      )}
     </div>
   );
 }
