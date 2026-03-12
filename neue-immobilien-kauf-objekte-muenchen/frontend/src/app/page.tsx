@@ -295,6 +295,14 @@ export default function Page() {
               activeLabel={selectedDay}
               onBarClick={(point) => {
                 setSelectedDay(point.label);
+                setBucket("all");
+                setSource("all");
+                setSelectedDistricts([]);
+                setMinScore(0);
+                setPriceMin("");
+                setPriceMax("");
+                setQuery("");
+                setSort("newest");
                 requestAnimationFrame(() => {
                   listingsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
                 });
@@ -410,7 +418,7 @@ export default function Page() {
           <CardHeader>
             <div className="flex items-center justify-between gap-3">
               <CardTitle className="text-lg">Listings ({filtered.length})</CardTitle>
-              {selectedDay ? <span className="text-xs text-muted-foreground">Nur Einträge von {selectedDay}</span> : null}
+              {selectedDay ? <span className="text-xs text-muted-foreground">Nur Einträge von {selectedDay} · andere Filter für diesen Drilldown zurückgesetzt</span> : null}
             </div>
           </CardHeader>
           <CardContent>
