@@ -123,11 +123,11 @@ export default function Page() {
         setScan(next);
 
         if (next?.status === "done" && prevScanStatus.current !== "done") {
-          setScanNotice("Scan Complete");
+          setScanNotice("Scan abgeschlossen");
           setRefreshTick((v) => v + 1);
           timer = setTimeout(() => setScanNotice(null), 2500);
         } else if (next?.status === "error" && prevScanStatus.current !== "error") {
-          setScanNotice("Scan Failed");
+          setScanNotice("Scan fehlgeschlagen");
         }
         prevScanStatus.current = next?.status || null;
       } catch {
@@ -151,7 +151,7 @@ export default function Page() {
       const res = await fetch(`${API_URL}${endpoint}`, { method: "POST" });
       const data = await res.json();
       if (!res.ok) {
-        setScanNotice("Scan Failed");
+        setScanNotice("Scan fehlgeschlagen");
         return;
       }
       setScan(data?.scan || null);
@@ -205,27 +205,27 @@ export default function Page() {
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">Deal Finder · neueste zuerst · lokale Datenbank</p>
+          <p className="text-sm text-muted-foreground">Kaufobjekte München · neueste zuerst · lokale Datenbank</p>
         </div>
         <div className="flex items-center gap-2">
-          <button className="rounded border px-2 py-1 text-xs" onClick={() => setRefreshTick((v) => v + 1)}>
-            Refresh
+          <button className="rounded border bg-background px-2 py-1 text-xs" onClick={() => setRefreshTick((v) => v + 1)}>
+            Aktualisieren
           </button>
           <button
             className="rounded border px-2 py-1 text-xs"
             onClick={() => startScan("major")}
             disabled={scan?.running}
-            title="Primary portals"
+            title="Große Portale"
           >
-            {scan?.running ? "Scanning..." : "Scan Major"}
+            {scan?.running ? "Scan läuft…" : "Große Quellen scannen"}
           </button>
           <button
             className="rounded border px-2 py-1 text-xs"
             onClick={() => startScan("secondary")}
             disabled={scan?.running}
-            title="Broker + classifieds + auctions"
+            title="Makler, Kleinanzeigen und Auktionen"
           >
-            Scan Secondary
+            Sekundäre Quellen scannen
           </button>
           <button
             className="rounded border px-2 py-1 text-xs"
@@ -249,9 +249,9 @@ export default function Page() {
               URL.revokeObjectURL(a.href);
             }}
           >
-            Export CSV
+            CSV exportieren
           </button>
-          <p className="text-xs text-muted-foreground">Last updated: {lastUpdated}</p>
+          <p className="text-xs text-muted-foreground">Letzte Aktualisierung: {lastUpdated}</p>
         </div>
       </div>
 
@@ -270,7 +270,7 @@ export default function Page() {
       <div className="grid gap-4 md:grid-cols-4">
         <Card className="rounded-2xl"><CardHeader><CardTitle className="text-sm">New last 7d</CardTitle></CardHeader><CardContent className="text-2xl font-semibold">{stats?.new_listings ?? 0}</CardContent></Card>
         <Card className="rounded-2xl"><CardHeader><CardTitle className="text-sm">Median/avg €/m²</CardTitle></CardHeader><CardContent className="text-2xl font-semibold">{eur(stats?.avg_price_per_sqm)}</CardContent></Card>
-        <Card className="rounded-2xl"><CardHeader><CardTitle className="text-sm">Top deals</CardTitle></CardHeader><CardContent className="text-2xl font-semibold">{stats?.top_deals ?? 0}</CardContent></Card>
+        <Card className="rounded-2xl"><CardHeader><CardTitle className="text-sm">Top-Deals</CardTitle></CardHeader><CardContent className="text-2xl font-semibold">{stats?.top_deals ?? 0}</CardContent></Card>
         <Card className="rounded-2xl"><CardHeader><CardTitle className="text-sm">Shown</CardTitle></CardHeader><CardContent className="text-2xl font-semibold">{filtered.length}</CardContent></Card>
       </div>
 

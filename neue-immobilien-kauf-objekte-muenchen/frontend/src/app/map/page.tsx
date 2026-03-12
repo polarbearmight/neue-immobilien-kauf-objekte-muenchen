@@ -153,16 +153,16 @@ export default function MapPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold tracking-tight">Munich Geo Map</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">Kartenansicht München</h1>
 
       <div className="grid gap-3 rounded-xl border p-3 md:grid-cols-6 text-sm">
-        <div><label className="mb-1 block text-muted-foreground">Mode</label><select className="w-full rounded border px-2 py-1" value={mode} onChange={(e) => setMode(e.target.value)}><option value="median_price">Median Price €/m²</option><option value="deal_density">Deal Score Density</option><option value="new_density">New Listings Density</option><option value="off_market">Off-Market Density</option><option value="price_drop">Price Drop Density</option><option value="yield">Investment Yield Potential</option><option value="markers">Raw Listing Markers</option></select></div>
-        <div><label className="mb-1 block text-muted-foreground">Time range</label><select className="w-full rounded border px-2 py-1" value={window} onChange={(e) => setWindow(e.target.value)}><option value="24h">24h</option><option value="7d">7d</option><option value="30d">30d</option><option value="all">all</option></select></div>
-        <div><label className="mb-1 block text-muted-foreground">Score</label><input type="number" min={0} max={100} className="w-full rounded border px-2 py-1" value={minScore} onChange={(e) => setMinScore(Number(e.target.value || 0))} /></div>
-        <div><label className="mb-1 block text-muted-foreground">District</label><select className="w-full rounded border px-2 py-1" value={district} onChange={(e) => setDistrict(e.target.value)}>{districts.map((d) => <option key={d} value={d}>{d}</option>)}</select></div>
-        <div><label className="mb-1 block text-muted-foreground">Source</label><select className="w-full rounded border px-2 py-1" value={source} onChange={(e) => setSource(e.target.value)}>{sources.map((s) => <option key={s} value={s}>{s}</option>)}</select></div>
-        <div><label className="mb-1 block text-muted-foreground">Layer</label><div className="flex gap-2"><button className={`rounded border px-2 py-1 ${view==="district"?"bg-muted":""}`} onClick={() => setView("district")}>district</button><button className={`rounded border px-2 py-1 ${view==="markers"?"bg-muted":""}`} onClick={() => setView("markers")}>markers</button></div></div>
-        <div className="md:col-span-6 flex justify-end"><button className="rounded border px-2 py-1 text-xs" onClick={() => { setMode("deal_density"); setWindow("30d"); setMinScore(0); setSource("all"); setDistrict("all"); setSelectedDistrict(null); setSelectedMarker(null); }}>Reset view</button></div>
+        <div><label className="mb-1 block text-muted-foreground">Ansicht</label><select className="w-full rounded border bg-background px-2 py-1" value={mode} onChange={(e) => setMode(e.target.value)}><option value="median_price">Medianpreis €/m²</option><option value="deal_density">Deal-Dichte</option><option value="new_density">Neue Listings</option><option value="off_market">Off-Market-Dichte</option><option value="price_drop">Preisnachlässe</option><option value="yield">Investment-Potenzial</option><option value="markers">Marker</option></select></div>
+        <div><label className="mb-1 block text-muted-foreground">Zeitraum</label><select className="w-full rounded border bg-background px-2 py-1" value={window} onChange={(e) => setWindow(e.target.value)}><option value="24h">24h</option><option value="7d">7d</option><option value="30d">30d</option><option value="all">Gesamt</option></select></div>
+        <div><label className="mb-1 block text-muted-foreground">Mindest-Score</label><input type="number" min={0} max={100} className="w-full rounded border bg-background px-2 py-1" value={minScore} onChange={(e) => setMinScore(Number(e.target.value || 0))} /></div>
+        <div><label className="mb-1 block text-muted-foreground">Stadtteil</label><select className="w-full rounded border bg-background px-2 py-1" value={district} onChange={(e) => setDistrict(e.target.value)}>{districts.map((d) => <option key={d} value={d}>{d}</option>)}</select></div>
+        <div><label className="mb-1 block text-muted-foreground">Quelle</label><select className="w-full rounded border bg-background px-2 py-1" value={source} onChange={(e) => setSource(e.target.value)}>{sources.map((s) => <option key={s} value={s}>{s}</option>)}</select></div>
+        <div><label className="mb-1 block text-muted-foreground">Ebene</label><div className="flex gap-2"><button className={`rounded border px-2 py-1 ${view==="district"?"bg-muted":""}`} onClick={() => setView("district")}>Stadtteile</button><button className={`rounded border px-2 py-1 ${view==="markers"?"bg-muted":""}`} onClick={() => setView("markers")}>Marker</button></div></div>
+        <div className="md:col-span-6 flex justify-end"><button className="rounded border px-2 py-1 text-xs" onClick={() => { setMode("deal_density"); setWindow("30d"); setMinScore(0); setSource("all"); setDistrict("all"); setSelectedDistrict(null); setSelectedMarker(null); }}>Ansicht zurücksetzen</button></div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
@@ -186,7 +186,7 @@ export default function MapPage() {
                   const m = metricByDistrict.get(name);
                   layer.bindTooltip(name);
                   layer.bindPopup(
-                    `<strong>${name}</strong><br/>Listings: ${m?.listing_count ?? 0}<br/>Median €/m²: ${m?.median_price_per_sqm ?? "-"}<br/>Avg deal: ${Math.round(m?.average_deal_score ?? 0)}<br/>Top deals: ${m?.top_deal_count ?? 0}<br/>Off-market: ${Math.round(m?.average_off_market_score ?? 0)}<br/>Hotspot: ${Math.round(m?.hotspot_score ?? 0)}`
+                    `<strong>${name}</strong><br/>Listings: ${m?.listing_count ?? 0}<br/>Median €/m²: ${m?.median_price_per_sqm ?? "-"}<br/>Ø Score: ${Math.round(m?.average_deal_score ?? 0)}<br/>Top-Deals: ${m?.top_deal_count ?? 0}<br/>Off-Market: ${Math.round(m?.average_off_market_score ?? 0)}<br/>Hotspot: ${Math.round(m?.hotspot_score ?? 0)}`
                   );
                   layer.on("click", () => {
                     setSelectedDistrict(name);
@@ -218,36 +218,36 @@ export default function MapPage() {
           <h2 className="mb-2 font-medium">Geo Intelligence</h2>
           {selectedMarker ? (
             <div className="space-y-1 text-xs">
-              <p className="font-semibold">Selected Listing</p>
+              <p className="font-semibold">Ausgewähltes Listing</p>
               <p>{selectedMarker.display_title || selectedMarker.title || "Listing"}</p>
               <p>{selectedMarker.district || "München"} · {selectedMarker.source}</p>
               <p>Preis: {selectedMarker.price_eur ? `${Math.round(selectedMarker.price_eur).toLocaleString("de-DE")} €` : "-"}</p>
-              <p>Size: {selectedMarker.area_sqm || "-"} m² · Rooms: {selectedMarker.rooms || "-"}</p>
+              <p>Größe: {selectedMarker.area_sqm || "-"} m² · Zimmer: {selectedMarker.rooms || "-"}</p>
               <p>€/m²: {selectedMarker.price_per_sqm ? Math.round(selectedMarker.price_per_sqm) : "-"}</p>
               <p>Deal {Math.round(selectedMarker.deal_score || 0)} · Off-market {Math.round(selectedMarker.off_market_score || 0)}</p>
-              <a className="inline-block rounded border px-2 py-1" href={selectedMarker.url} target="_blank" rel="noreferrer">Open listing</a>
+              <a className="inline-block rounded border px-2 py-1" href={selectedMarker.url} target="_blank" rel="noreferrer">Listing öffnen</a>
             </div>
           ) : selectedDistrict && selectedDistrictMetric ? (
             <div className="space-y-1 text-xs">
-              <p className="font-semibold">District: {selectedDistrict}</p>
+              <p className="font-semibold">Stadtteil: {selectedDistrict}</p>
               <p>Listings: {selectedDistrictMetric.listing_count}</p>
               <p>Median €/m²: {selectedDistrictMetric.median_price_per_sqm ? Math.round(selectedDistrictMetric.median_price_per_sqm).toLocaleString("de-DE") : "-"}</p>
-              <p>Avg score: {selectedDistrictMetric.average_deal_score ? Math.round(selectedDistrictMetric.average_deal_score) : "-"}</p>
-              <p>Top deals: {selectedDistrictMetric.top_deal_count}</p>
-              <p>Off-market: {selectedDistrictMetric.average_off_market_score ? Math.round(selectedDistrictMetric.average_off_market_score) : 0}</p>
-              <p>Price drops: {selectedDistrictMetric.price_drop_count}</p>
-              <p>Just listed: {selectedDistrictMetric.just_listed_count}</p>
+              <p>Ø Score: {selectedDistrictMetric.average_deal_score ? Math.round(selectedDistrictMetric.average_deal_score) : "-"}</p>
+              <p>Top-Deals: {selectedDistrictMetric.top_deal_count}</p>
+              <p>Off-Market: {selectedDistrictMetric.average_off_market_score ? Math.round(selectedDistrictMetric.average_off_market_score) : 0}</p>
+              <p>Preisnachlässe: {selectedDistrictMetric.price_drop_count}</p>
+              <p>Neu gelistet: {selectedDistrictMetric.just_listed_count}</p>
             </div>
           ) : (
             <div className="space-y-1 text-xs">
-              <p className="font-semibold">Citywide Summary</p>
-              <p>Active listings: {citySummary.listingCount}</p>
-              <p>Median €/m² (district avg): {Math.round(citySummary.medianAvg || 0).toLocaleString("de-DE")}</p>
-              <p>Average deal score: {Math.round(citySummary.avgDeal || 0)}</p>
+              <p className="font-semibold">Stadtweite Übersicht</p>
+              <p>Aktive Listings: {citySummary.listingCount}</p>
+              <p>Median €/m² (Stadtteil-Ø): {Math.round(citySummary.medianAvg || 0).toLocaleString("de-DE")}</p>
+              <p>Ø Deal-Score: {Math.round(citySummary.avgDeal || 0)}</p>
             </div>
           )}
 
-          <h3 className="mt-4 mb-1 text-xs font-medium">Top Hotspots</h3>
+          <h3 className="mt-4 mb-1 text-xs font-medium">Top-Hotspots</h3>
           <ol className="space-y-1 text-xs">
             {[...districtRows].sort((a, b) => b.hotspot_score - a.hotspot_score).slice(0, 5).map((h, idx) => (
               <li key={h.district}>{idx + 1}. {h.district} ({Math.round(h.hotspot_score)})</li>
@@ -258,7 +258,7 @@ export default function MapPage() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="rounded-xl border p-3">
-          <h3 className="mb-2 text-sm font-medium">District Ranking</h3>
+          <h3 className="mb-2 text-sm font-medium">Stadtteil-Ranking</h3>
           <div className="space-y-1 text-xs max-h-[280px] overflow-auto">
             {[...districtRows].sort((a, b) => b.hotspot_score - a.hotspot_score).map((r) => (
               <button key={r.district} className="block w-full rounded border px-2 py-1 text-left" onClick={() => { setSelectedDistrict(r.district); setDistrict(r.district); setSelectedMarker(null); }}>
@@ -269,7 +269,7 @@ export default function MapPage() {
         </div>
 
         <div className="rounded-xl border p-3">
-          <h3 className="mb-2 text-sm font-medium">Selected Area Listings</h3>
+          <h3 className="mb-2 text-sm font-medium">Listings im gewählten Bereich</h3>
           <div className="space-y-1 text-xs max-h-[280px] overflow-auto">
             {selectedDistrictListings.slice(0, 10).map((l) => (
               <a key={l.id} href={l.url} target="_blank" rel="noreferrer" className="block rounded border px-2 py-1">
@@ -278,7 +278,7 @@ export default function MapPage() {
                 <p>€/m² {l.price_per_sqm ? Math.round(l.price_per_sqm) : "-"} · Score {Math.round(l.deal_score || 0)}</p>
               </a>
             ))}
-            {!selectedDistrictListings.length ? <p className="text-muted-foreground">Wähle einen District auf der Karte oder im Ranking.</p> : null}
+            {!selectedDistrictListings.length ? <p className="text-muted-foreground">Wähle einen Stadtteil auf der Karte oder im Ranking.</p> : null}
           </div>
         </div>
       </div>
