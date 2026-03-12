@@ -71,6 +71,7 @@ export default function Page() {
   const [scanNotice, setScanNotice] = useState<string | null>(null);
   const [refreshTick, setRefreshTick] = useState(0);
   const prevScanStatus = useRef<string | null>(null);
+  const listingsRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -292,7 +293,12 @@ export default function Page() {
             <MiniBarChart
               data={stats.series.map((s) => ({ label: s.date, value: s.count }))}
               activeLabel={selectedDay}
-              onBarClick={(point) => setSelectedDay((prev) => (prev === point.label ? null : point.label))}
+              onBarClick={(point) => {
+                setSelectedDay(point.label);
+                requestAnimationFrame(() => {
+                  listingsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                });
+              }}
             />
           </CardContent>
         </Card>
@@ -400,10 +406,15 @@ export default function Page() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-2xl">
-          <CardHeader><CardTitle className="text-lg">Listings ({filtered.length})</CardTitle></CardHeader>
+        <Card className="rounded-2xl" ref={listingsRef}>
+          <CardHeader>
+            <div className="flex items-center justify-between gap-3">
+              <CardTitle className="text-lg">Listings ({filtered.length})</CardTitle>
+              {selectedDay ? <span className="text-xs text-muted-foreground">Nur Einträge von {selectedDay}</span> : null}
+            </div>
+          </CardHeader>
           <CardContent>
-            {loading ? <p className="text-sm text-muted-foreground">Lade…</p> : <ListingTable rows={filtered} onDetails={setSelected} />}
+            {loading ? <p className="text-sm text-muted-foreground">Lade…</p> : <ListingTable key={selectedDay || "all-days"} rows={filtered} onDetails={setSelected} />}
           </CardContent>
         </Card>
       </div>
