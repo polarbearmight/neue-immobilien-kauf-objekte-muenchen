@@ -64,6 +64,11 @@ export default function DealsPage() {
         </div>
       </div>
 
+      {sortedListings.length === 0 ? (
+        <div className="rounded-xl border p-6 text-sm text-muted-foreground">
+          Keine Listings für den aktuellen Score-/Sortier-Filter gefunden.
+        </div>
+      ) : (
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {sortedListings.map((l) => {
           const h = listingHighlightBadges(l);
@@ -93,6 +98,7 @@ export default function DealsPage() {
           );
         })}
       </div>
+      )}
     </div>
   );
 }

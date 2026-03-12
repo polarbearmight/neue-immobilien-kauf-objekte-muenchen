@@ -87,6 +87,17 @@ export default function MapPage() {
   const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
   const [selectedMarker, setSelectedMarker] = useState<MarkerRow | null>(null);
   const [selectedDistrictListings, setSelectedDistrictListings] = useState<MarkerRow[]>([]);
+  const [sources, setSources] = useState<string[]>(["all"]);
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/sources`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((rows) => {
+        const dynamicSources = Array.isArray(rows) ? rows.map((x: { name?: string }) => x.name).filter((v): v is string => Boolean(v)) : [];
+        setSources(["all", ...Array.from(new Set(dynamicSources)).sort((a, b) => a.localeCompare(b))]);
+      })
+      .catch(() => setSources(["all"]));
+  }, []);
 
   useEffect(() => {
     fetch("/data/munich_districts.geojson", { cache: "no-store" })
@@ -149,7 +160,7 @@ export default function MapPage() {
         <div><label className="mb-1 block text-muted-foreground">Time range</label><select className="w-full rounded border px-2 py-1" value={window} onChange={(e) => setWindow(e.target.value)}><option value="24h">24h</option><option value="7d">7d</option><option value="30d">30d</option><option value="all">all</option></select></div>
         <div><label className="mb-1 block text-muted-foreground">Score</label><input type="number" min={0} max={100} className="w-full rounded border px-2 py-1" value={minScore} onChange={(e) => setMinScore(Number(e.target.value || 0))} /></div>
         <div><label className="mb-1 block text-muted-foreground">District</label><select className="w-full rounded border px-2 py-1" value={district} onChange={(e) => setDistrict(e.target.value)}>{districts.map((d) => <option key={d} value={d}>{d}</option>)}</select></div>
-        <div><label className="mb-1 block text-muted-foreground">Source</label><select className="w-full rounded border px-2 py-1" value={source} onChange={(e) => setSource(e.target.value)}>{["all","sz","immowelt","ohne_makler","wohnungsboerse","sis","planethome"].map((s) => <option key={s} value={s}>{s}</option>)}</select></div>
+        <div><label className="mb-1 block text-muted-foreground">Source</label><select className="w-full rounded border px-2 py-1" value={source} onChange={(e) => setSource(e.target.value)}>{sources.map((s) => <option key={s} value={s}>{s}</option>)}</select></div>
         <div><label className="mb-1 block text-muted-foreground">Layer</label><div className="flex gap-2"><button className={`rounded border px-2 py-1 ${view==="district"?"bg-muted":""}`} onClick={() => setView("district")}>district</button><button className={`rounded border px-2 py-1 ${view==="markers"?"bg-muted":""}`} onClick={() => setView("markers")}>markers</button></div></div>
         <div className="md:col-span-6 flex justify-end"><button className="rounded border px-2 py-1 text-xs" onClick={() => { setMode("deal_density"); setWindow("30d"); setMinScore(0); setSource("all"); setDistrict("all"); setSelectedDistrict(null); setSelectedMarker(null); }}>Reset view</button></div>
       </div>
