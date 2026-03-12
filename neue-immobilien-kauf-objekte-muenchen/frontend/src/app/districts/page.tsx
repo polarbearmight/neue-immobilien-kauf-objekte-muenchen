@@ -15,16 +15,16 @@ export default async function DistrictsPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold tracking-tight">District Stats</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">Stadtteil-Statistiken</h1>
       <div className="overflow-x-auto rounded-xl border">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-muted/40 text-left">
-              <th className="px-3 py-2">District</th>
+              <th className="px-3 py-2">Stadtteil</th>
               <th className="px-3 py-2">Listings</th>
-              <th className="px-3 py-2">Median/Avg €/m²</th>
-              <th className="px-3 py-2">Top deals</th>
-              <th className="px-3 py-2">Avg score</th>
+              <th className="px-3 py-2">Median/Ø €/m²</th>
+              <th className="px-3 py-2">Top-Deals</th>
+              <th className="px-3 py-2">Ø Score</th>
             </tr>
           </thead>
           <tbody>

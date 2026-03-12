@@ -79,21 +79,21 @@ export function ListingTable({ rows, onDetails }: { rows: Listing[]; onDetails: 
           );
         },
       }),
-      columnHelper.accessor("title", { header: "Title", cell: (info) => info.getValue() || "Ohne Titel" }),
+      columnHelper.accessor("title", { header: "Titel", cell: (info) => info.getValue() || "Ohne Titel" }),
       columnHelper.accessor("district", {
-        header: "District",
+        header: "Stadtteil",
         cell: (info) => {
           const val = info.getValue() ? `📍 ${info.getValue()}` : "📍 München";
           return <span className="inline-block min-w-[170px] whitespace-nowrap">{val}</span>;
         },
       }),
-      columnHelper.accessor("rooms", { header: "Rooms", cell: (info) => info.getValue() ?? "-" }),
+      columnHelper.accessor("rooms", { header: "Zi.", cell: (info) => info.getValue() ?? "-" }),
       columnHelper.accessor("area_sqm", {
-        header: () => <button className="text-left" onClick={() => toggleSort("area_sqm")}>Size {sortIndicator("area_sqm")}</button>,
+        header: () => <button className="text-left" onClick={() => toggleSort("area_sqm")}>Größe {sortIndicator("area_sqm")}</button>,
         cell: (info) => (info.getValue() ? `${info.getValue()} m²` : "-"),
       }),
       columnHelper.accessor("price_eur", {
-        header: () => <button className="text-left" onClick={() => toggleSort("price_eur")}>Price {sortIndicator("price_eur")}</button>,
+        header: () => <button className="text-left" onClick={() => toggleSort("price_eur")}>Preis {sortIndicator("price_eur")}</button>,
         cell: (info) => eur(info.getValue()),
       }),
       columnHelper.accessor("price_per_sqm", {
@@ -117,7 +117,7 @@ export function ListingTable({ rows, onDetails }: { rows: Listing[]; onDetails: 
                 target="_blank"
                 rel="noreferrer"
               >
-                Link
+                Öffnen
               </a>
               <button className="rounded border px-2 py-1 text-xs" onClick={() => onDetails(info.row.original)}>
                 Details
@@ -127,7 +127,7 @@ export function ListingTable({ rows, onDetails }: { rows: Listing[]; onDetails: 
                 onClick={() => saveToWatchlist(listingId)}
                 disabled={!listingId || !!(listingId && savingIds[listingId])}
               >
-                {listingId && savingIds[listingId] ? "Saving..." : listingId && savedIds[listingId] ? "Saved" : "Save"}
+                {listingId && savingIds[listingId] ? "Speichert…" : listingId && savedIds[listingId] ? "Gespeichert" : "Merken"}
               </button>
             </div>
           );
@@ -145,10 +145,10 @@ export function ListingTable({ rows, onDetails }: { rows: Listing[]; onDetails: 
   return (
     <div className="overflow-x-auto">
       <div className="min-w-[1330px]">
-        <div className="grid gap-2 border-b pb-2 text-xs font-medium text-muted-foreground" style={{ gridTemplateColumns: gridTemplate }}>
-          {table.getHeaderGroups()[0].headers.map((header) => <div key={header.id}>{flexRender(header.column.columnDef.header, header.getContext())}</div>)}
-        </div>
         <div ref={parentRef} className="max-h-[65vh] overflow-auto">
+          <div className="sticky top-0 z-10 grid gap-2 border-b bg-background pb-2 pt-1 text-xs font-medium text-muted-foreground" style={{ gridTemplateColumns: gridTemplate }}>
+            {table.getHeaderGroups()[0].headers.map((header) => <div key={header.id}>{flexRender(header.column.columnDef.header, header.getContext())}</div>)}
+          </div>
           <div style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: "relative" }}>
           {virtualRows.map((vr) => {
             const row = table.getRowModel().rows[vr.index];
