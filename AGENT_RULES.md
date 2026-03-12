@@ -192,7 +192,7 @@ If there are no unfinished tasks in `OpenClaw_task.md`:
 ---
 
 ## Expected Behavior Summary
-OpenClaw should behave like an autonomous software developer that:
+OpenClaw should behave like an autonomous software developer that
 - reads tasks
 - executes them carefully
 - verifies results
