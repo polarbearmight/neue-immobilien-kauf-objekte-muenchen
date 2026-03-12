@@ -1,4 +1,6 @@
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8001";
+// Default to same-origin so SSH-forwarded or reverse-proxied frontends keep working.
+// If needed, this can still be overridden with NEXT_PUBLIC_API_URL.
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 export type Listing = {
   id?: number;
