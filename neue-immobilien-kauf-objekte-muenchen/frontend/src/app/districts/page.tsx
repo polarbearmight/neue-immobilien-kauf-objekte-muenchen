@@ -1,4 +1,4 @@
-import { API_URL } from "@/lib/api";
+import { getDistricts } from "@/lib/api";
 
 type DistrictRow = {
   district: string;
@@ -11,8 +11,7 @@ type DistrictRow = {
 const eur = (v?: number | null) => (v == null ? "-" : `${new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 }).format(v)} €/m²`);
 
 export default async function DistrictsPage() {
-  const res = await fetch(`${API_URL}/api/districts`, { cache: "no-store" });
-  const rows: DistrictRow[] = res.ok ? await res.json() : [];
+  const rows: DistrictRow[] = await getDistricts();
 
   return (
     <div className="space-y-4">

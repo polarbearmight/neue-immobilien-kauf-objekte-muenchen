@@ -1,6 +1,7 @@
-// Default to same-origin so SSH-forwarded or reverse-proxied frontends keep working.
-// If needed, this can still be overridden with NEXT_PUBLIC_API_URL.
+// Browser: prefer same-origin so SSH-forwarded or reverse-proxied frontends keep working.
+// Server-side rendering: relative URLs are invalid, so fall back to a concrete backend origin.
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+const SERVER_API_URL = process.env.BACKEND_ORIGIN || process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:7001";
 
 export type Listing = {
   id?: number;
@@ -45,7 +46,8 @@ export type Listing = {
 };
 
 async function apiFetch<T>(path: string, signal?: AbortSignal): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, { cache: "no-store", signal });
+  const baseUrl = typeof window === "undefined" ? SERVER_API_URL : API_URL;
+  const res = await fetch(`${baseUrl}${path}`, { cache: "no-store", signal });
   if (!res.ok) throw new Error(`API ${res.status}`);
   return res.json();
 }
@@ -67,6 +69,7 @@ export const getSources = () => apiFetch<Array<{ name: string; health_status: st
 export const getClusters = () => apiFetch<Array<{ cluster_id: string; members_count: number; sources?: string[]; canonical_listing_id?: number; canonical?: Listing; members: Listing[] }>>(`/api/clusters`);
 export const getPriceDrops = () => apiFetch<Listing[]>(`/api/price-drops`);
 export const getOffMarket = (params = "") => apiFetch<Listing[]>(`/api/off-market${params ? `?${params}` : ""}`);
+export const getDistricts = () => apiFetch<Array<{ district: string; listing_count: number; median_or_avg_ppsqm: number | null; top_deals: number; avg_score: number | null }>>(`/api/districts`);
 export const getAnalytics = (days = 30) => apiFetch<{
   source_distribution: Array<{ source: string; count: number }>;
   price_bands: Array<{ band: string; count: number }>;
