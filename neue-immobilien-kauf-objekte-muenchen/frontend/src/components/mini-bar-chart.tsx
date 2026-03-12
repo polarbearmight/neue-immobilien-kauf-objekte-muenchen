@@ -13,14 +13,19 @@ export function MiniBarChart({ data, onBarClick, activeLabel }: MiniBarChartProp
       {data.map((d) => {
         const isActive = activeLabel === d.label;
         const clickable = Boolean(onBarClick);
+        const listingLabel = d.value === 1 ? "1 neues Listing" : `${d.value} neue Listings`;
         return (
           <button
             key={d.label}
             type="button"
             onClick={() => onBarClick?.(d)}
-            className={`group flex flex-1 flex-col items-center ${clickable ? "cursor-pointer" : "cursor-default"}`}
-            title={`${d.label}: ${d.value}${clickable ? " · klicken zum Filtern" : ""}`}
+            className={`group relative flex flex-1 flex-col items-center ${clickable ? "cursor-pointer" : "cursor-default"}`}
+            aria-label={`${d.label}: ${listingLabel}`}
           >
+            <div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 hidden -translate-x-1/2 rounded-md border bg-background px-2 py-1 text-[11px] whitespace-nowrap text-foreground shadow-sm group-hover:block">
+              <div className="font-medium">{d.label}</div>
+              <div className="text-muted-foreground">{listingLabel}</div>
+            </div>
             <div
               className={`w-full rounded-t transition-opacity ${isActive ? "bg-primary" : "bg-primary/70 group-hover:bg-primary/90"}`}
               style={{ height: `${Math.max(6, (d.value / max) * 100)}px` }}
