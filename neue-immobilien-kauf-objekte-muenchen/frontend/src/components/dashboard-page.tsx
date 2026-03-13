@@ -7,6 +7,7 @@ import { ListingDrawer } from "@/components/listing-drawer";
 import { MiniBarChart } from "@/components/mini-bar-chart";
 import { ListingTable } from "@/components/listing-table";
 import { OnboardingCard } from "@/components/onboarding-card";
+import { StateCard } from "@/components/state-card";
 
 const eur = (v?: number | null) => (v == null ? "-" : new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(v));
 
@@ -198,31 +199,37 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <OnboardingCard />
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
           <p className="text-sm text-muted-foreground">Kaufobjekte München · neueste zuerst · lokale Datenbank</p>
         </div>
-        <div className="flex items-center gap-2">
-          <button className="rounded border bg-background px-2 py-1 text-xs" onClick={() => setRefreshTick((v) => v + 1)}>Aktualisieren</button>
-          <button className="rounded border bg-background px-2 py-1 text-xs" onClick={() => startScan("major")} disabled={scan?.running} title="Große Portale">{scan?.running ? "Scan läuft…" : "Große Quellen scannen"}</button>
-          <button className="rounded border bg-background px-2 py-1 text-xs" onClick={() => startScan("secondary")} disabled={scan?.running}>Sekundäre Quellen scannen</button>
-          <a className="rounded border bg-background px-2 py-1 text-xs" href={`${API_URL}/api/export.csv`} target="_blank" rel="noreferrer">CSV exportieren</a>
+        <div className="flex flex-wrap items-center gap-2">
+          <button className="rounded border bg-background px-3 py-2 text-xs" onClick={() => setRefreshTick((v) => v + 1)}>Aktualisieren</button>
+          <button className="rounded border bg-background px-3 py-2 text-xs" onClick={() => startScan("major")} disabled={scan?.running} title="Große Portale">{scan?.running ? "Scan läuft…" : "Große Quellen scannen"}</button>
+          <button className="rounded border bg-background px-3 py-2 text-xs" onClick={() => startScan("secondary")} disabled={scan?.running}>Sekundäre Quellen scannen</button>
+          <a className="rounded border bg-background px-3 py-2 text-xs" href={`${API_URL}/api/export.csv`} target="_blank" rel="noreferrer">CSV exportieren</a>
         </div>
       </div>
 
       {scanNotice ? <div className="rounded-xl border px-3 py-2 text-sm">{scanNotice}</div> : null}
       {scan ? <div className="rounded-xl border px-3 py-2 text-xs text-muted-foreground">Status: {scan.status} · Quelle: {scan.current_source || "-"} · {scan.completed_sources}/{scan.total_sources} · new {scan.new_listings_count} · updated {scan.updated_count} · errors {scan.error_count}</div> : null}
-      {error ? <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div> : null}
+      {error ? <StateCard title="Daten konnten nicht geladen werden" body="Die API hat gerade keine vollständige Antwort geliefert. Bitte aktualisieren oder den Scan erneut starten." tone="error" action={<button className="rounded-xl border border-red-300 bg-white px-4 py-2 text-sm" onClick={() => setRefreshTick((v) => v + 1)}>Erneut laden</button>} /> : null}
 
       <div className="rounded-xl border px-3 py-2 text-xs text-muted-foreground">Aktive Immobilien in der lokalen Datenbank: {items.length || 0} geladene Treffer · Live-Daten aus der aktuellen lokalen Immobilien-Datenbank.</div>
 
-      <div className="grid gap-4 md:grid-cols-4">
+      {loading ? (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-28 animate-pulse rounded-2xl border bg-muted/40" />)}
+        </div>
+      ) : (
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Card className="rounded-2xl"><CardHeader><CardTitle className="text-sm">Neue Listings</CardTitle></CardHeader><CardContent className="text-2xl font-semibold">{stats?.new_listings ?? 0}</CardContent></Card>
         <Card className="rounded-2xl"><CardHeader><CardTitle className="text-sm">Ø Preis / m²</CardTitle></CardHeader><CardContent className="text-2xl font-semibold">{eur(stats?.avg_price_per_sqm)}</CardContent></Card>
         <Card className="rounded-2xl"><CardHeader><CardTitle className="text-sm">Top-Deals</CardTitle></CardHeader><CardContent className="text-2xl font-semibold">{stats?.top_deals ?? 0}</CardContent></Card>
         <Card className="rounded-2xl"><CardHeader><CardTitle className="text-sm">Aktive Quellen</CardTitle></CardHeader><CardContent className="text-2xl font-semibold">{sources.length - 1}</CardContent></Card>
       </div>
+      )}
 
       <Card className="rounded-2xl">
         <CardHeader>
@@ -256,7 +263,7 @@ export default function DashboardPage() {
         <CardHeader>
           <CardTitle>Filter</CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-4 xl:grid-cols-8">
+        <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-8">
           <label className="text-sm">Bucket<select className="mt-1 w-full rounded border px-2 py-1" value={bucket} onChange={(e) => setBucket(e.target.value)}><option value="all">all</option><option value="top">top</option><option value="new">new</option><option value="price_drop">price_drop</option></select></label>
           <label className="text-sm">Quelle<select className="mt-1 w-full rounded border px-2 py-1" value={source} onChange={(e) => setSource(e.target.value)}>{sources.map((s) => <option key={s} value={s}>{s}</option>)}</select></label>
           <label className="text-sm">Sortierung<select className="mt-1 w-full rounded border px-2 py-1" value={sort} onChange={(e) => setSort(e.target.value)}><option value="newest">newest</option><option value="price_asc">price_asc</option><option value="price_desc">price_desc</option><option value="score">score</option><option value="investment">investment</option></select></label>
@@ -274,16 +281,16 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
 
-      <div ref={listingsRef} className="space-y-2">
-        <div className="flex items-center justify-between">
+      <div ref={listingsRef} className="space-y-3">
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
           <h2 className="text-lg font-semibold">Listings</h2>
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
             {selectedDay ? <span>Nur Einträge von {selectedDay} · andere Filter für diesen Drilldown zurückgesetzt</span> : null}
             <span>Treffer: {filtered.length}</span>
             <p>Letzte Aktualisierung: {lastUpdated}</p>
           </div>
         </div>
-        <ListingTable rows={filtered} onDetails={(item) => setSelected(item)} />
+        {loading ? <StateCard title="Listings werden geladen" body="Die neuesten Immobilien und Kennzahlen werden gerade aus der lokalen Datenbank geladen." tone="muted" /> : <ListingTable rows={filtered} onDetails={(item) => setSelected(item)} />}
       </div>
 
       <ListingDrawer listing={selected} onClose={() => setSelected(null)} />

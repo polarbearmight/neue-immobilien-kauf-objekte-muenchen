@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { API_URL } from "@/lib/api";
+import { StateCard } from "@/components/state-card";
 
 type WatchItem = {
   id: number;
@@ -78,12 +79,12 @@ export default function WatchlistPage() {
         <div className="rounded-xl border p-3 text-sm">Ø Score: <span className="font-semibold">{stats.avgScore}</span></div>
       </div>
 
-      {error ? <p className="rounded border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">{error}</p> : null}
+      {error ? <StateCard title="Watchlist nicht verfügbar" body={error} tone="error" /> : null}
 
       {loading ? (
-        <p className="text-sm text-muted-foreground">Lade Watchlist…</p>
+        <StateCard title="Watchlist wird geladen" body="Gespeicherte Immobilien werden gerade aus der Datenbank geladen." tone="muted" />
       ) : items.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Noch keine Einträge in der Watchlist.</p>
+        <StateCard title="Noch leer" body="Du hast noch keine Immobilien zur Watchlist hinzugefügt. Nutze 'Merken' im Dashboard oder Deal Radar." tone="muted" />
       ) : (
         <div className="space-y-2">
           {items.map((w) => (
