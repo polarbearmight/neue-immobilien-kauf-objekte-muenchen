@@ -8,6 +8,9 @@ import { MiniBarChart } from "@/components/mini-bar-chart";
 import { ListingTable } from "@/components/listing-table";
 import { OnboardingCard } from "@/components/onboarding-card";
 import { StateCard } from "@/components/state-card";
+import { MobileListingCards } from "@/components/mobile-listing-cards";
+import { MobileFilterSheet } from "@/components/mobile-filter-sheet";
+import { MobileStickyActions } from "@/components/mobile-sticky-actions";
 
 const eur = (v?: number | null) => (v == null ? "-" : new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(v));
 
@@ -72,6 +75,7 @@ export default function DashboardPage() {
   const [scan, setScan] = useState<ScanState | null>(null);
   const [scanNotice, setScanNotice] = useState<string | null>(null);
   const [refreshTick, setRefreshTick] = useState(0);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const prevScanStatus = useRef<string | null>(null);
   const listingsRef = useRef<HTMLDivElement | null>(null);
 
@@ -197,18 +201,18 @@ export default function DashboardPage() {
   }, [analytics, allDistrictOptions]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 pb-24 md:space-y-6 md:pb-0">
       <OnboardingCard />
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
           <p className="text-sm text-muted-foreground">Kaufobjekte München · neueste zuerst · lokale Datenbank</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <button className="rounded border bg-background px-3 py-2 text-xs" onClick={() => setRefreshTick((v) => v + 1)}>Aktualisieren</button>
-          <button className="rounded border bg-background px-3 py-2 text-xs" onClick={() => startScan("major")} disabled={scan?.running} title="Große Portale">{scan?.running ? "Scan läuft…" : "Große Quellen scannen"}</button>
-          <button className="rounded border bg-background px-3 py-2 text-xs" onClick={() => startScan("secondary")} disabled={scan?.running}>Sekundäre Quellen scannen</button>
-          <a className="rounded border bg-background px-3 py-2 text-xs" href={`${API_URL}/api/export.csv`} target="_blank" rel="noreferrer">CSV exportieren</a>
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+          <button className="min-h-11 rounded-xl border bg-background px-4 py-2 text-sm" onClick={() => setRefreshTick((v) => v + 1)}>Aktualisieren</button>
+          <button className="min-h-11 rounded-xl border bg-background px-4 py-2 text-sm" onClick={() => startScan("major")} disabled={scan?.running} title="Große Portale">{scan?.running ? "Scan läuft…" : "Große Quellen scannen"}</button>
+          <button className="col-span-2 min-h-11 rounded-xl border bg-background px-4 py-2 text-sm sm:col-span-1" onClick={() => startScan("secondary")} disabled={scan?.running}>Sekundäre Quellen scannen</button>
+          <a className="col-span-2 inline-flex min-h-11 items-center justify-center rounded-xl border bg-background px-4 py-2 text-sm sm:col-span-1" href={`${API_URL}/api/export.csv`} target="_blank" rel="noreferrer">CSV exportieren</a>
         </div>
       </div>
 
@@ -259,7 +263,7 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
 
-      <Card className="rounded-2xl">
+      <Card className="hidden rounded-2xl md:block">
         <CardHeader>
           <CardTitle>Filter</CardTitle>
         </CardHeader>
@@ -281,7 +285,7 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
 
-      <div ref={listingsRef} className="space-y-3">
+      <div ref={listingsRef} className="space-y-3 overflow-hidden">
         <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
           <h2 className="text-lg font-semibold">Listings</h2>
           <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
@@ -290,8 +294,32 @@ export default function DashboardPage() {
             <p>Letzte Aktualisierung: {lastUpdated}</p>
           </div>
         </div>
-        {loading ? <StateCard title="Listings werden geladen" body="Die neuesten Immobilien und Kennzahlen werden gerade aus der lokalen Datenbank geladen." tone="muted" /> : <ListingTable rows={filtered} onDetails={(item) => setSelected(item)} />}
+        {loading ? <StateCard title="Listings werden geladen" body="Die neuesten Immobilien und Kennzahlen werden gerade aus der lokalen Datenbank geladen." tone="muted" /> : <>
+          <MobileListingCards rows={filtered} onDetails={(item) => setSelected(item)} />
+          <div className="hidden md:block"><ListingTable rows={filtered} onDetails={(item) => setSelected(item)} /></div>
+        </>}
       </div>
+
+      <MobileStickyActions onOpenFilters={() => setMobileFiltersOpen(true)} onRefresh={() => setRefreshTick((v) => v + 1)} resultCount={filtered.length} />
+      <MobileFilterSheet open={mobileFiltersOpen} onClose={() => setMobileFiltersOpen(false)}>
+        <div className="grid gap-4">
+          <label className="text-sm">Bucket<select className="mt-1 w-full rounded-xl border px-3 py-3" value={bucket} onChange={(e) => setBucket(e.target.value)}><option value="all">all</option><option value="top">top</option><option value="new">new</option><option value="price_drop">price_drop</option></select></label>
+          <label className="text-sm">Quelle<select className="mt-1 w-full rounded-xl border px-3 py-3" value={source} onChange={(e) => setSource(e.target.value)}>{sources.map((s) => <option key={s} value={s}>{s}</option>)}</select></label>
+          <label className="text-sm">Sortierung<select className="mt-1 w-full rounded-xl border px-3 py-3" value={sort} onChange={(e) => setSort(e.target.value)}><option value="newest">newest</option><option value="price_asc">price_asc</option><option value="price_desc">price_desc</option><option value="score">score</option><option value="investment">investment</option></select></label>
+          <label className="text-sm">Mindest-Score: {minScore}<input className="mt-2 w-full" type="range" min={0} max={100} value={minScore} onChange={(e) => setMinScore(Number(e.target.value))} /></label>
+          <label className="text-sm">Preis min<input className="mt-1 w-full rounded-xl border px-3 py-3" type="number" value={priceMin} onChange={(e) => setPriceMin(e.target.value === "" ? "" : Number(e.target.value))} /></label>
+          <label className="text-sm">Preis max<input className="mt-1 w-full rounded-xl border px-3 py-3" type="number" value={priceMax} onChange={(e) => setPriceMax(e.target.value === "" ? "" : Number(e.target.value))} /></label>
+          <label className="text-sm">Suche<input className="mt-1 w-full rounded-xl border px-3 py-3" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Titel oder Stadtteil" /></label>
+          <div className="text-sm">
+            <p className="mb-2 text-muted-foreground">Stadtteile</p>
+            <div className="flex flex-wrap gap-2">{districtOptions.map((district) => {
+              const active = selectedDistricts.includes(district);
+              return <button key={district} className={`rounded-full border px-3 py-2 text-xs ${active ? "bg-primary text-primary-foreground" : "bg-background"}`} onClick={() => setSelectedDistricts((prev) => active ? prev.filter((d) => d !== district) : [...prev, district])}>{district}</button>;
+            })}</div>
+          </div>
+          <button className="min-h-11 rounded-2xl bg-slate-950 px-4 py-2 text-sm font-medium text-white" onClick={() => setMobileFiltersOpen(false)}>Filter anwenden</button>
+        </div>
+      </MobileFilterSheet>
 
       <ListingDrawer listing={selected} onClose={() => setSelected(null)} />
     </div>
