@@ -1,20 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
-import { authToken, getPassword, USERNAME } from "@/lib/auth";
+import { authToken } from "@/lib/auth";
+
+const API_BASE = process.env.BACKEND_ORIGIN || process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:7001";
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
-  const username = body?.username;
-  const password = body?.password;
-
-  if (username !== USERNAME || password !== getPassword()) {
-    return NextResponse.json({ error: "Ungültige Zugangsdaten" }, { status: 401 });
+  const resBackend = await fetch(`${API_BASE}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = await resBackend.json().catch(() => ({}));
+  if (!resBackend.ok || !data?.user?.username) {
+    return NextResponse.json({ error: data?.error || "Ungültige Zugangsdaten" }, { status: resBackend.status || 401 });
   }
 
-  const res = NextResponse.json({ ok: true });
-  res.cookies.set("mdf_auth", authToken(), {
+  const res = NextResponse.json({ ok: true, user: data.user });
+  res.cookies.set("mdf_auth", authToken(data.user.username), {
     httpOnly: true,
     sameSite: "lax",
-    secure: false,
+    secure: true,
     path: "/",
     maxAge: 60 * 60 * 24 * 7,
   });

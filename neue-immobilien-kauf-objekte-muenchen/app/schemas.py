@@ -36,6 +36,31 @@ class ContactSalesIn(BaseModel):
     message: str
 
 
+class LoginIn(BaseModel):
+    username: str
+    password: str
+
+
+class ProfileUpdateIn(BaseModel):
+    display_name: str | None = None
+    email: str
+    company: str | None = None
+
+
+class ChangePasswordIn(BaseModel):
+    current_password: str
+    new_password: str
+
+
+class ForgotPasswordIn(BaseModel):
+    email: str
+
+
+class ResetPasswordIn(BaseModel):
+    token: str
+    new_password: str
+
+
 class ListingOut(BaseModel):
     id: int
     source: str

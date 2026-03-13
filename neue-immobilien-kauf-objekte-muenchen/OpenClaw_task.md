@@ -155,3 +155,7 @@ Notes:
 - [x] Add onboarding after first login
 - [x] Polish dashboard SaaS UX with responsive shell, loading, empty and error states
 - [x] Improve deals, watchlist and settings states and UX consistency
+- [x] Replace local password reset with backend user/password management
+- [x] Add legal contact data endpoint and real legal page structure
+- [x] Make contact-sales flow production-ready with persisted leads and admin overview
+- [x] Add basic login/form rate limiting and tighten auth cookie handling

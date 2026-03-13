@@ -24,9 +24,9 @@ export function ContactSalesForm({ compact = false }: { compact?: boolean }) {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(data?.error || "Anfrage konnte nicht gesendet werden.");
+        setError(data?.error === "too_many_requests" ? "Zu viele Anfragen in kurzer Zeit. Bitte später erneut versuchen." : data?.error || "Anfrage konnte nicht gesendet werden.");
       } else {
-        setNotice(data?.message || "Vielen Dank. Wir melden uns zeitnah.");
+        setNotice(`${data?.message || "Vielen Dank. Wir melden uns zeitnah."}${data?.lead_id ? ` (Lead #${data.lead_id})` : ""}`);
         setName("");
         setEmail("");
         setCompany("");

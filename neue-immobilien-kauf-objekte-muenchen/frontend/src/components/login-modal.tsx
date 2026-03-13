@@ -35,7 +35,7 @@ export function LoginModal({ open, onClose }: { open: boolean; onClose: () => vo
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(data?.error || "Login fehlgeschlagen");
+        setError(data?.error === "too_many_login_attempts" ? "Zu viele Login-Versuche. Bitte kurz warten." : data?.error || "Login fehlgeschlagen");
         setLoading(false);
         return;
       }
