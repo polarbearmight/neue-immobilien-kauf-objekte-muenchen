@@ -7,6 +7,11 @@ FRONTEND_PORT="${FRONTEND_PORT:-7010}"
 
 cd "$ROOT_DIR"
 
+if [[ ! -f "$ROOT_DIR/requirements.txt" || ! -d "$ROOT_DIR/app" || ! -d "$ROOT_DIR/frontend" ]]; then
+  echo "Error: start-local.sh must be run from the repository root: $ROOT_DIR"
+  exit 1
+fi
+
 if [[ ! -d .venv ]]; then
   python3 -m venv .venv
 fi
