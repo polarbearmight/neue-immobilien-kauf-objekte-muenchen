@@ -39,8 +39,8 @@ export function AppShell({ children }: { children: ReactNode }) {
     document.documentElement.classList.toggle("dark", next);
   };
 
-  const onLanding = pathname === "/";
-  if (onLanding) return <>{children}</>;
+  const publicPaths = new Set(["/", "/contact", "/impressum", "/privacy"]);
+  if (publicPaths.has(pathname)) return <>{children}</>;
 
   const logout = async () => {
     setLoggingOut(true);

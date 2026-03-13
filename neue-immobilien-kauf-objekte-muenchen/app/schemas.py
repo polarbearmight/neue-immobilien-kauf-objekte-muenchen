@@ -29,6 +29,13 @@ class AlertRuleIn(BaseModel):
     enabled: bool = True
 
 
+class ContactSalesIn(BaseModel):
+    name: str
+    email: str
+    company: str | None = None
+    message: str
+
+
 class ListingOut(BaseModel):
     id: int
     source: str

@@ -1,9 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import Image from "next/image";
 import { Building2, Check, Globe, TrendingUp, Zap } from "lucide-react";
 import { LoginModal } from "@/components/login-modal";
+import { ContactSalesForm } from "@/components/contact-sales-form";
 import heroBg from "@/app/hero-bg.jpg";
 
 const features = [
@@ -93,13 +95,12 @@ export default function LandingPage() {
               Unsere Plattform durchsucht automatisch alle großen Immobilienportale und versteckte Quellen und bündelt die Angebote auf einer einzigen Plattform. So entdecken Sie neue Immobilien früher als die Konkurrenz und sichern sich die besten Deals.
             </p>
             <div className="mt-10">
-              <button
-                type="button"
-                onClick={() => setOpen(true)}
-                className="rounded-2xl bg-emerald-700 px-8 py-4 text-base font-semibold text-white shadow-[0_20px_60px_rgba(4,120,87,0.35)] transition hover:-translate-y-0.5 hover:bg-emerald-800"
+              <a
+                href="#contact-sales"
+                className="inline-flex rounded-2xl bg-emerald-700 px-8 py-4 text-base font-semibold text-white shadow-[0_20px_60px_rgba(4,120,87,0.35)] transition hover:-translate-y-0.5 hover:bg-emerald-800"
               >
                 Contact Sales for Access
-              </button>
+              </a>
               <p className="mt-4 text-sm text-white/60">Exklusiver Zugang zur Plattform für ausgewählte Nutzer.</p>
             </div>
           </div>
@@ -157,13 +158,32 @@ export default function LandingPage() {
               Unsere Software ist aktuell nur für ausgewählte Nutzer verfügbar.
             </p>
             <div className="mt-10">
-              <button
-                type="button"
-                onClick={() => setOpen(true)}
-                className="rounded-2xl bg-slate-950 px-8 py-4 text-base font-semibold text-white shadow-lg transition hover:bg-slate-800"
+              <a
+                href="#contact-sales"
+                className="inline-flex rounded-2xl bg-slate-950 px-8 py-4 text-base font-semibold text-white shadow-lg transition hover:bg-slate-800"
               >
                 Contact Sales for Access
-              </button>
+              </a>
+            </div>
+          </div>
+        </section>
+
+        <section id="contact-sales" className="bg-slate-50 py-24 lg:py-32">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+            <div className="grid gap-10 lg:grid-cols-[1fr_1.05fr] lg:items-start">
+              <div className="space-y-5">
+                <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-700">Contact Sales</p>
+                <h2 className="text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">Zugang anfragen oder Demo vereinbaren</h2>
+                <p className="text-lg leading-relaxed text-slate-600">Wenn du Zugriff auf ImmoDealFinder willst, schick uns kurz deinen Kontext. Wir melden uns mit den passenden nächsten Schritten.</p>
+                <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <ul className="space-y-3 text-sm text-slate-700">
+                    <li>• Investor, Makler oder Suchender</li>
+                    <li>• gewünschter Einsatzbereich</li>
+                    <li>• Zielregion oder Deal-Fokus</li>
+                  </ul>
+                </div>
+              </div>
+              <ContactSalesForm />
             </div>
           </div>
         </section>
@@ -173,9 +193,9 @@ export default function LandingPage() {
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 px-4 sm:px-6 md:flex-row lg:px-8">
           <p className="text-sm text-slate-500">© {new Date().getFullYear()} DealFinder. Alle Rechte vorbehalten.</p>
           <nav className="flex items-center gap-6 text-sm text-slate-500">
-            <a href="#" className="transition hover:text-slate-950">Kontakt</a>
-            <a href="#" className="transition hover:text-slate-950">Impressum</a>
-            <a href="#" className="transition hover:text-slate-950">Datenschutz</a>
+            <Link href="/contact" className="transition hover:text-slate-950">Kontakt</Link>
+            <Link href="/impressum" className="transition hover:text-slate-950">Impressum</Link>
+            <Link href="/privacy" className="transition hover:text-slate-950">Datenschutz</Link>
           </nav>
         </div>
       </footer>

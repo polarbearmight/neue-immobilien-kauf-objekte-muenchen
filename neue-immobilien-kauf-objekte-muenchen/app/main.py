@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.db import Base, SessionLocal, engine, ensure_schema
 from app.models import AlertRule, Listing, ListingSnapshot, Source, SourceRun, Watchlist
-from app.schemas import AlertRuleIn, ListingOut, SourceOut
+from app.schemas import AlertRuleIn, ContactSalesIn, ListingOut, SourceOut
 from app.source_reliability import attach_reliability, compute_reliability
 from app.time_utils import utc_now
 from app.investment import recompute_investments
@@ -512,6 +512,23 @@ def listing_detail_expanded(listing_id: int, db: Session = Depends(get_db)):
             ],
         },
     }
+
+
+@app.post("/api/contact-sales")
+def api_contact_sales(payload: ContactSalesIn):
+    target_path = os.path.join(os.path.dirname(__file__), "..", "reports", "contact-sales-leads.jsonl")
+    os.makedirs(os.path.dirname(target_path), exist_ok=True)
+    record = {
+        "received_at": utc_now().isoformat(),
+        "name": payload.name,
+        "email": payload.email,
+        "company": payload.company,
+        "message": payload.message,
+    }
+    with open(target_path, "a", encoding="utf-8") as f:
+        import json
+        f.write(json.dumps(record, ensure_ascii=False) + "\n")
+    return {"ok": True, "message": "Vielen Dank. Wir melden uns zeitnah."}
 
 
 @app.post("/api/collect/run")

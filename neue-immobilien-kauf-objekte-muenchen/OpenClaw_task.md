@@ -145,3 +145,6 @@ Notes:
 - [x] Polish landing page login flow and verify dashboard data freshness
 
 - [x] Improve logout/session UX for protected dashboard flow
+
+- [x] Add /impressum, /privacy and /contact public pages
+- [x] Add contact sales form connected to backend
