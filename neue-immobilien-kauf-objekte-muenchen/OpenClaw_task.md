@@ -153,3 +153,5 @@ Notes:
 - [x] Add /account page
 - [x] Add forgot/reset password flow
 - [x] Add onboarding after first login
+- [x] Polish dashboard SaaS UX with responsive shell, loading, empty and error states
+- [x] Improve deals, watchlist and settings states and UX consistency

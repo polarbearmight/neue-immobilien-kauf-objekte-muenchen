@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { API_URL } from "@/lib/api";
+import { StateCard } from "@/components/state-card";
 
 type Rule = { id: number; name: string; enabled: boolean };
 type Watch = { id: number; listing: { title?: string; url: string; district?: string; deal_score?: number } };
@@ -12,6 +13,7 @@ export default function SettingsPage() {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [aiModifier, setAiModifier] = useState<boolean>(() => {
     if (typeof window === "undefined") return true;
     const raw = localStorage.getItem("deal-ui-settings");
@@ -36,13 +38,22 @@ export default function SettingsPage() {
 
   const load = async () => {
     setLoading(true);
-    const [rr, wr] = await Promise.all([
-      fetch(`${API_URL}/api/alert-rules`, { cache: "no-store" }),
-      fetch(`${API_URL}/api/watchlist`, { cache: "no-store" }),
-    ]);
-    setRules(await rr.json());
-    setWatchlist(await wr.json());
-    setLoading(false);
+    setError(null);
+    try {
+      const [rr, wr] = await Promise.all([
+        fetch(`${API_URL}/api/alert-rules`, { cache: "no-store" }),
+        fetch(`${API_URL}/api/watchlist`, { cache: "no-store" }),
+      ]);
+      if (!rr.ok || !wr.ok) throw new Error('settings_load_failed');
+      setRules(await rr.json());
+      setWatchlist(await wr.json());
+    } catch {
+      setRules([]);
+      setWatchlist([]);
+      setError("Settings konnten nicht vollständig geladen werden.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -69,6 +80,7 @@ export default function SettingsPage() {
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
       {notice ? <p className="rounded border px-3 py-2 text-sm text-muted-foreground">{notice}</p> : null}
+      {error ? <StateCard title="Settings unvollständig geladen" body={error} tone="error" /> : null}
 
       <div className="rounded-xl border p-4 text-sm space-y-3">
         <p className="text-xs text-muted-foreground">Diese UI-Thresholds werden nur lokal im Browser gespeichert und ändern nicht die Backend-Logik.</p>
@@ -94,7 +106,7 @@ export default function SettingsPage() {
 
       <div className="rounded-xl border p-4">
         <p className="mb-2 text-sm font-medium">Watchlist</p>
-        {loading ? <p className="text-sm text-muted-foreground">Lade Watchlist…</p> : watchlist.length === 0 ? <p className="text-sm text-muted-foreground">Keine Watchlist-Einträge vorhanden.</p> : <div className="space-y-2 text-sm">
+        {loading ? <StateCard title="Watchlist wird geladen" body="Die gespeicherten Immobilien werden gerade vorbereitet." tone="muted" /> : watchlist.length === 0 ? <StateCard title="Keine Watchlist-Einträge" body="Sobald du Immobilien merkst, erscheinen sie auch hier in den Settings." tone="muted" /> : <div className="space-y-2 text-sm">
           {watchlist.map((w) => (
             <a key={w.id} href={w.listing.url} target="_blank" rel="noreferrer" className="block rounded border p-2 hover:bg-muted/40">
               {w.listing.title || "Ohne Titel"} · {w.listing.district || "-"} · Score {Math.round(w.listing.deal_score || 0)}

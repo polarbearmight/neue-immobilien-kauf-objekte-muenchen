@@ -142,8 +142,12 @@ export function ListingTable({ rows, onDetails }: { rows: Listing[]; onDetails: 
   const rowVirtualizer = useVirtualizer({ count: table.getRowModel().rows.length, getScrollElement: () => parentRef.current, estimateSize: () => 48, overscan: 10 });
   const virtualRows = rowVirtualizer.getVirtualItems();
 
+  if (rows.length === 0) {
+    return <div className="rounded-3xl border border-slate-200 bg-slate-50 p-8 text-sm text-slate-600">Keine Listings für die aktuellen Filter gefunden. Passe Score, Preis oder Stadtteile an.</div>;
+  }
+
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto rounded-2xl border">
       <div className="min-w-[1330px]">
         <div ref={parentRef} className="max-h-[65vh] overflow-auto">
           <div className="sticky top-0 z-10 grid gap-2 border-b bg-background pb-2 pt-1 text-xs font-medium text-muted-foreground" style={{ gridTemplateColumns: gridTemplate }}>

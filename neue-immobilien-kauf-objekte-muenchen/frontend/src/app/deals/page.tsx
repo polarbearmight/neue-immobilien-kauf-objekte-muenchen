@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { API_URL, Listing } from "@/lib/api";
 import { badgeToneClass, listingHighlightBadges, listingHighlightRowClass } from "@/lib/deal-highlights";
+import { StateCard } from "@/components/state-card";
 
 const eur = (v?: number | null) => (v == null ? "-" : new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(v));
 
@@ -12,11 +13,23 @@ export default function DealsPage() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [savingIds, setSavingIds] = useState<Record<number, boolean>>({});
   const [savedIds, setSavedIds] = useState<Record<number, boolean>>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
-      const res = await fetch(`${API_URL}/api/listings?min_score=${minScore}&sort=score&limit=160`, { cache: "no-store" });
-      setListings(await res.json());
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch(`${API_URL}/api/listings?min_score=${minScore}&sort=score&limit=160`, { cache: "no-store" });
+        if (!res.ok) throw new Error(`deals_${res.status}`);
+        setListings(await res.json());
+      } catch {
+        setListings([]);
+        setError("Deals konnten nicht geladen werden.");
+      } finally {
+        setLoading(false);
+      }
     };
     load();
   }, [minScore]);
@@ -64,10 +77,8 @@ export default function DealsPage() {
         </div>
       </div>
 
-      {sortedListings.length === 0 ? (
-        <div className="rounded-xl border p-6 text-sm text-muted-foreground">
-          Keine Listings für den aktuellen Score-/Sortier-Filter gefunden.
-        </div>
+      {error ? <StateCard title="Deal Radar nicht verfügbar" body={error} tone="error" /> : loading ? <StateCard title="Deals werden geladen" body="Die stärksten Listings mit dem gewählten Score werden gerade vorbereitet." tone="muted" /> : sortedListings.length === 0 ? (
+        <StateCard title="Keine Treffer" body="Für den aktuellen Score- und Sortierfilter wurden keine passenden Listings gefunden." tone="muted" />
       ) : (
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {sortedListings.map((l) => {
