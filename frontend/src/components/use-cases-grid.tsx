@@ -15,7 +15,7 @@ const cases = [
 
 export function UseCasesGrid() {
   return (
-    <div className="grid gap-6 lg:grid-cols-3">
+    <div className="grid gap-6 lg:grid-cols-3 xl:gap-8">
       {cases.map((item) => (
         <div key={item.title} className="rounded-[2rem] border border-white/80 bg-white/90 p-7 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl">
           <h3 className="text-2xl font-semibold tracking-tight text-slate-950">{item.title}</h3>

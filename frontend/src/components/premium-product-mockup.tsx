@@ -2,7 +2,7 @@
 
 export function PremiumProductMockup() {
   return (
-    <div className="relative mx-auto w-full max-w-5xl">
+    <div className="relative mx-auto w-full max-w-6xl xl:max-w-[88rem]">
       <div className="absolute -inset-x-6 -top-8 h-40 rounded-full bg-emerald-400/20 blur-3xl" />
       <div className="relative overflow-hidden rounded-[2rem] border border-white/20 bg-slate-950/70 shadow-[0_30px_120px_rgba(15,23,42,0.45)] backdrop-blur-2xl before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.6),transparent)]">
         <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 text-white/70">
@@ -13,8 +13,8 @@ export function PremiumProductMockup() {
           </div>
           <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs">DealFinder · Live Dashboard</div>
         </div>
-        <div className="grid gap-0 lg:grid-cols-[1.15fr_0.85fr]">
-          <div className="border-b border-white/10 p-5 lg:border-b-0 lg:border-r">
+        <div className="grid gap-0 lg:grid-cols-[1.2fr_0.8fr] xl:grid-cols-[1.28fr_0.72fr]">
+          <div className="border-b border-white/10 p-5 lg:border-b-0 lg:border-r xl:p-7">
             <div className="grid gap-3 sm:grid-cols-3">
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-white">
                 <div className="text-xs uppercase tracking-[0.2em] text-white/50">Neue Listings</div>
@@ -48,7 +48,7 @@ export function PremiumProductMockup() {
               </div>
             </div>
           </div>
-          <div className="p-5 text-white">
+          <div className="p-5 text-white xl:p-7">
             <div className="rounded-[1.6rem] border border-white/10 bg-white/5 p-4">
               <div className="text-xs uppercase tracking-[0.2em] text-white/50">Decision Panel</div>
               <div className="mt-3 space-y-3">
