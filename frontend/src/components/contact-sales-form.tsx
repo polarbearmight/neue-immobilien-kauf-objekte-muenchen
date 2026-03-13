@@ -57,7 +57,10 @@ export function ContactSalesForm({ compact = false }: { compact?: boolean }) {
       </label>
       {notice ? <p className="text-sm text-emerald-700">{notice}</p> : null}
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
-      <button type="submit" disabled={loading} className="rounded-2xl bg-slate-950 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60">{loading ? "Wird gesendet…" : "Anfrage senden"}</button>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <button type="submit" disabled={loading} className="rounded-2xl bg-slate-950 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60">{loading ? "Wird gesendet…" : "Anfrage senden"}</button>
+        <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Concierge review · qualifizierter Zugang</p>
+      </div>
     </form>
   );
 }
