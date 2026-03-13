@@ -1,6 +1,7 @@
 import re
+from app.time_utils import utc_now
 from bs4 import BeautifulSoup
-from datetime import datetime
+from urllib.parse import urljoin
 from collectors.base import SafeCollector
 
 SEARCH_URL = "https://immobilienmarkt.sueddeutsche.de/suche/kaufen-wohnung-in-muenchen"
@@ -28,6 +29,29 @@ def _extract_numbers(text: str):
     return price, area, rooms, ppsqm
 
 
+def _enrich_from_detail(c: SafeCollector, url: str):
+    try:
+        html = c.get(url)
+    except Exception:
+        return None, None, None, None, None, None
+
+    soup = BeautifulSoup(html, "html.parser")
+    text = soup.get_text(" ", strip=True)[:12000]
+    price, area, rooms, price_per_sqm = _extract_numbers(text)
+
+    district = None
+    district_el = soup.select_one("[class*='district'], [class*='location'], [itemprop='addressLocality']")
+    if district_el:
+        district = district_el.get_text(" ", strip=True)[:120]
+
+    img = None
+    og = soup.select_one("meta[property='og:image']")
+    if og and og.get("content"):
+        img = urljoin(url, og.get("content"))
+
+    return price, area, rooms, price_per_sqm, district, img
+
+
 def collect_sz_listings() -> list[dict]:
     c = SafeCollector()
     c.assert_allowed("https://immobilienmarkt.sueddeutsche.de/robots.txt", "/suche/kaufen-wohnung-in-muenchen")
@@ -46,7 +70,12 @@ def collect_sz_listings() -> list[dict]:
             continue
         if url.startswith("/"):
             url = f"https://immobilienmarkt.sueddeutsche.de{url}"
-        if "immobilienmarkt.sueddeutsche.de" not in url:
+        low = url.lower()
+        if "immobilienmarkt.sueddeutsche.de" not in low:
+            continue
+        if not any(t in low for t in ("expose", "objekt", "immobilie", "kaufen")):
+            continue
+        if any(t in low for t in ("/anbieter/", "impressum", "datenschutz", "facebook", "instagram")):
             continue
 
         source_id = url.rstrip("/").split("/")[-1]
@@ -71,6 +100,18 @@ def collect_sz_listings() -> list[dict]:
                 if img and img.startswith("/"):
                     img = f"https://immobilienmarkt.sueddeutsche.de{img}"
 
+        district = None
+        # Most SZ search cards are sparse. Enrich from detail page when key fields are missing.
+        if (price is None or area is None or rooms is None) and len(rows) < 40:
+            d_price, d_area, d_rooms, d_ppsqm, d_district, d_img = _enrich_from_detail(c, url)
+            price = price if price is not None else d_price
+            area = area if area is not None else d_area
+            rooms = rooms if rooms is not None else d_rooms
+            price_per_sqm = price_per_sqm if price_per_sqm is not None else d_ppsqm
+            district = d_district
+            if not img and d_img:
+                img = d_img
+
         rows.append(
             {
                 "source": "sz",
@@ -79,12 +120,13 @@ def collect_sz_listings() -> list[dict]:
                 "title": title,
                 "description": desc,
                 "image_url": img,
+                "district": district,
                 "price_eur": price,
                 "area_sqm": area,
                 "rooms": rooms,
                 "price_per_sqm": price_per_sqm,
-                "first_seen_at": datetime.utcnow(),
-                "last_seen_at": datetime.utcnow(),
+                "first_seen_at": utc_now(),
+                "last_seen_at": utc_now(),
             }
         )
 
