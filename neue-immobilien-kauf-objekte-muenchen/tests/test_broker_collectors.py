@@ -64,3 +64,36 @@ def test_parse_detail_kleinanzeigen_extracts_district_from_body():
     assert row is not None
     assert row["district"] == "Trudering-Riem"
     assert row["price_eur"] == 1234000.0
+
+
+def test_parse_detail_kleinanzeigen_falls_back_to_generic_euro_price_and_title_rooms():
+    html = """
+    <html><head><title>3-Zi.-Wohnung mit Balkon</title></head>
+    <body>
+      3-Zi.-Wohnung mit Balkon in München - Laim | Preis 875.000 € | Wohnfläche 80 m²
+    </body></html>
+    """
+    row = _parse_detail("kleinanzeigen", "https://www.kleinanzeigen.de/s-anzeige/foo/1234567890-196-6411", html)
+    assert row is not None
+    assert row["district"] == "Laim"
+    assert row["price_eur"] == 875000.0
+    assert row["rooms"] == 3.0
+
+
+def test_parse_detail_broker_riedel_ignores_overview_pages():
+    html = """
+    <html><head><title>Immobilien zum Kauf - Riedel Immobilienmakler</title></head>
+    <body>Aktuelle Angebote in München</body></html>
+    """
+    row = _parse_detail("broker_riedel", "https://www.riedel-immobilien.de/angebote/kauf/", html)
+    assert row is None
+
+
+def test_parse_detail_engel_ignores_category_pages():
+    html = """
+    <html><head><title>Wohnung kaufen in München | Engel & Völkers</title>
+    <script type='application/ld+json'>{"@context":"https://schema.org","@type":"Product","name":"Wohnung kaufen in München | Engel & Völkers"}</script>
+    </head><body>Wohnung kaufen in München</body></html>
+    """
+    row = _parse_detail("broker_engel_voelkers_muenchen", "https://www.engelvoelkers.com/de/de/immobilien/res/kaufen/wohnung/bayern/muenchen", html)
+    assert row is None

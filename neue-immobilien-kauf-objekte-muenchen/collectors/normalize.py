@@ -45,6 +45,12 @@ GENERIC_TITLE_HINTS = {
     "kaufobjekt",
 }
 
+NON_MUNICH_PLACE_HINTS = {
+    "karlsfeld", "maisach", "olching", "eichenau", "kirchheim", "taufkirchen", "riemerling",
+    "unterhaching", "gruenwald", "grünwald", "garching", "unterfoehring", "unterföhring", "ismaning",
+    "dachau", "germering", "fürstenfeldbruck", "fuerstenfeldbruck"
+}
+
 
 def normalize_source_name(source: str | None) -> str | None:
     if not source:
@@ -155,6 +161,10 @@ def normalize_listing_row(row: dict) -> dict | None:
     district = normalize_location(row.get("district") or row.get("raw_district_text"))
     address = normalize_location(row.get("address") or row.get("raw_address"))
     city = normalize_location(row.get("city"))
+
+    combined_location_text = " ".join(filter(None, [district, address, city, raw_title, raw_description])).lower()
+    if any(place in combined_location_text for place in NON_MUNICH_PLACE_HINTS) and not any(m in combined_location_text for m in ["münchen", "muenchen"]):
+        return None
 
     title_low = (title or "").lower().strip()
     if title_low in GENERIC_TITLE_HINTS and not (price or area or rooms or address):

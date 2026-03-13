@@ -1,4 +1,5 @@
 import re
+from bs4 import BeautifulSoup
 
 from app.time_utils import utc_now
 import httpx
@@ -24,6 +25,17 @@ def _to_num(val) -> float | None:
         return float(s)
     except Exception:
         return None
+
+
+def _extract_detail_price(client: httpx.Client, url: str) -> float | None:
+    try:
+        html = client.get(url).text
+    except Exception:
+        return None
+    soup = BeautifulSoup(html, "html.parser")
+    text = soup.get_text(" ", strip=True)
+    m = re.search(r"([\d\.,]{3,})\s*€", text)
+    return _to_num(m.group(1)) if m else None
 
 
 def collect_planethome_listings() -> list[dict]:
@@ -128,6 +140,10 @@ def collect_planethome_listings() -> list[dict]:
                     ppsqm = round(price / area, 2)
 
                 detail_url = f"https://planethome.de/objekt-detailseite?propertyId={provider_id}&portal=ph-de"
+                if price is None:
+                    price = _extract_detail_price(client, detail_url)
+                    if (ppsqm is None or ppsqm <= 0) and price and area:
+                        ppsqm = round(price / area, 2)
 
                 rows.append(
                     {
