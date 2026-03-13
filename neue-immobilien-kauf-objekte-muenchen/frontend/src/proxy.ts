@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { isValidAuthCookie } from "@/lib/auth";
 
 const protectedPrefixes = [
   "/dashboard",
@@ -23,7 +24,7 @@ const protectedPrefixes = [
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const isProtected = protectedPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
-  const isAuthed = req.cookies.get("mdf_auth")?.value === "1";
+  const isAuthed = isValidAuthCookie(req.cookies.get("mdf_auth")?.value);
 
   if (isProtected && !isAuthed) {
     const url = req.nextUrl.clone();

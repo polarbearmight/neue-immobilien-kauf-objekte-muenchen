@@ -49,14 +49,15 @@ export function LoginModal({ open, onClose }: { open: boolean; onClose: () => vo
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm animate-in fade-in duration-300" onClick={onClose}>
-      <div className="w-full max-w-md rounded-3xl border border-white/10 bg-white p-8 shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-4 duration-300" onClick={(e) => e.stopPropagation()}>
+      <div className="relative w-full max-w-md rounded-[28px] border border-white/60 bg-white/95 p-8 shadow-[0_30px_120px_rgba(15,23,42,0.25)] backdrop-blur-xl animate-in zoom-in-95 slide-in-from-bottom-4 duration-300" onClick={(e) => e.stopPropagation()}>
         <div className="mb-6 flex items-start justify-between">
+          <div className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent" />
           <div>
-            <p className="text-sm font-medium text-emerald-700">Munich Deal Finder</p>
-            <h2 className="mt-1 text-3xl font-semibold tracking-tight text-slate-950">Login</h2>
-            <p className="mt-2 text-sm text-slate-500">Zugang zum Dashboard mit Demo-Credentials.</p>
+            <p className="text-sm font-medium uppercase tracking-[0.22em] text-emerald-700">Munich Deal Finder</p>
+            <h2 className="mt-1 text-3xl font-semibold tracking-tight text-slate-950">Willkommen zurück</h2>
+            <p className="mt-2 text-sm text-slate-500">Melde dich an, um auf das SaaS-Dashboard und die Deal-Engine zuzugreifen.</p>
           </div>
-          <button className="rounded-full border px-3 py-1 text-sm text-slate-500 transition hover:bg-slate-50" onClick={onClose}>✕</button>
+          <button className="rounded-full border border-slate-200 px-3 py-1 text-sm text-slate-500 transition hover:bg-slate-50" onClick={onClose}>✕</button>
         </div>
         <form className="space-y-4" onSubmit={submit}>
           <label className="block text-sm font-medium text-slate-700">Username

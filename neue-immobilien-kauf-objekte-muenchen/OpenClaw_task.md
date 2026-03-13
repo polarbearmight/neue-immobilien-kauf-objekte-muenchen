@@ -136,3 +136,6 @@ Notes:
 
 - [x] Recreate landing page from ZIP and connect auth flow to dashboard
 - [x] Protect dashboard routes behind login modal flow
+
+- [x] Polish landing page visual fidelity, login modal, auth signing, and mobile animation behavior
+- [!] Investigate Next.js `next start` runtime issue: missing `.next/prerender-manifest.json` despite successful build on this host
