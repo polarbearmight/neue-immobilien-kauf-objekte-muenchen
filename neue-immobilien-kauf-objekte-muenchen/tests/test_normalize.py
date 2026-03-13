@@ -44,6 +44,19 @@ def test_normalize_cleans_noisy_munich_district():
     assert out["district"] == "Untergiesing-Harlaching"
 
 
+def test_normalize_rejects_kleinanzeigen_without_price():
+    row = {
+        "source": "kleinanzeigen",
+        "source_listing_id": "ka-1",
+        "url": "https://www.kleinanzeigen.de/s-anzeige/foo/1234567890-196-6411",
+        "title": "3-Zimmer-Wohnung mit Balkon",
+        "description": "München Laim 80 m² 3 Zimmer",
+        "area_sqm": 80,
+        "rooms": 3,
+    }
+    assert normalize_listing_row(row) is None
+
+
 def test_dedupe_rows_drops_secondary_duplicates_same_source():
     rows = [
         {
