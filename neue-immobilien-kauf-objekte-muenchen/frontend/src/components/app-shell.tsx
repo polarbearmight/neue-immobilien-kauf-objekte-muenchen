@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import type { ReactNode } from "react";
+import { MobileTabBar } from "@/components/mobile-tab-bar";
 
 const nav = [
   ["Dashboard", "/dashboard"],
@@ -68,7 +69,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             ))}
           </nav>
         </aside>
-        <main className="flex-1 px-3 py-3 md:px-6 md:py-6">
+        <main className="flex-1 px-3 py-3 pb-28 md:px-6 md:py-6 md:pb-6">
           <div className="mb-4 rounded-2xl border px-4 py-4 text-sm shadow-sm md:px-3 md:py-3">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
@@ -86,6 +87,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {children}
         </main>
       </div>
+      <MobileTabBar />
     </div>
   );
 }
