@@ -167,3 +167,5 @@ Notes:
 - [x] Add Apple-style landing motion with smooth reveal and subtle parallax
 - [x] Add iOS-style bottom tab bar and segmented KPI controls on mobile
 - [x] Extend landing page with stronger premium motion and product-page storytelling
+- [x] Redesign listing details drawer into premium structured sections
+- [x] Add stronger product-storytelling section to the landing page
