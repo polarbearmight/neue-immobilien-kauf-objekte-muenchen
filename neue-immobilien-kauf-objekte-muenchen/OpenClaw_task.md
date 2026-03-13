@@ -159,3 +159,7 @@ Notes:
 - [x] Add legal contact data endpoint and real legal page structure
 - [x] Make contact-sales flow production-ready with persisted leads and admin overview
 - [x] Add basic login/form rate limiting and tighten auth cookie handling
+- [x] Add mobile filter bottom sheet for iPhone-first dashboard UX
+- [x] Add mobile listing card view alongside desktop table
+- [x] Add sticky mobile action bar for filters and refresh
+- [x] Improve landing page and dashboard spacing/scrolling for mobile devices

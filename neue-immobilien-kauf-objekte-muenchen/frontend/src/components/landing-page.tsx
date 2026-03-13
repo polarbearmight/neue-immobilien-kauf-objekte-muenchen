@@ -39,12 +39,14 @@ export default function LandingPage() {
   const [mobileMenu, setMobileMenu] = useState(false);
 
   return (
-    <div className="min-h-screen bg-white text-slate-900">
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-slate-200/70 bg-white/85 backdrop-blur-md">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#f8fafc_0%,#eef2ff_35%,#ffffff_68%)] text-slate-900">
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-white/60 bg-white/70 backdrop-blur-2xl supports-[backdrop-filter]:bg-white/55">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-2">
-            <Building2 className="h-6 w-6 text-emerald-700" />
-            <span className="text-lg font-bold tracking-tight">DealFinder</span>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/90 shadow-[0_10px_30px_rgba(15,23,42,0.08)] ring-1 ring-slate-200/70">
+              <Building2 className="h-5 w-5 text-emerald-700" />
+            </div>
+            <span className="text-lg font-semibold tracking-tight text-slate-900">DealFinder</span>
           </div>
 
           <nav className="hidden items-center gap-8 text-sm text-slate-500 md:flex">
@@ -56,7 +58,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium shadow-sm transition hover:bg-slate-50 md:hidden"
+              className="min-h-11 rounded-2xl border border-white/80 bg-white/80 px-4 py-2 text-sm font-medium shadow-[0_10px_30px_rgba(15,23,42,0.08)] backdrop-blur md:hidden"
               onClick={() => setMobileMenu((v) => !v)}
             >
               {mobileMenu ? "Close" : "Menu"}
@@ -64,7 +66,7 @@ export default function LandingPage() {
             <button
               type="button"
               onClick={() => setOpen(true)}
-              className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium shadow-sm transition hover:-translate-y-0.5 hover:bg-slate-50"
+              className="min-h-11 rounded-2xl border border-white/80 bg-white/80 px-4 py-2 text-sm font-medium shadow-[0_10px_30px_rgba(15,23,42,0.08)] backdrop-blur transition hover:-translate-y-0.5 hover:bg-white"
             >
               Login
             </button>
@@ -73,7 +75,7 @@ export default function LandingPage() {
       </header>
 
       {mobileMenu ? (
-        <div className="fixed inset-x-4 top-20 z-40 rounded-2xl border border-slate-200 bg-white p-4 shadow-xl md:hidden">
+        <div className="fixed inset-x-4 top-20 z-40 rounded-3xl border border-white/70 bg-white/85 p-4 shadow-[0_24px_80px_rgba(15,23,42,0.16)] backdrop-blur-2xl md:hidden">
           <div className="flex flex-col gap-3 text-sm text-slate-600">
             <a href="#features" onClick={() => setMobileMenu(false)}>Features</a>
             <a href="#vorteile" onClick={() => setMobileMenu(false)}>Vorteile</a>
@@ -83,30 +85,48 @@ export default function LandingPage() {
       ) : null}
 
       <main className="overflow-x-hidden">
-        <section className="relative flex min-h-[90vh] items-center justify-center overflow-hidden pt-16">
+        <section className="relative flex min-h-[100svh] items-center justify-center overflow-hidden pt-16">
           <Image src={heroBg} alt="Munich skyline" fill priority className="absolute inset-0 object-cover" />
-          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.55)_0%,rgba(15,23,42,0.72)_100%)]" />
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.34)_0%,rgba(15,23,42,0.52)_55%,rgba(15,23,42,0.72)_100%)]" />
+          <div className="absolute inset-x-0 top-16 h-40 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.35),transparent_70%)]" />
 
-          <div className="relative z-10 mx-auto max-w-7xl px-4 py-28 text-center sm:px-6 sm:py-32 lg:px-8">
-            <h1 className="mx-auto max-w-4xl text-4xl font-bold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
+          <div className="relative z-10 mx-auto max-w-7xl px-4 py-20 text-center sm:px-6 sm:py-28 lg:px-8">
+            <div className="mx-auto mb-5 inline-flex items-center rounded-full border border-white/30 bg-white/10 px-4 py-2 text-xs font-medium uppercase tracking-[0.24em] text-white/80 backdrop-blur">
+              München · Kaufobjekte · Deal Intelligence
+            </div>
+            <h1 className="mx-auto max-w-4xl text-4xl font-semibold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
               Finden Sie Immobilien schneller als alle anderen.
             </h1>
             <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-white/80 sm:text-xl">
               Unsere Plattform durchsucht automatisch alle großen Immobilienportale und versteckte Quellen und bündelt die Angebote auf einer einzigen Plattform. So entdecken Sie neue Immobilien früher als die Konkurrenz und sichern sich die besten Deals.
             </p>
-            <div className="mt-10">
+            <div className="mt-10 flex flex-col items-center gap-4">
               <a
                 href="#contact-sales"
-                className="inline-flex rounded-2xl bg-emerald-700 px-8 py-4 text-base font-semibold text-white shadow-[0_20px_60px_rgba(4,120,87,0.35)] transition hover:-translate-y-0.5 hover:bg-emerald-800"
+                className="inline-flex min-h-12 items-center justify-center rounded-[1.35rem] bg-white px-8 py-4 text-base font-semibold text-slate-950 shadow-[0_24px_70px_rgba(15,23,42,0.24)] transition hover:-translate-y-0.5 hover:bg-slate-50"
               >
                 Contact Sales for Access
               </a>
-              <p className="mt-4 text-sm text-white/60">Exklusiver Zugang zur Plattform für ausgewählte Nutzer.</p>
+              <p className="text-sm text-white/70">Exklusiver Zugang zur Plattform für ausgewählte Nutzer.</p>
+              <div className="grid w-full max-w-3xl gap-3 pt-3 sm:grid-cols-3">
+                <div className="rounded-3xl border border-white/20 bg-white/10 px-4 py-4 text-left text-white/90 backdrop-blur-xl">
+                  <div className="text-2xl font-semibold">24/7</div>
+                  <div className="mt-1 text-sm text-white/70">laufende Marktbeobachtung</div>
+                </div>
+                <div className="rounded-3xl border border-white/20 bg-white/10 px-4 py-4 text-left text-white/90 backdrop-blur-xl">
+                  <div className="text-2xl font-semibold">1 View</div>
+                  <div className="mt-1 text-sm text-white/70">alle Portale in einer Oberfläche</div>
+                </div>
+                <div className="rounded-3xl border border-white/20 bg-white/10 px-4 py-4 text-left text-white/90 backdrop-blur-xl">
+                  <div className="text-2xl font-semibold">Top Deals</div>
+                  <div className="mt-1 text-sm text-white/70">automatisch priorisiert</div>
+                </div>
+              </div>
             </div>
           </div>
         </section>
 
-        <section id="features" className="bg-white py-24 lg:py-32">
+        <section id="features" className="bg-white py-20 lg:py-32">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <h2 className="mx-auto max-w-2xl text-center text-3xl font-bold text-slate-950 sm:text-4xl">
               Der schnellste Weg zu besseren Immobilien-Deals
@@ -115,7 +135,7 @@ export default function LandingPage() {
               {features.map((feature) => (
                 <div
                   key={feature.title}
-                  className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_24px_80px_rgba(15,23,42,0.10)]"
+                  className="rounded-[2rem] border border-white/70 bg-white/85 p-8 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:border-emerald-200"
                 >
                   <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-700/10 text-emerald-700">
                     <feature.icon className="h-6 w-6" />
@@ -128,7 +148,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section id="vorteile" className="bg-slate-50 py-24 lg:py-32">
+        <section id="vorteile" className="bg-[linear-gradient(180deg,#f8fafc_0%,#ffffff_100%)] py-20 lg:py-32">
           <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
             <h2 className="text-center text-3xl font-bold text-slate-950 sm:text-4xl">
               Mehr Deals. Weniger Konkurrenz.
@@ -149,7 +169,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section id="zugang" className="bg-white py-24 lg:py-32">
+        <section id="zugang" className="bg-white py-20 lg:py-32">
           <div className="mx-auto max-w-2xl px-4 text-center sm:px-6 lg:px-8">
             <h2 className="text-3xl font-bold text-slate-950 sm:text-4xl">
               Erhalten Sie Zugang zur Plattform
@@ -160,7 +180,7 @@ export default function LandingPage() {
             <div className="mt-10">
               <a
                 href="#contact-sales"
-                className="inline-flex rounded-2xl bg-slate-950 px-8 py-4 text-base font-semibold text-white shadow-lg transition hover:bg-slate-800"
+                className="inline-flex min-h-12 items-center justify-center rounded-[1.35rem] bg-slate-950 px-8 py-4 text-base font-semibold text-white shadow-[0_24px_70px_rgba(15,23,42,0.16)] transition hover:bg-slate-800"
               >
                 Contact Sales for Access
               </a>
@@ -168,14 +188,14 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section id="contact-sales" className="bg-slate-50 py-24 lg:py-32">
+        <section id="contact-sales" className="bg-slate-50 py-20 lg:py-32">
           <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
             <div className="grid gap-10 lg:grid-cols-[1fr_1.05fr] lg:items-start">
               <div className="space-y-5">
                 <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-700">Contact Sales</p>
                 <h2 className="text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">Zugang anfragen oder Demo vereinbaren</h2>
                 <p className="text-lg leading-relaxed text-slate-600">Wenn du Zugriff auf ImmoDealFinder willst, schick uns kurz deinen Kontext. Wir melden uns mit den passenden nächsten Schritten.</p>
-                <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="rounded-[2rem] border border-white/80 bg-white/90 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl">
                   <ul className="space-y-3 text-sm text-slate-700">
                     <li>• Investor, Makler oder Suchender</li>
                     <li>• gewünschter Einsatzbereich</li>

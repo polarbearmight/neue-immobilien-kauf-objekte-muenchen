@@ -147,13 +147,15 @@ export function ListingTable({ rows, onDetails }: { rows: Listing[]; onDetails: 
   }
 
   return (
-    <div className="overflow-x-auto rounded-2xl border">
-      <div className="min-w-[1330px]">
-        <div ref={parentRef} className="max-h-[65vh] overflow-auto">
+    <div className="space-y-2">
+      <div className="px-1 text-xs text-slate-500 md:hidden">Tipp: In der Tabelle horizontal wischen, um alle Spalten zu sehen.</div>
+      <div className="overflow-x-auto rounded-2xl border [-webkit-overflow-scrolling:touch] touch-pan-x overscroll-x-contain">
+        <div className="min-w-[1330px] pr-6">
+          <div ref={parentRef} className="max-h-[65vh] overflow-y-auto overflow-x-visible">
           <div className="sticky top-0 z-10 grid gap-2 border-b bg-background pb-2 pt-1 text-xs font-medium text-muted-foreground" style={{ gridTemplateColumns: gridTemplate }}>
             {table.getHeaderGroups()[0].headers.map((header) => <div key={header.id}>{flexRender(header.column.columnDef.header, header.getContext())}</div>)}
           </div>
-          <div style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: "relative" }}>
+          <div style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: "relative", minWidth: gridTemplate }}>
           {virtualRows.map((vr) => {
             const row = table.getRowModel().rows[vr.index];
             const rowClass = listingHighlightRowClass(row.original);
@@ -176,6 +178,7 @@ export function ListingTable({ rows, onDetails }: { rows: Listing[]; onDetails: 
           })}
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

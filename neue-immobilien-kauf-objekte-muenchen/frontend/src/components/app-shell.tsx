@@ -68,20 +68,20 @@ export function AppShell({ children }: { children: ReactNode }) {
             ))}
           </nav>
         </aside>
-        <main className="flex-1 px-4 py-4 md:px-6 md:py-6">
-          <div className="mb-4 rounded-2xl border px-3 py-3 text-sm">
+        <main className="flex-1 px-3 py-3 md:px-6 md:py-6">
+          <div className="mb-4 rounded-2xl border px-4 py-4 text-sm shadow-sm md:px-3 md:py-3">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div className="flex items-center gap-2">
-                <button className="rounded border px-2 py-1 text-xs md:hidden" onClick={() => setMobileNavOpen((v) => !v)}>{mobileNavOpen ? "Menü schließen" : "Menü"}</button>
-                <input placeholder="Search (page-local)" className="w-full rounded border px-2 py-1 text-xs md:max-w-xs" disabled />
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+                <button className="min-h-11 rounded-xl border px-4 py-2 text-sm font-medium md:hidden" onClick={() => setMobileNavOpen((v) => !v)}>{mobileNavOpen ? "Menü schließen" : "Menü öffnen"}</button>
+                <input placeholder="Search (page-local)" className="min-h-11 w-full rounded-xl border px-3 py-2 text-sm md:max-w-xs" disabled />
               </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <button className="rounded border px-2 py-1 text-xs" onClick={() => location.reload()}>Refresh</button>
-                <button className="rounded border px-2 py-1 text-xs" onClick={toggleTheme}>{dark ? "Light" : "Dark"}</button>
-                <button className="rounded border px-2 py-1 text-xs" onClick={logout} disabled={loggingOut}>{loggingOut ? "Logout…" : "Logout"}</button>
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+                <button className="min-h-11 rounded-xl border px-4 py-2 text-sm" onClick={() => location.reload()}>Refresh</button>
+                <button className="min-h-11 rounded-xl border px-4 py-2 text-sm" onClick={toggleTheme}>{dark ? "Light" : "Dark"}</button>
+                <button className="col-span-2 min-h-11 rounded-xl border px-4 py-2 text-sm sm:col-span-1" onClick={logout} disabled={loggingOut}>{loggingOut ? "Logout…" : "Logout"}</button>
               </div>
             </div>
-            {mobileNavOpen ? <div className="mt-3 grid gap-1 border-t pt-3 md:hidden">{nav.map(([label, href]) => <Link key={href} href={href} className={`rounded-lg px-3 py-2 text-sm ${pathname === href ? "bg-muted font-medium" : "text-muted-foreground hover:bg-muted/60"}`} onClick={() => setMobileNavOpen(false)}>{label}</Link>)}</div> : null}
+            {mobileNavOpen ? <div className="mt-4 grid gap-2 border-t pt-4 md:hidden">{nav.map(([label, href]) => <Link key={href} href={href} className={`rounded-xl px-4 py-3 text-sm ${pathname === href ? "bg-muted font-medium" : "text-muted-foreground hover:bg-muted/60"}`} onClick={() => setMobileNavOpen(false)}>{label}</Link>)}</div> : null}
           </div>
           {children}
         </main>
