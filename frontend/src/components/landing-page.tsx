@@ -139,14 +139,14 @@ export default function LandingPage() {
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.34)_0%,rgba(15,23,42,0.52)_55%,rgba(15,23,42,0.72)_100%)]" />
           <div className="absolute inset-x-0 top-16 h-40 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.35),transparent_70%)]" />
 
-          <div className="relative z-10 mx-auto max-w-7xl px-4 py-20 text-center sm:px-6 sm:py-28 lg:px-8">
+          <div className="relative z-10 mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-28 lg:px-8 xl:max-w-[88rem] xl:py-32">
             <div data-reveal className="motion-reveal mx-auto mb-5 inline-flex items-center rounded-full border border-white/30 bg-white/10 px-4 py-2 text-xs font-medium uppercase tracking-[0.24em] text-white/80 backdrop-blur">
               München · Kaufobjekte · Deal Intelligence
             </div>
-            <h1 data-reveal className="motion-reveal mx-auto max-w-4xl text-4xl font-semibold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
+            <h1 data-reveal className="motion-reveal mx-auto max-w-5xl text-4xl font-semibold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl xl:max-w-6xl xl:text-7xl">
               Finden Sie Immobilien schneller als alle anderen.
             </h1>
-            <p data-reveal className="motion-reveal mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-white/80 sm:text-xl">
+            <p data-reveal className="motion-reveal mx-auto mt-6 max-w-3xl text-lg leading-relaxed text-white/80 sm:text-xl xl:max-w-4xl xl:text-[1.35rem]">
               Unsere Plattform durchsucht automatisch alle großen Immobilienportale und versteckte Quellen und bündelt die Angebote auf einer einzigen Plattform. So entdecken Sie neue Immobilien früher als die Konkurrenz und sichern sich die besten Deals.
             </p>
             <div data-reveal className="motion-reveal mt-10 flex flex-col items-center gap-4 [transition-delay:80ms]">
@@ -185,11 +185,20 @@ export default function LandingPage() {
         </section>
 
         <section id="product-preview" className="bg-[linear-gradient(180deg,#eef2ff_0%,#ffffff_100%)] py-16 lg:py-24">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="mb-8 max-w-3xl">
-              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-700">Produktvorschau</p>
-              <h2 className="mt-3 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">Ein Workspace für Marktüberblick, Deal-Erkennung und schnelle Entscheidungen</h2>
-              <p className="mt-4 text-lg leading-relaxed text-slate-600">Statt dutzende Quellen manuell zu prüfen, bündelt DealFinder Listings, Preisverläufe, Investment-Signale und Off-Market-Hinweise in einer Oberfläche.</p>
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 xl:max-w-[88rem]">
+            <div className="mb-10 grid gap-8 xl:grid-cols-[0.9fr_1.1fr] xl:items-end">
+              <div className="max-w-3xl">
+                <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-700">Produktvorschau</p>
+                <h2 className="mt-3 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl xl:text-5xl">Ein Workspace für Marktüberblick, Deal-Erkennung und schnelle Entscheidungen</h2>
+                <p className="mt-4 text-lg leading-relaxed text-slate-600 xl:max-w-2xl">Statt dutzende Quellen manuell zu prüfen, bündelt DealFinder Listings, Preisverläufe, Investment-Signale und Off-Market-Hinweise in einer Oberfläche.</p>
+              </div>
+              <div className="rounded-[2rem] border border-white/80 bg-white/70 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div><div className="text-xs uppercase tracking-[0.2em] text-slate-400">Coverage</div><div className="mt-2 text-3xl font-semibold text-slate-950">Multi-Source</div></div>
+                  <div><div className="text-xs uppercase tracking-[0.2em] text-slate-400">Decision Layer</div><div className="mt-2 text-3xl font-semibold text-slate-950">Deal + Investment</div></div>
+                  <div><div className="text-xs uppercase tracking-[0.2em] text-slate-400">Workflow</div><div className="mt-2 text-3xl font-semibold text-slate-950">Search to Action</div></div>
+                </div>
+              </div>
             </div>
             <PremiumProductMockup />
           </div>
@@ -289,8 +298,8 @@ export default function LandingPage() {
         </section>
 
         <section id="contact-sales" className="bg-[linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)] py-20 lg:py-32">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-            <div className="grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 xl:max-w-[88rem]">
+            <div className="grid gap-10 lg:grid-cols-[0.92fr_1.08fr] lg:items-start xl:gap-14">
               <div className="space-y-6">
                 <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-700">Concierge Access</p>
                 <h2 className="text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">Zugang anfragen oder Demo vereinbaren</h2>
