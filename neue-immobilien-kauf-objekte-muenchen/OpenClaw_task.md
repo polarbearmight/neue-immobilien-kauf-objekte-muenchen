@@ -165,3 +165,5 @@ Notes:
 - [x] Improve landing page and dashboard spacing/scrolling for mobile devices
 - [x] Add premium mobile dashboard IA with sticky actions and bottom-sheet filters
 - [x] Add Apple-style landing motion with smooth reveal and subtle parallax
+- [x] Add iOS-style bottom tab bar and segmented KPI controls on mobile
+- [x] Extend landing page with stronger premium motion and product-page storytelling

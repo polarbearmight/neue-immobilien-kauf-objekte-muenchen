@@ -11,6 +11,7 @@ import { StateCard } from "@/components/state-card";
 import { MobileListingCards } from "@/components/mobile-listing-cards";
 import { MobileFilterSheet } from "@/components/mobile-filter-sheet";
 import { MobileStickyActions } from "@/components/mobile-sticky-actions";
+import { MobileKpiSwitcher } from "@/components/mobile-kpi-switcher";
 
 const eur = (v?: number | null) => (v == null ? "-" : new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(v));
 
@@ -76,6 +77,7 @@ export default function DashboardPage() {
   const [scanNotice, setScanNotice] = useState<string | null>(null);
   const [refreshTick, setRefreshTick] = useState(0);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [mobileKpiMode, setMobileKpiMode] = useState<"market" | "deals" | "sources">("market");
   const prevScanStatus = useRef<string | null>(null);
   const listingsRef = useRef<HTMLDivElement | null>(null);
 
@@ -222,17 +224,32 @@ export default function DashboardPage() {
 
       <div className="rounded-xl border px-3 py-2 text-xs text-muted-foreground">Aktive Immobilien in der lokalen Datenbank: {items.length || 0} geladene Treffer · Live-Daten aus der aktuellen lokalen Immobilien-Datenbank.</div>
 
+      <MobileKpiSwitcher active={mobileKpiMode} setActive={setMobileKpiMode} />
       {loading ? (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-28 animate-pulse rounded-2xl border bg-muted/40" />)}
         </div>
       ) : (
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <Card className="rounded-2xl"><CardHeader><CardTitle className="text-sm">Neue Listings</CardTitle></CardHeader><CardContent className="text-2xl font-semibold">{stats?.new_listings ?? 0}</CardContent></Card>
-        <Card className="rounded-2xl"><CardHeader><CardTitle className="text-sm">Ø Preis / m²</CardTitle></CardHeader><CardContent className="text-2xl font-semibold">{eur(stats?.avg_price_per_sqm)}</CardContent></Card>
-        <Card className="rounded-2xl"><CardHeader><CardTitle className="text-sm">Top-Deals</CardTitle></CardHeader><CardContent className="text-2xl font-semibold">{stats?.top_deals ?? 0}</CardContent></Card>
-        <Card className="rounded-2xl"><CardHeader><CardTitle className="text-sm">Aktive Quellen</CardTitle></CardHeader><CardContent className="text-2xl font-semibold">{sources.length - 1}</CardContent></Card>
-      </div>
+      <>
+        <div className="grid gap-3 md:hidden">
+          {mobileKpiMode === "market" ? <>
+            <Card className="rounded-2xl"><CardHeader><CardTitle className="text-sm">Neue Listings</CardTitle></CardHeader><CardContent className="text-2xl font-semibold">{stats?.new_listings ?? 0}</CardContent></Card>
+            <Card className="rounded-2xl"><CardHeader><CardTitle className="text-sm">Ø Preis / m²</CardTitle></CardHeader><CardContent className="text-2xl font-semibold">{eur(stats?.avg_price_per_sqm)}</CardContent></Card>
+          </> : mobileKpiMode === "deals" ? <>
+            <Card className="rounded-2xl"><CardHeader><CardTitle className="text-sm">Top-Deals</CardTitle></CardHeader><CardContent className="text-2xl font-semibold">{stats?.top_deals ?? 0}</CardContent></Card>
+            <Card className="rounded-2xl"><CardHeader><CardTitle className="text-sm">Treffer aktuell</CardTitle></CardHeader><CardContent className="text-2xl font-semibold">{filtered.length}</CardContent></Card>
+          </> : <>
+            <Card className="rounded-2xl"><CardHeader><CardTitle className="text-sm">Aktive Quellen</CardTitle></CardHeader><CardContent className="text-2xl font-semibold">{sources.length - 1}</CardContent></Card>
+            <Card className="rounded-2xl"><CardHeader><CardTitle className="text-sm">Status</CardTitle></CardHeader><CardContent className="text-base font-semibold">{scan?.status || "idle"}</CardContent></Card>
+          </>}
+        </div>
+        <div className="hidden gap-3 md:grid md:grid-cols-2 xl:grid-cols-4">
+          <Card className="rounded-2xl"><CardHeader><CardTitle className="text-sm">Neue Listings</CardTitle></CardHeader><CardContent className="text-2xl font-semibold">{stats?.new_listings ?? 0}</CardContent></Card>
+          <Card className="rounded-2xl"><CardHeader><CardTitle className="text-sm">Ø Preis / m²</CardTitle></CardHeader><CardContent className="text-2xl font-semibold">{eur(stats?.avg_price_per_sqm)}</CardContent></Card>
+          <Card className="rounded-2xl"><CardHeader><CardTitle className="text-sm">Top-Deals</CardTitle></CardHeader><CardContent className="text-2xl font-semibold">{stats?.top_deals ?? 0}</CardContent></Card>
+          <Card className="rounded-2xl"><CardHeader><CardTitle className="text-sm">Aktive Quellen</CardTitle></CardHeader><CardContent className="text-2xl font-semibold">{sources.length - 1}</CardContent></Card>
+        </div>
+      </>
       )}
 
       <Card className="rounded-2xl">
