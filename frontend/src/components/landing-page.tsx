@@ -6,6 +6,9 @@ import Image from "next/image";
 import { Building2, Check, Globe, TrendingUp, Zap } from "lucide-react";
 import { LoginModal } from "@/components/login-modal";
 import { ContactSalesForm } from "@/components/contact-sales-form";
+import { PremiumProductMockup } from "@/components/premium-product-mockup";
+import { TrustStrip } from "@/components/trust-strip";
+import { UseCasesGrid } from "@/components/use-cases-grid";
 import heroBg from "@/app/hero-bg.jpg";
 
 const features = [
@@ -147,12 +150,20 @@ export default function LandingPage() {
               Unsere Plattform durchsucht automatisch alle großen Immobilienportale und versteckte Quellen und bündelt die Angebote auf einer einzigen Plattform. So entdecken Sie neue Immobilien früher als die Konkurrenz und sichern sich die besten Deals.
             </p>
             <div data-reveal className="motion-reveal mt-10 flex flex-col items-center gap-4 [transition-delay:80ms]">
-              <a
-                href="#contact-sales"
-                className="inline-flex min-h-12 items-center justify-center rounded-[1.35rem] bg-white px-8 py-4 text-base font-semibold text-slate-950 shadow-[0_24px_70px_rgba(15,23,42,0.24)] transition hover:-translate-y-0.5 hover:bg-slate-50"
-              >
-                Contact Sales for Access
-              </a>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <a
+                  href="#contact-sales"
+                  className="inline-flex min-h-12 items-center justify-center rounded-[1.35rem] bg-white px-8 py-4 text-base font-semibold text-slate-950 shadow-[0_24px_70px_rgba(15,23,42,0.24)] transition hover:-translate-y-0.5 hover:bg-slate-50"
+                >
+                  Zugang anfragen
+                </a>
+                <a
+                  href="#product-preview"
+                  className="inline-flex min-h-12 items-center justify-center rounded-[1.35rem] border border-white/30 bg-white/10 px-8 py-4 text-base font-semibold text-white backdrop-blur transition hover:bg-white/15"
+                >
+                  Produkt ansehen
+                </a>
+              </div>
               <p className="text-sm text-white/70">Exklusiver Zugang zur Plattform für ausgewählte Nutzer.</p>
               <div className="grid w-full max-w-3xl gap-3 pt-3 sm:grid-cols-3">
                 <div className="rounded-3xl border border-white/20 bg-white/10 px-4 py-4 text-left text-white/90 backdrop-blur-xl">
@@ -169,6 +180,23 @@ export default function LandingPage() {
                 </div>
               </div>
             </div>
+          </div>
+        </section>
+
+        <section id="product-preview" className="bg-[linear-gradient(180deg,#eef2ff_0%,#ffffff_100%)] py-16 lg:py-24">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="mb-8 max-w-3xl">
+              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-700">Produktvorschau</p>
+              <h2 className="mt-3 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">Ein Workspace für Marktüberblick, Deal-Erkennung und schnelle Entscheidungen</h2>
+              <p className="mt-4 text-lg leading-relaxed text-slate-600">Statt dutzende Quellen manuell zu prüfen, bündelt DealFinder Listings, Preisverläufe, Investment-Signale und Off-Market-Hinweise in einer Oberfläche.</p>
+            </div>
+            <PremiumProductMockup />
+          </div>
+        </section>
+
+        <section className="bg-white py-14 lg:py-18">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <TrustStrip />
           </div>
         </section>
 
@@ -230,6 +258,16 @@ export default function LandingPage() {
           </div>
         </section>
 
+        <section className="bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] py-20 lg:py-28">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="mb-8 max-w-3xl">
+              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-700">Use Cases</p>
+              <h2 className="mt-3 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">Für Teams und Entscheider, die nicht auf Portale warten wollen</h2>
+            </div>
+            <UseCasesGrid />
+          </div>
+        </section>
+
         <section id="zugang" className="bg-white py-20 lg:py-32">
           <div className="mx-auto max-w-2xl px-4 text-center sm:px-6 lg:px-8">
             <h2 className="text-3xl font-bold text-slate-950 sm:text-4xl">
@@ -249,19 +287,30 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section id="contact-sales" className="bg-slate-50 py-20 lg:py-32">
+        <section id="contact-sales" className="bg-[linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)] py-20 lg:py-32">
           <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-            <div className="grid gap-10 lg:grid-cols-[1fr_1.05fr] lg:items-start">
-              <div className="space-y-5">
-                <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-700">Contact Sales</p>
+            <div className="grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
+              <div className="space-y-6">
+                <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-700">Concierge Access</p>
                 <h2 className="text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">Zugang anfragen oder Demo vereinbaren</h2>
-                <p className="text-lg leading-relaxed text-slate-600">Wenn du Zugriff auf ImmoDealFinder willst, schick uns kurz deinen Kontext. Wir melden uns mit den passenden nächsten Schritten.</p>
-                <div className="rounded-[2rem] border border-white/80 bg-white/90 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl">
-                  <ul className="space-y-3 text-sm text-slate-700">
-                    <li>• Investor, Makler oder Suchender</li>
-                    <li>• gewünschter Einsatzbereich</li>
-                    <li>• Zielregion oder Deal-Fokus</li>
-                  </ul>
+                <p className="text-lg leading-relaxed text-slate-600">Beschreibe kurz deinen Anwendungsfall. Wir melden uns mit den passenden nächsten Schritten, Demo-Möglichkeiten oder einem qualifizierten Zugang.</p>
+                <div className="grid gap-4">
+                  <div className="rounded-[1.6rem] border border-white/80 bg-white/90 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+                    <div className="text-sm font-semibold text-slate-950">Was du idealerweise mitschickst</div>
+                    <ul className="mt-3 space-y-3 text-sm text-slate-700">
+                      <li>• Investor, Makler oder Suchender</li>
+                      <li>• gewünschter Einsatzbereich</li>
+                      <li>• Zielregion oder Deal-Fokus</li>
+                    </ul>
+                  </div>
+                  <div className="rounded-[1.6rem] border border-slate-900 bg-slate-950 p-5 text-white shadow-[0_20px_60px_rgba(15,23,42,0.16)]">
+                    <div className="text-xs uppercase tracking-[0.2em] text-white/60">Response Flow</div>
+                    <div className="mt-3 space-y-2 text-sm text-white/85">
+                      <p>1. Anfrage prüfen</p>
+                      <p>2. Use Case qualifizieren</p>
+                      <p>3. Zugang oder Demo abstimmen</p>
+                    </div>
+                  </div>
                 </div>
               </div>
               <ContactSalesForm />

@@ -40,7 +40,7 @@ export function ContactSalesForm({ compact = false }: { compact?: boolean }) {
   };
 
   return (
-    <form onSubmit={submit} className={`space-y-4 ${compact ? "" : "rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"}`}>
+    <form onSubmit={submit} className={`space-y-4 ${compact ? "" : "rounded-[2rem] border border-white/80 bg-white/92 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:p-8"}`}>
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="block text-sm font-medium text-slate-700">Name
           <input required className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10" value={name} onChange={(e) => setName(e.target.value)} />
