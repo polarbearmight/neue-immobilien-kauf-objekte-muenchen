@@ -6,6 +6,7 @@ import { API_URL, Listing } from "@/lib/api";
 import { ListingDrawer } from "@/components/listing-drawer";
 import { MiniBarChart } from "@/components/mini-bar-chart";
 import { ListingTable } from "@/components/listing-table";
+import { OnboardingCard } from "@/components/onboarding-card";
 
 const eur = (v?: number | null) => (v == null ? "-" : new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(v));
 
@@ -196,6 +197,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      <OnboardingCard />
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>

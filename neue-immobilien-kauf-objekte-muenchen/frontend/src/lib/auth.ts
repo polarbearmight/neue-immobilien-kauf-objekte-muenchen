@@ -1,20 +1,31 @@
 import crypto from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
 
-const SECRET = process.env.MDF_AUTH_SECRET || "mdf-local-secret";
-const USERNAME = process.env.MDF_USERNAME || "admin";
+export const USERNAME = process.env.MDF_USERNAME || "admin";
+export const SECRET = process.env.MDF_AUTH_SECRET || "mdf-local-secret";
+const envPath = path.resolve(process.cwd(), ".env.local");
 
-function sign(value: string) {
+export function getPassword() {
+  if (fs.existsSync(envPath)) {
+    const env = fs.readFileSync(envPath, "utf8");
+    const match = env.match(/^MDF_PASSWORD=(.*)$/m);
+    if (match?.[1]) return match[1].trim();
+  }
+  return process.env.MDF_PASSWORD || "admin123";
+}
+
+export function signAuth(value: string) {
   return crypto.createHmac("sha256", SECRET).update(value).digest("hex");
 }
 
-export function isValidAuthCookie(raw?: string | null) {
-  if (!raw || !raw.includes(".")) return false;
-  const [payload, sig] = raw.split(".");
-  if (!payload || !sig) return false;
-  const expected = sign(payload);
-  const a = Buffer.from(sig);
-  const b = Buffer.from(expected);
-  if (a.length !== b.length) return false;
-  const ok = crypto.timingSafeEqual(a, b);
-  return ok && payload === `${USERNAME}:authenticated`;
+export function authToken() {
+  const payload = `${USERNAME}:authenticated`;
+  return `${payload}.${signAuth(payload)}`;
+}
+
+export function isValidAuthToken(token?: string | null) {
+  if (!token) return false;
+  const payload = `${USERNAME}:authenticated`;
+  return token === `${payload}.${signAuth(payload)}`;
 }

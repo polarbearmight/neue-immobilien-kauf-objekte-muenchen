@@ -18,6 +18,7 @@ const nav = [
   ["Map", "/map"],
   ["Sources", "/sources"],
   ["Settings", "/settings"],
+  ["Account", "/account"],
   ["District Debug", "/district-debug"],
   ["Source Debug", "/source-debug"],
   ["Duplicate Debug", "/duplicate-debug"],
@@ -39,7 +40,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     document.documentElement.classList.toggle("dark", next);
   };
 
-  const publicPaths = new Set(["/", "/contact", "/impressum", "/privacy"]);
+  const publicPaths = new Set(["/", "/contact", "/impressum", "/privacy", "/forgot-password", "/reset-password"]);
   if (publicPaths.has(pathname)) return <>{children}</>;
 
   const logout = async () => {

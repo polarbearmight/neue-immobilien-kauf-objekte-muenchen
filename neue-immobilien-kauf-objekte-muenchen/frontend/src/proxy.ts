@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { isValidAuthCookie } from "@/lib/auth";
+import { isValidAuthToken } from "@/lib/auth";
 
 const protectedPrefixes = [
   "/dashboard",
@@ -15,6 +15,7 @@ const protectedPrefixes = [
   "/map",
   "/sources",
   "/settings",
+  "/account",
   "/district-debug",
   "/source-debug",
   "/duplicate-debug",
@@ -24,7 +25,7 @@ const protectedPrefixes = [
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const isProtected = protectedPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
-  const isAuthed = isValidAuthCookie(req.cookies.get("mdf_auth")?.value);
+  const isAuthed = isValidAuthToken(req.cookies.get("mdf_auth")?.value);
 
   if (isProtected && !isAuthed) {
     const url = req.nextUrl.clone();
@@ -37,5 +38,5 @@ export function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/deals/:path*", "/watchlist/:path*", "/brand-new/:path*", "/price-drops/:path*", "/clusters/:path*", "/off-market/:path*", "/districts/:path*", "/geo/:path*", "/map/:path*", "/sources/:path*", "/settings/:path*", "/district-debug/:path*", "/source-debug/:path*", "/duplicate-debug/:path*", "/geo-debug/:path*"],
+  matcher: ["/dashboard/:path*", "/deals/:path*", "/watchlist/:path*", "/brand-new/:path*", "/price-drops/:path*", "/clusters/:path*", "/off-market/:path*", "/districts/:path*", "/geo/:path*", "/map/:path*", "/sources/:path*", "/settings/:path*", "/account/:path*", "/district-debug/:path*", "/source-debug/:path*", "/duplicate-debug/:path*", "/geo-debug/:path*"],
 };
