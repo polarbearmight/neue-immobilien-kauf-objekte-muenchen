@@ -9,6 +9,7 @@ import { ContactSalesForm } from "@/components/contact-sales-form";
 import { PremiumProductMockup } from "@/components/premium-product-mockup";
 import { TrustStrip } from "@/components/trust-strip";
 import { UseCasesGrid } from "@/components/use-cases-grid";
+import { DesktopStoryPanel } from "@/components/desktop-story-panel";
 import heroBg from "@/app/hero-bg.jpg";
 
 const features = [
@@ -234,8 +235,8 @@ export default function LandingPage() {
         </section>
 
         <section className="bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] py-20 lg:py-28">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="grid gap-6 lg:grid-cols-3">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 xl:max-w-[88rem]">
+            <div className="grid gap-6 lg:grid-cols-3 xl:hidden">
               {storySteps.map((step) => (
                 <div key={step.eyebrow} data-reveal className="motion-reveal rounded-[2rem] border border-white/80 bg-white/90 p-7 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl">
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-700">{step.eyebrow}</p>
@@ -244,6 +245,7 @@ export default function LandingPage() {
                 </div>
               ))}
             </div>
+            <DesktopStoryPanel />
           </div>
         </section>
 
