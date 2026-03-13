@@ -109,7 +109,7 @@ export default function LandingPage() {
         </div>
       </header>
 
-      {mobileMenu ? <div className="fixed inset-x-4 top-20 z-40 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-xl backdrop-blur md:hidden"><div className="flex flex-col gap-3 text-sm text-slate-600"><a href="#features" onClick={() => setMobileMenu(false)}>Features</a><a href="#vorteile" onClick={() => setMobileMenu(false)}>Vorteile</a><a href="#zugang" onClick={() => setMobileMenu(false)}>Zugang</a></div></div> : null}
+      {mobileMenu ? <div className="fixed inset-x-4 top-20 z-40 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-xl backdrop-blur md:hidden animate-in fade-in zoom-in-95 duration-200"><div className="flex flex-col gap-3 text-sm text-slate-600"><a href="#features" onClick={() => setMobileMenu(false)}>Features</a><a href="#vorteile" onClick={() => setMobileMenu(false)}>Vorteile</a><a href="#zugang" onClick={() => setMobileMenu(false)}>Zugang</a></div></div> : null}
       <main className="overflow-x-hidden">
         <section data-hero className="relative flex min-h-[90vh] items-center justify-center overflow-hidden">
           <Image data-parallax src={heroBg} alt="Munich skyline" fill priority className="absolute inset-0 object-cover" />
@@ -120,6 +120,7 @@ export default function LandingPage() {
             <div data-reveal className="mt-10">
               <button onClick={() => setOpen(true)} className="rounded-2xl bg-emerald-700 px-8 py-4 text-base font-semibold text-white shadow-[0_20px_60px_rgba(4,120,87,0.35)] transition hover:-translate-y-0.5 hover:bg-emerald-800">Contact Sales for Access</button>
               <p className="mt-4 text-sm text-white/60">Exklusiver Zugang zur Plattform für ausgewählte Nutzer.</p>
+              <p className="mt-2 text-xs uppercase tracking-[0.24em] text-white/45">Landing page → Login → Dashboard</p>
             </div>
           </div>
         </section>

@@ -41,10 +41,17 @@ export function AppShell({ children }: { children: ReactNode }) {
   const onLanding = pathname === "/";
   if (onLanding) return <>{children}</>;
 
+  const [loggingOut, setLoggingOut] = useState(false);
+
   const logout = async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
-    router.push("/");
-    router.refresh();
+    setLoggingOut(true);
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } finally {
+      router.push("/");
+      router.refresh();
+      setLoggingOut(false);
+    }
   };
 
   return (
@@ -65,7 +72,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <input placeholder="Search (page-local)" className="w-full max-w-xs rounded border px-2 py-1 text-xs" disabled />
             <button className="rounded border px-2 py-1 text-xs" onClick={() => location.reload()}>Refresh</button>
             <button className="rounded border px-2 py-1 text-xs" onClick={toggleTheme}>{dark ? "Light" : "Dark"}</button>
-            <button className="rounded border px-2 py-1 text-xs" onClick={logout}>Logout</button>
+            <button className="rounded border px-2 py-1 text-xs" onClick={logout} disabled={loggingOut}>{loggingOut ? "Logout…" : "Logout"}</button>
           </div>
           {children}
         </main>
