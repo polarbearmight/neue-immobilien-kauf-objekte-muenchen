@@ -141,3 +141,5 @@ Notes:
 - [x] Investigate Next.js `next start` runtime issue: production start works when run after a fresh build in the same shell/session
 
 - [ ] Refine landing page motion/pixel polish further if needed
+
+- [x] Polish landing page login flow and verify dashboard data freshness
