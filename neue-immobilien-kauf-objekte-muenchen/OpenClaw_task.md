@@ -148,3 +148,5 @@ Notes:
 
 - [x] Add /impressum, /privacy and /contact public pages
 - [x] Add contact sales form connected to backend
+- [x] Fix production dashboard data loading after login by keeping backend on stable internal service
+- [x] Remove demo credential autofill and demo hint from login modal

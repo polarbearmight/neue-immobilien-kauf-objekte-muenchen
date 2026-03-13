@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 
 export function LoginModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const router = useRouter();
-  const [username, setUsername] = useState("admin");
-  const [password, setPassword] = useState("admin123");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -66,16 +66,15 @@ export function LoginModal({ open, onClose }: { open: boolean; onClose: () => vo
         </div>
         <form className="space-y-4" onSubmit={submit}>
           <label className="block text-sm font-medium text-slate-700">Username
-            <input className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10" value={username} onChange={(e) => setUsername(e.target.value)} />
+            <input autoComplete="username" className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10" value={username} onChange={(e) => setUsername(e.target.value)} />
           </label>
           <label className="block text-sm font-medium text-slate-700">Password
-            <input type="password" className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10" value={password} onChange={(e) => setPassword(e.target.value)} />
+            <input autoComplete="current-password" type="password" className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10" value={password} onChange={(e) => setPassword(e.target.value)} />
           </label>
           {error ? <p className="text-sm text-red-600">{error}</p> : null}
           {success ? <p className="text-sm text-emerald-700">Login erfolgreich – Dashboard wird geöffnet…</p> : null}
           <button type="submit" disabled={loading || success} className="w-full rounded-2xl bg-slate-950 px-4 py-3 font-medium text-white transition hover:bg-slate-800 disabled:opacity-60">{loading ? "Anmelden…" : success ? "Weiterleiten…" : "Login"}</button>
         </form>
-        <p className="mt-4 text-xs text-slate-400">Demo: admin / admin123</p>
       </div>
     </div>
   );
