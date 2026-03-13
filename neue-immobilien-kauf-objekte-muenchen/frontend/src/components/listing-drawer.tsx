@@ -165,24 +165,25 @@ export function ListingDrawer({ listing, onClose }: { listing: Listing | null; o
           </SectionCard>
 
           {(detail?.cluster?.members || []).length > 1 ? (
-            <details className="rounded border p-2" open>
-              <summary className="cursor-pointer font-medium">Seen on</summary>
-              <div className="mt-2 space-y-1 text-xs text-muted-foreground">
+            <SectionCard title="Seen on" subtitle="Weitere Quellen im gleichen Cluster">
+              <div className="space-y-2 text-xs text-slate-600">
                 {detail?.cluster?.members.map((m) => {
                   const memberUrl = normalizeExternalUrl(m.url);
                   return (
-                    <p key={m.id}>
-                      {m.source} · {eur(m.price_eur)} · {m.title || "-"}{m.is_canonical ? " · canonical" : ""}
-                      {memberUrl ? (
-                        <>
-                          {" "}· <a href={memberUrl} target="_blank" rel="noreferrer" className="text-blue-600 underline underline-offset-2">open</a>
-                        </>
-                      ) : null}
-                    </p>
+                    <div key={m.id} className="flex flex-col gap-2 rounded-2xl bg-slate-50 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="font-medium text-slate-900">{m.source}{m.is_canonical ? " · canonical" : ""}</p>
+                        <p>{m.title || "-"}</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="font-medium text-slate-900">{eur(m.price_eur)}</span>
+                        {memberUrl ? <a href={memberUrl} target="_blank" rel="noreferrer" className="text-blue-600 underline underline-offset-2">open</a> : null}
+                      </div>
+                    </div>
                   );
                 })}
               </div>
-            </details>
+            </SectionCard>
           ) : null}
 
           <SectionCard title="AI Flags" subtitle="Automatische Hinweise aus dem Analyse-Flow">

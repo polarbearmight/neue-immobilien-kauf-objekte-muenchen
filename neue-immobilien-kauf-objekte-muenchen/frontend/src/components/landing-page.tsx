@@ -43,7 +43,7 @@ const storySteps = [
   {
     eyebrow: "02 · Rank",
     title: "Relevanz automatisch priorisieren",
-    text: "Deal Score, Investment Signale und Sichtbarkeitsdaten helfen dir, gute Chancen sofort von Rauschen zu trennen.",
+    text: "Deal Score, Investment Signale und Sichtbarkeitsdaten helfen dir, gute Chancen sofort von schlechten Deals zu trennen.",
   },
   {
     eyebrow: "03 · Act",
@@ -146,7 +146,7 @@ export default function LandingPage() {
             <p data-reveal className="motion-reveal mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-white/80 sm:text-xl">
               Unsere Plattform durchsucht automatisch alle großen Immobilienportale und versteckte Quellen und bündelt die Angebote auf einer einzigen Plattform. So entdecken Sie neue Immobilien früher als die Konkurrenz und sichern sich die besten Deals.
             </p>
-            <div data-reveal className="motion-reveal mt-10 flex flex-col items-center gap-4">
+            <div data-reveal className="motion-reveal mt-10 flex flex-col items-center gap-4 [transition-delay:80ms]">
               <a
                 href="#contact-sales"
                 className="inline-flex min-h-12 items-center justify-center rounded-[1.35rem] bg-white px-8 py-4 text-base font-semibold text-slate-950 shadow-[0_24px_70px_rgba(15,23,42,0.24)] transition hover:-translate-y-0.5 hover:bg-slate-50"
