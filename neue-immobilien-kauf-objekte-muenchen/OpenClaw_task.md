@@ -169,3 +169,5 @@ Notes:
 - [x] Extend landing page with stronger premium motion and product-page storytelling
 - [x] Redesign listing details drawer into premium structured sections
 - [x] Add stronger product-storytelling section to the landing page
+- [x] Update homepage rank-copy to separate good chances from bad deals
+- [x] Polish details drawer seen-on section into premium cards
