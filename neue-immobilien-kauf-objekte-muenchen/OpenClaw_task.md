@@ -119,8 +119,8 @@ Notes:
 
 - [x] Top-3 priorisiert: 1) Kleinanzeigen Preis/Zimmer-Coverage, 2) SIS District/Zimmer, 3) Immowelt generische Titel/District
 - [x] Erste Fixes umgesetzt für Immowelt, SIS und Planethome
-- [ ] Kleinanzeigen Preis-Coverage auf frischen Listings verbessern
-- [ ] Broker_riedel / Engel-Völkers District-Extraktion prüfen und ggf. verbessern
+- [~] Kleinanzeigen Preis-Coverage auf frischen Listings verbessern
+- [~] Broker_riedel / Engel-Völkers District-Extraktion prüfen und ggf. verbessern
 
 ## Discovered Issues / New Tasks
 - [ ] Improve Kleinanzeigen price coverage on fresh listings (currently 3/6 with `price_eur` on latest live sample)

@@ -42,7 +42,7 @@ BROKER_SOURCES: dict[str, str] = {
 }
 
 _LINK_HINTS = ("immobil", "objekt", "projekt", "expose", "angebot", "wohnung", "haus", "kaufen")
-_NOISE_TITLE_HINTS = ("bewertung", "webinar", "ratgeber", "karriere", "service", "kontakt", "impressum", "datenschutz")
+_NOISE_TITLE_HINTS = ("bewertung", "webinar", "ratgeber", "karriere", "service", "kontakt", "impressum", "datenschutz", "immobilienmakler")
 
 # Source fetch profiles: html first, optional script-json fallback for dynamic pages
 SOURCE_FETCH_MODE: dict[str, str] = {
@@ -177,10 +177,11 @@ def _extract_kleinanzeigen_district(text: str) -> str | None:
     # Examples:
     # "... in München - Trudering-Riem | ..."
     # "... in München - Thalk.Obersendl.-Forsten-Fürstenr.-Solln | ..."
-    m = re.search(r"in\s+m[üu]nchen\s*-\s*([^|\n]+)", text, flags=re.IGNORECASE)
+    m = re.search(r"in\s+m[üu]nchen\s*-\s*([^|\n<\"]+)", text, flags=re.IGNORECASE)
     if not m:
         return None
     raw = m.group(1).strip(" -\t")
+    raw = re.split(r"(?:\||\"|<|@context|description|contentUrl)", raw, maxsplit=1)[0]
     raw = re.sub(r"\s{2,}", " ", raw)
     return raw or None
 
@@ -373,6 +374,15 @@ def _is_probable_listing_detail(source_name: str, detail_url: str, title: str | 
         if price is None:
             return False
 
+    if source_name == "broker_riedel":
+        if "/objekte/" not in l:
+            return False
+
+    if source_name == "broker_engel_voelkers_muenchen":
+        # keep only actual expose detail pages; broad category / city landing pages create noisy pseudo-listings
+        if "/exposes/" not in l:
+            return False
+
     if has_offer_like_ld:
         return True
 
@@ -461,11 +471,16 @@ def _parse_detail(source_name: str, detail_url: str, html: str) -> dict | None:
 
     if price is None:
         price = _extract_price_from_text(body_text, strict_kaufpreis=(source_name == "kleinanzeigen"))
+        if price is None and source_name == "kleinanzeigen":
+            price = _extract_price_from_text(body_text, strict_kaufpreis=False)
     if area is None:
         m = re.search(r"(\d+[\.,]?\d*)\s*(m²|qm)", body_text, flags=re.IGNORECASE)
         area = _to_num(m.group(1)) if m else None
     if rooms is None:
-        m = re.search(r"(\d+[\.,]?\d*)\s*(Zimmer)", body_text, flags=re.IGNORECASE)
+        m = re.search(r"(\d+[\.,]?\d*)\s*(?:Zimmer|Zi\.?|ZKB|Zimmerwohnung)", body_text, flags=re.IGNORECASE)
+        rooms = _to_num(m.group(1)) if m else None
+    if rooms is None and title:
+        m = re.search(r"(\d+[\.,]?\d*)\s*[- ]?\s*(?:Zimmer|Zi\.?|ZKB|Zimmerwohnung)", title, flags=re.IGNORECASE)
         rooms = _to_num(m.group(1)) if m else None
 
     if title:
