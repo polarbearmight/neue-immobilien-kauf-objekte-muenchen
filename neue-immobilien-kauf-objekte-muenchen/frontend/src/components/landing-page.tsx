@@ -34,6 +34,7 @@ const benefits = [
 
 export default function LandingPage() {
   const [open, setOpen] = useState(false);
+  const [mobileMenu, setMobileMenu] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -101,10 +102,14 @@ export default function LandingPage() {
             <a href="#vorteile" className="transition hover:text-slate-950">Vorteile</a>
             <a href="#zugang" className="transition hover:text-slate-950">Zugang</a>
           </nav>
-          <button onClick={() => setOpen(true)} className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium shadow-sm transition hover:-translate-y-0.5 hover:bg-slate-50">Login</button>
+          <div className="flex items-center gap-2">
+            <button className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium shadow-sm transition hover:bg-slate-50 md:hidden" onClick={() => setMobileMenu((v) => !v)}>{mobileMenu ? "Close" : "Menu"}</button>
+            <button onClick={() => setOpen(true)} className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium shadow-sm transition hover:-translate-y-0.5 hover:bg-slate-50">Login</button>
+          </div>
         </div>
       </header>
 
+      {mobileMenu ? <div className="fixed inset-x-4 top-20 z-40 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-xl backdrop-blur md:hidden"><div className="flex flex-col gap-3 text-sm text-slate-600"><a href="#features" onClick={() => setMobileMenu(false)}>Features</a><a href="#vorteile" onClick={() => setMobileMenu(false)}>Vorteile</a><a href="#zugang" onClick={() => setMobileMenu(false)}>Zugang</a></div></div> : null}
       <main className="overflow-x-hidden">
         <section data-hero className="relative flex min-h-[90vh] items-center justify-center overflow-hidden">
           <Image data-parallax src={heroBg} alt="Munich skyline" fill priority className="absolute inset-0 object-cover" />

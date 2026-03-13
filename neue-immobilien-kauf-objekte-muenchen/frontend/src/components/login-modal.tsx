@@ -9,6 +9,7 @@ export function LoginModal({ open, onClose }: { open: boolean; onClose: () => vo
   const [password, setPassword] = useState("admin123");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -25,6 +26,7 @@ export function LoginModal({ open, onClose }: { open: boolean; onClose: () => vo
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setSuccess(false);
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
@@ -37,10 +39,13 @@ export function LoginModal({ open, onClose }: { open: boolean; onClose: () => vo
         setLoading(false);
         return;
       }
-      onClose();
+      setSuccess(true);
       const redirect = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("redirect") : null;
-      router.push(redirect || "/dashboard");
-      router.refresh();
+      setTimeout(() => {
+        onClose();
+        router.push(redirect || "/dashboard");
+        router.refresh();
+      }, 220);
     } catch {
       setError("Login fehlgeschlagen");
       setLoading(false);
@@ -67,7 +72,8 @@ export function LoginModal({ open, onClose }: { open: boolean; onClose: () => vo
             <input type="password" className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10" value={password} onChange={(e) => setPassword(e.target.value)} />
           </label>
           {error ? <p className="text-sm text-red-600">{error}</p> : null}
-          <button type="submit" disabled={loading} className="w-full rounded-2xl bg-slate-950 px-4 py-3 font-medium text-white transition hover:bg-slate-800 disabled:opacity-60">{loading ? "Anmelden…" : "Login"}</button>
+          {success ? <p className="text-sm text-emerald-700">Login erfolgreich – Dashboard wird geöffnet…</p> : null}
+          <button type="submit" disabled={loading || success} className="w-full rounded-2xl bg-slate-950 px-4 py-3 font-medium text-white transition hover:bg-slate-800 disabled:opacity-60">{loading ? "Anmelden…" : success ? "Weiterleiten…" : "Login"}</button>
         </form>
         <p className="mt-4 text-xs text-slate-400">Demo: admin / admin123</p>
       </div>
