@@ -34,7 +34,7 @@ export function PremiumProductMockup() {
                 <div>
                   <div className="text-xs uppercase tracking-[0.2em] text-white/50">Top Listing</div>
                   <div className="mt-2 text-xl font-semibold">3-Zimmer Altbau · Maxvorstadt</div>
-                  <div className="mt-1 text-sm text-white/60">830.000 € · 78 m² · 10.641 €/m²</div>
+                  <div className="mt-1 text-sm text-white/60">830.000 € · 78 m² · 10.641 €/m² · first seen 18 Min. ago</div>
                 </div>
                 <div className="rounded-2xl bg-white px-4 py-3 text-right text-slate-950">
                   <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Score</div>
@@ -55,6 +55,7 @@ export function PremiumProductMockup() {
                 <div className="rounded-2xl bg-white/5 p-3">
                   <div className="text-sm text-white/60">Investment Score</div>
                   <div className="mt-1 text-2xl font-semibold">78</div>
+                  <div className="mt-1 text-xs text-white/45">gross yield 3.8% · rent est. 1.980 €</div>
                 </div>
                 <div className="rounded-2xl bg-white/5 p-3">
                   <div className="text-sm text-white/60">Off-Market Score</div>
