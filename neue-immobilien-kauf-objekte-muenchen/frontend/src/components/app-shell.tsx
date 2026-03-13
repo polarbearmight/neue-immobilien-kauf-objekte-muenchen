@@ -31,6 +31,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     if (typeof window === "undefined") return false;
     return document.documentElement.classList.contains("dark");
   });
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const toggleTheme = () => {
     const next = !dark;
@@ -40,8 +41,6 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const onLanding = pathname === "/";
   if (onLanding) return <>{children}</>;
-
-  const [loggingOut, setLoggingOut] = useState(false);
 
   const logout = async () => {
     setLoggingOut(true);
