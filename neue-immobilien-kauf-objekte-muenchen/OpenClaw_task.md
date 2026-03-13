@@ -163,3 +163,5 @@ Notes:
 - [x] Add mobile listing card view alongside desktop table
 - [x] Add sticky mobile action bar for filters and refresh
 - [x] Improve landing page and dashboard spacing/scrolling for mobile devices
+- [x] Add premium mobile dashboard IA with sticky actions and bottom-sheet filters
+- [x] Add Apple-style landing motion with smooth reveal and subtle parallax

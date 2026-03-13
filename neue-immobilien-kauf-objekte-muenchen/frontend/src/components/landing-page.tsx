@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Building2, Check, Globe, TrendingUp, Zap } from "lucide-react";
 import { LoginModal } from "@/components/login-modal";
@@ -37,6 +37,34 @@ const benefits = [
 export default function LandingPage() {
   const [open, setOpen] = useState(false);
   const [mobileMenu, setMobileMenu] = useState(false);
+  const heroRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const nodes = Array.from(document.querySelectorAll<HTMLElement>("[data-reveal]"));
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) entry.target.setAttribute("data-in-view", "true");
+        }
+      },
+      { threshold: 0.18, rootMargin: "0px 0px -8% 0px" },
+    );
+    nodes.forEach((node) => observer.observe(node));
+
+    const onScroll = () => {
+      const y = window.scrollY || 0;
+      document.documentElement.style.setProperty("--landing-scroll", String(Math.min(y, 480)));
+      if (heroRef.current) {
+        heroRef.current.style.setProperty("--hero-shift", `${Math.min(y * 0.12, 36)}px`);
+      }
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,#f8fafc_0%,#eef2ff_35%,#ffffff_68%)] text-slate-900">
@@ -85,22 +113,22 @@ export default function LandingPage() {
       ) : null}
 
       <main className="overflow-x-hidden">
-        <section className="relative flex min-h-[100svh] items-center justify-center overflow-hidden pt-16">
-          <Image src={heroBg} alt="Munich skyline" fill priority className="absolute inset-0 object-cover" />
+        <section ref={heroRef} className="relative flex min-h-[100svh] items-center justify-center overflow-hidden pt-16 [--hero-shift:0px]">
+          <Image src={heroBg} alt="Munich skyline" fill priority className="absolute inset-0 object-cover will-change-transform [transform:scale(1.08)_translateY(var(--hero-shift))]" />
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.34)_0%,rgba(15,23,42,0.52)_55%,rgba(15,23,42,0.72)_100%)]" />
           <div className="absolute inset-x-0 top-16 h-40 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.35),transparent_70%)]" />
 
           <div className="relative z-10 mx-auto max-w-7xl px-4 py-20 text-center sm:px-6 sm:py-28 lg:px-8">
-            <div className="mx-auto mb-5 inline-flex items-center rounded-full border border-white/30 bg-white/10 px-4 py-2 text-xs font-medium uppercase tracking-[0.24em] text-white/80 backdrop-blur">
+            <div data-reveal className="motion-reveal mx-auto mb-5 inline-flex items-center rounded-full border border-white/30 bg-white/10 px-4 py-2 text-xs font-medium uppercase tracking-[0.24em] text-white/80 backdrop-blur">
               München · Kaufobjekte · Deal Intelligence
             </div>
-            <h1 className="mx-auto max-w-4xl text-4xl font-semibold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
+            <h1 data-reveal className="motion-reveal mx-auto max-w-4xl text-4xl font-semibold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
               Finden Sie Immobilien schneller als alle anderen.
             </h1>
-            <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-white/80 sm:text-xl">
+            <p data-reveal className="motion-reveal mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-white/80 sm:text-xl">
               Unsere Plattform durchsucht automatisch alle großen Immobilienportale und versteckte Quellen und bündelt die Angebote auf einer einzigen Plattform. So entdecken Sie neue Immobilien früher als die Konkurrenz und sichern sich die besten Deals.
             </p>
-            <div className="mt-10 flex flex-col items-center gap-4">
+            <div data-reveal className="motion-reveal mt-10 flex flex-col items-center gap-4">
               <a
                 href="#contact-sales"
                 className="inline-flex min-h-12 items-center justify-center rounded-[1.35rem] bg-white px-8 py-4 text-base font-semibold text-slate-950 shadow-[0_24px_70px_rgba(15,23,42,0.24)] transition hover:-translate-y-0.5 hover:bg-slate-50"
@@ -128,14 +156,15 @@ export default function LandingPage() {
 
         <section id="features" className="bg-white py-20 lg:py-32">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <h2 className="mx-auto max-w-2xl text-center text-3xl font-bold text-slate-950 sm:text-4xl">
+            <h2 data-reveal className="motion-reveal mx-auto max-w-2xl text-center text-3xl font-bold text-slate-950 sm:text-4xl">
               Der schnellste Weg zu besseren Immobilien-Deals
             </h2>
             <div className="mt-16 grid gap-8 md:grid-cols-3">
               {features.map((feature) => (
                 <div
                   key={feature.title}
-                  className="rounded-[2rem] border border-white/70 bg-white/85 p-8 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:border-emerald-200"
+                  className="motion-reveal rounded-[2rem] border border-white/70 bg-white/85 p-8 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:border-emerald-200"
+                  data-reveal
                 >
                   <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-700/10 text-emerald-700">
                     <feature.icon className="h-6 w-6" />
