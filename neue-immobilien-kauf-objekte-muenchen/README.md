@@ -2,6 +2,35 @@
 
 Lokales System für neue Kaufwohnungen in München.
 
+## Repository Root (wichtig)
+**Dieses Verzeichnis ist das einzige Projekt-Root des GitHub-Repos.**
+
+Wenn es in deinem OpenClaw-Workspace so aussieht, als gäbe es `app/`, `collectors/`, `frontend/`, `ui/` noch einmal darüber, dann sind das **Workspace-Dateien außerhalb dieses Repos** – nicht eine doppelte Verschachtelung innerhalb des GitHub-Projekts.
+
+Das eigentliche Repo ist:
+- `neue-immobilien-kauf-objekte-muenchen/`
+
+Innerhalb dieses Repos gilt:
+- **eine** Python-Umgebung: `.venv/`
+- **eine** SQLite-Datei: `local.db`
+- **ein** Produkt-Frontend: `frontend/`
+- **ein** optionales Legacy-/Ops-UI: `ui/streamlit_app.py`
+
+## Verzeichnisstruktur
+```text
+neue-immobilien-kauf-objekte-muenchen/
+├─ app/            # FastAPI Backend / API / Business Logic
+├─ collectors/     # Scraper / Datenquellen / Normalisierung
+├─ frontend/       # Next.js Landingpage + SaaS Dashboard (primäres Frontend)
+├─ ui/             # Legacy / internes Streamlit-Ops-UI
+├─ tests/          # Python Tests
+├─ .venv/          # einzige Python venv für dieses Repo
+├─ local.db        # einzige lokale SQLite-DB für dieses Repo
+├─ requirements.txt
+├─ start-local.sh
+└─ start-all-sources.sh
+```
+
 ## Enthalten (aktueller Stand)
 - FastAPI Backend mit:
   - `GET /api/listings` (+ Filter für bucket/score/district/source/ranges)
