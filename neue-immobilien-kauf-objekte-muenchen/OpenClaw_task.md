@@ -99,7 +99,7 @@ Notes:
 ## Example Task
 
 ### Task: Add property price filter
-Status: [ ]
+Status: [x]
 Priority: High
 Type: Feature
 Description:
@@ -113,6 +113,7 @@ Acceptance Criteria:
 
 Notes:
 - Reuse existing filter UI if available
+- Bereits umgesetzt im Dashboard via `price_min` / `price_max` Filter mit UI-Feldern und API-Unterstützung.
 
 ---
 
@@ -120,7 +121,7 @@ Notes:
 - [x] Top-3 priorisiert: 1) Kleinanzeigen Preis/Zimmer-Coverage, 2) SIS District/Zimmer, 3) Immowelt generische Titel/District
 - [x] Erste Fixes umgesetzt für Immowelt, SIS und Planethome
 - [~] Kleinanzeigen Preis-Coverage auf frischen Listings verbessern
-- [~] Broker_riedel / Engel-Völkers District-Extraktion prüfen und ggf. verbessern
+- [x] Broker_riedel / Engel-Völkers District-Extraktion prüfen und ggf. verbessern
 
 ## Discovered Issues / New Tasks
 - [ ] Improve Kleinanzeigen price coverage on fresh listings (currently 3/6 with `price_eur` on latest live sample)
@@ -129,3 +130,5 @@ Notes:
 
 ## Completed Tasks
 - Move completed tasks here if the file becomes too long
+
+- [ ] Re-run fresh source scans to verify improved Kleinanzeigen price coverage on live data
