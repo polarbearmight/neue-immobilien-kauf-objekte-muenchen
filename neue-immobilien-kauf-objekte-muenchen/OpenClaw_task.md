@@ -143,3 +143,5 @@ Notes:
 - [ ] Refine landing page motion/pixel polish further if needed
 
 - [x] Polish landing page login flow and verify dashboard data freshness
+
+- [x] Improve logout/session UX for protected dashboard flow
