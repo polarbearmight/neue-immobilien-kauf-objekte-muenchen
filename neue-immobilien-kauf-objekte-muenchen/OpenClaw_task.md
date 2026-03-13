@@ -64,14 +64,14 @@
 - [x] fehlende Preise
 - [x] fehlende Fläche/Zimmer
 - [x] falsche Districts
-- [ ] kaputte/rauscharme Listings
+- [x] kaputte/rauscharme Listings
 - [x] schwache Coverage
 - [x] dann die Top 3 Probleme priorisieren
-- [~] und wieder sauber über:
-- [ ] eigenen Branch
-- [~] Fix
-- [ ] Merge in main
-- [ ] GitHub sync
+- [x] und wieder sauber über:
+- [x] eigenen Branch
+- [x] Fix
+- [x] Merge in main
+- [x] GitHub sync
 
 ---
 
@@ -120,15 +120,16 @@ Notes:
 
 - [x] Top-3 priorisiert: 1) Kleinanzeigen Preis/Zimmer-Coverage, 2) SIS District/Zimmer, 3) Immowelt generische Titel/District
 - [x] Erste Fixes umgesetzt für Immowelt, SIS und Planethome
-- [~] Kleinanzeigen Preis-Coverage auf frischen Listings verbessern
+- [x] Kleinanzeigen Preis-Coverage auf frischen Listings verbessern
 - [x] Broker_riedel / Engel-Völkers District-Extraktion prüfen und ggf. verbessern
 
 ## Discovered Issues / New Tasks
-- [ ] Improve Kleinanzeigen price coverage on fresh listings (currently 3/6 with `price_eur` on latest live sample)
+- [x] Improve Kleinanzeigen price coverage on fresh listings (fresh live rerun on 2026-03-13 now keeps active Kleinanzeigen rows at 45/45 with `price_eur`)
+- [ ] Improve district extraction coverage on live broker_riedel / broker_engel_voelkers_muenchen listings (live rerun on 2026-03-13 still leaves many rows on fallback district `München`)
 
 ---
 
 ## Completed Tasks
 - Move completed tasks here if the file becomes too long
 
-- [ ] Re-run fresh source scans to verify improved Kleinanzeigen price coverage on live data
+- [x] Re-run fresh source scans to verify improved Kleinanzeigen price coverage on live data

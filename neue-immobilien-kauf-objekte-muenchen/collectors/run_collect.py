@@ -192,6 +192,33 @@ def get_or_create_source(db, name: str, base_url: str) -> Source:
     return src
 
 
+def _should_force_deactivate_legacy_listing(listing: Listing, source_name: str) -> bool:
+    if listing.source != source_name:
+        return False
+
+    url = (listing.url or "").lower()
+    title = (listing.title or "").lower()
+
+    if source_name == "kleinanzeigen":
+        if "/s-anzeige/" not in url:
+            return True
+        if listing.price_eur is None:
+            return True
+        return False
+
+    if source_name == "broker_riedel":
+        return "/objekte/" not in url
+
+    if source_name == "broker_engel_voelkers_muenchen":
+        if "/exposes/" not in url:
+            return True
+        if "engel & völkers" in title and "immobilie kaufen in" in title:
+            return True
+        return False
+
+    return False
+
+
 def upsert_rows(db, rows: list[dict], source_name: str) -> tuple[int, int, int]:
     new_count = 0
     updated_count = 0
@@ -286,17 +313,19 @@ def upsert_rows(db, rows: list[dict], source_name: str) -> tuple[int, int, int]:
             ))
             new_count += 1
 
-    stale_rows = db.execute(
+    active_rows = db.execute(
         select(Listing).where(
             Listing.source == source_name,
             Listing.is_active.is_(True),
-            Listing.last_seen_at < now - timedelta(hours=12),
         )
     ).scalars().all()
-    for stale in stale_rows:
+    for stale in active_rows:
         if stale.source_listing_id in seen_ids:
             continue
-        if _is_inactive(stale.last_seen_at):
+        should_force_deactivate = _should_force_deactivate_legacy_listing(stale, source_name)
+        stale_last_seen = ensure_utc(stale.last_seen_at) if stale.last_seen_at else None
+        is_stale_inactive = bool(stale_last_seen and stale_last_seen < now - timedelta(hours=12) and _is_inactive(stale.last_seen_at))
+        if should_force_deactivate or is_stale_inactive:
             stale.is_active = False
             db.add(ListingSnapshot(
                 listing_id=stale.id,

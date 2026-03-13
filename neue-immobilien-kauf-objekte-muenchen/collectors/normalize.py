@@ -147,6 +147,9 @@ def normalize_listing_row(row: dict) -> dict | None:
     rooms = normalize_rooms(to_num(row.get("rooms")))
     ppsqm = to_num(row.get("price_per_sqm"))
 
+    if source == "kleinanzeigen" and price is None:
+        return None
+
     # If normalized price is missing/invalid, ignore upstream €/m² to avoid false ultra-deals.
     if price is None:
         ppsqm = None
