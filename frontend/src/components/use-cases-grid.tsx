@@ -1,11 +1,11 @@
 const cases = [
   {
     title: 'Für Investoren',
-    text: 'Deals schneller identifizieren, Preisverläufe prüfen und Objekte mit attraktiver Rendite priorisieren.',
+    text: 'Deals schneller identifizieren, Preisverläufe prüfen und Objekte mit attraktiver Rendite systematisch priorisieren.',
   },
   {
     title: 'Für Makler',
-    text: 'Marktbewegungen und vergleichbare Listings zentral sehen, statt Portale einzeln zu verfolgen.',
+    text: 'Marktbewegungen und vergleichbare Listings zentral sehen, statt Portale einzeln nach neuen Chancen zu durchsuchen.',
   },
   {
     title: 'Für Suchende',

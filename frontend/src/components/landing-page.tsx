@@ -148,7 +148,7 @@ export default function LandingPage() {
               Finden Sie Immobilien schneller als alle anderen.
             </h1>
             <p data-reveal className="motion-reveal mx-auto mt-6 max-w-3xl text-lg leading-relaxed text-white/80 sm:text-xl xl:max-w-4xl xl:text-[1.35rem]">
-              Unsere Plattform durchsucht automatisch alle großen Immobilienportale und versteckte Quellen und bündelt die Angebote auf einer einzigen Plattform. So entdecken Sie neue Immobilien früher als die Konkurrenz und sichern sich die besten Deals.
+              Unsere Plattform bündelt große Immobilienportale, kleinere Quellen und zusätzliche Marktsignale in einem kuratierten Such- und Entscheidungsraum. So erkennen Sie relevante Kaufobjekte früher, priorisieren bessere Chancen schneller und handeln mit mehr Kontext.
             </p>
             <div data-reveal className="motion-reveal mt-10 flex flex-col items-center gap-4 [transition-delay:80ms]">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
