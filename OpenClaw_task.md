@@ -22,15 +22,15 @@
 ## Current Priority Tasks
 
 ### Core Features
-- [ ] Build or improve property listing page
+- [~] Build or improve property listing page
 - [ ] Build or improve property detail page
 - [ ] 
 
 ### Bug Fixes
 - [ ] Identify and fix UI bugs
 - [ ] Identify and fix API or data loading issues
-- [ ] Fix mobile responsiveness issues
-- [ ] Fix broken navigation or routing problems
+- [~] Fix mobile responsiveness issues
+- [~] Fix broken navigation or routing problems
 
 ### Code Quality
 - [ ] Refactor duplicated code
@@ -47,8 +47,8 @@
 - [ ] Improve rendering performance
 
 ### UX Improvements
-- [ ] Improve homepage layout
-- [ ] Improve search experience
+- [x] Improve homepage layout
+- [~] Improve search experience
 - [ ] Improve listing card design
 - [ ] Improve detail page usability
 - [ ] Improve empty states and feedback messages
@@ -59,19 +59,19 @@
 ## In Progress / Next
 - [x] Verify Kleinanzeigen scan quality after next live scan run (price coverage + district extraction on fresh data)
 - [x] Add one-click "Run source now" action on Sources page for `kleinanzeigen` with status feedback
-- [ ] alle aktiven Quellen prüfen
-- [ ] schauen, wo Datenqualität schlecht ist:
-- [ ] fehlende Preise
-- [ ] fehlende Fläche/Zimmer
-- [ ] falsche Districts
-- [ ] kaputte/rauscharme Listings
-- [ ] schwache Coverage
-- [ ] dann die Top 3 Probleme priorisieren
-- [ ] und wieder sauber über:
-- [ ] eigenen Branch
-- [ ] Fix
-- [ ] Merge in main
-- [ ] GitHub sync
+- [x] alle aktiven Quellen prüfen
+- [x] schauen, wo Datenqualität schlecht ist:
+- [x] fehlende Preise
+- [x] fehlende Fläche/Zimmer
+- [x] falsche Districts
+- [x] kaputte/rauscharme Listings
+- [x] schwache Coverage
+- [x] dann die Top 3 Probleme priorisieren
+- [x] und wieder sauber über:
+- [x] eigenen Branch
+- [x] Fix
+- [x] Merge in main
+- [x] GitHub sync
 
 ---
 
@@ -99,7 +99,7 @@ Notes:
 ## Example Task
 
 ### Task: Add property price filter
-Status: [ ]
+Status: [x]
 Priority: High
 Type: Feature
 Description:
@@ -113,13 +113,61 @@ Acceptance Criteria:
 
 Notes:
 - Reuse existing filter UI if available
+- Bereits umgesetzt im Dashboard via `price_min` / `price_max` Filter mit UI-Feldern und API-Unterstützung.
 
 ---
 
+
+- [x] Top-3 priorisiert: 1) Kleinanzeigen Preis/Zimmer-Coverage, 2) SIS District/Zimmer, 3) Immowelt generische Titel/District
+- [x] Erste Fixes umgesetzt für Immowelt, SIS und Planethome
+- [x] Kleinanzeigen Preis-Coverage auf frischen Listings verbessern
+- [x] Broker_riedel / Engel-Völkers District-Extraktion prüfen und ggf. verbessern
+
 ## Discovered Issues / New Tasks
-- [ ] Improve Kleinanzeigen price coverage on fresh listings (currently 3/6 with `price_eur` on latest live sample)
+- [x] Improve Kleinanzeigen price coverage on fresh listings (fresh live rerun on 2026-03-13 now keeps active Kleinanzeigen rows at 45/45 with `price_eur`)
+- [ ] Improve district extraction coverage on live broker_riedel / broker_engel_voelkers_muenchen listings (live rerun on 2026-03-13 still leaves many rows on fallback district `München`)
 
 ---
 
 ## Completed Tasks
 - Move completed tasks here if the file becomes too long
+
+- [x] Re-run fresh source scans to verify improved Kleinanzeigen price coverage on live data
+
+- [x] Recreate landing page from ZIP and connect auth flow to dashboard
+- [x] Protect dashboard routes behind login modal flow
+
+- [x] Polish landing page visual fidelity, login modal, auth signing, and mobile animation behavior
+- [x] Investigate Next.js `next start` runtime issue: production start works when run after a fresh build in the same shell/session
+
+- [ ] Refine landing page motion/pixel polish further if needed
+
+- [x] Polish landing page login flow and verify dashboard data freshness
+
+- [x] Improve logout/session UX for protected dashboard flow
+
+- [x] Add /impressum, /privacy and /contact public pages
+- [x] Add contact sales form connected to backend
+- [x] Fix production dashboard data loading after login by keeping backend on stable internal service
+- [x] Remove demo credential autofill and demo hint from login modal
+- [x] Add /account page
+- [x] Add forgot/reset password flow
+- [x] Add onboarding after first login
+- [x] Polish dashboard SaaS UX with responsive shell, loading, empty and error states
+- [x] Improve deals, watchlist and settings states and UX consistency
+- [x] Replace local password reset with backend user/password management
+- [x] Add legal contact data endpoint and real legal page structure
+- [x] Make contact-sales flow production-ready with persisted leads and admin overview
+- [x] Add basic login/form rate limiting and tighten auth cookie handling
+- [x] Add mobile filter bottom sheet for iPhone-first dashboard UX
+- [x] Add mobile listing card view alongside desktop table
+- [x] Add sticky mobile action bar for filters and refresh
+- [x] Improve landing page and dashboard spacing/scrolling for mobile devices
+- [x] Add premium mobile dashboard IA with sticky actions and bottom-sheet filters
+- [x] Add Apple-style landing motion with smooth reveal and subtle parallax
+- [x] Add iOS-style bottom tab bar and segmented KPI controls on mobile
+- [x] Extend landing page with stronger premium motion and product-page storytelling
+- [x] Redesign listing details drawer into premium structured sections
+- [x] Add stronger product-storytelling section to the landing page
+- [x] Update homepage rank-copy to separate good chances from bad deals
+- [x] Polish details drawer seen-on section into premium cards

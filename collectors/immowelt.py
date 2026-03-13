@@ -1,6 +1,6 @@
 import re
-from datetime import datetime
 from urllib.parse import urljoin
+from app.time_utils import utc_now
 from bs4 import BeautifulSoup
 from collectors.base import SafeCollector, AccessBlockedError
 from collectors.image_tools import is_probable_property_photo
@@ -125,6 +125,19 @@ def collect_immowelt_listings() -> list[dict]:
             if len(parts) > 1:
                 desc = " - ".join(parts[1:])[:500]
 
+            # immowelt often uses generic titles like "Wohnung zum Kauf".
+            # In that case derive a more descriptive fallback from the remaining card text.
+            generic_titles = {"wohnung zum kauf", "haus zum kauf", "studio zum kauf", "penthouse zum kauf"}
+            if (title or "").strip().lower() in generic_titles and len(parts) >= 2:
+                detailish = []
+                for part in parts[1:]:
+                    low = part.lower()
+                    if "€" in part or "zimmer" in low or "m²" in low:
+                        continue
+                    detailish.append(part)
+                if detailish:
+                    title = " - ".join(detailish[:2])[:300]
+
         parent = a.parent
         if not desc and parent:
             desc = parent.get_text(" ", strip=True)[:500] or None
@@ -158,8 +171,8 @@ def collect_immowelt_listings() -> list[dict]:
                 "area_sqm": area,
                 "rooms": rooms,
                 "price_per_sqm": price_per_sqm,
-                "first_seen_at": datetime.utcnow(),
-                "last_seen_at": datetime.utcnow(),
+                "first_seen_at": utc_now(),
+                "last_seen_at": utc_now(),
             }
         )
 
