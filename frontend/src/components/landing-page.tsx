@@ -165,6 +165,7 @@ export default function LandingPage() {
                 </a>
               </div>
               <p className="text-sm text-white/70">Exklusiver Zugang zur Plattform für ausgewählte Nutzer.</p>
+              <div className="inline-flex rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs uppercase tracking-[0.22em] text-white/70 backdrop-blur-xl">Private Access · Curated Pipeline · Premium Signals</div>
               <div className="grid w-full max-w-3xl gap-3 pt-3 sm:grid-cols-3">
                 <div className="rounded-3xl border border-white/20 bg-white/10 px-4 py-4 text-left text-white/90 backdrop-blur-xl">
                   <div className="text-2xl font-semibold">24/7</div>

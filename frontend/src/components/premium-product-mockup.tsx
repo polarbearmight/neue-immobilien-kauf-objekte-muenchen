@@ -4,7 +4,7 @@ export function PremiumProductMockup() {
   return (
     <div className="relative mx-auto w-full max-w-5xl">
       <div className="absolute -inset-x-6 -top-8 h-40 rounded-full bg-emerald-400/20 blur-3xl" />
-      <div className="relative overflow-hidden rounded-[2rem] border border-white/20 bg-slate-950/70 shadow-[0_30px_120px_rgba(15,23,42,0.45)] backdrop-blur-2xl">
+      <div className="relative overflow-hidden rounded-[2rem] border border-white/20 bg-slate-950/70 shadow-[0_30px_120px_rgba(15,23,42,0.45)] backdrop-blur-2xl before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.6),transparent)]">
         <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 text-white/70">
           <div className="flex items-center gap-2">
             <span className="h-3 w-3 rounded-full bg-red-400/80" />
