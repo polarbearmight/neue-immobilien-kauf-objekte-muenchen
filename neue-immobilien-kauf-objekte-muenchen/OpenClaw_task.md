@@ -22,7 +22,7 @@
 ## Current Priority Tasks
 
 ### Core Features
-- [ ] Build or improve property listing page
+- [~] Build or improve property listing page
 - [ ] Build or improve property detail page
 - [ ] 
 
@@ -47,8 +47,8 @@
 - [ ] Improve rendering performance
 
 ### UX Improvements
-- [ ] Improve homepage layout
-- [ ] Improve search experience
+- [x] Improve homepage layout
+- [~] Improve search experience
 - [ ] Improve listing card design
 - [ ] Improve detail page usability
 - [ ] Improve empty states and feedback messages
@@ -133,3 +133,6 @@ Notes:
 - Move completed tasks here if the file becomes too long
 
 - [x] Re-run fresh source scans to verify improved Kleinanzeigen price coverage on live data
+
+- [x] Recreate landing page from ZIP and connect auth flow to dashboard
+- [x] Protect dashboard routes behind login modal flow

@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import type { ReactNode } from "react";
 
 const nav = [
-  ["Dashboard", "/"],
+  ["Dashboard", "/dashboard"],
   ["Deal Radar", "/deals"],
   ["Watchlist", "/watchlist"],
   ["Brand New", "/brand-new"],
@@ -26,6 +26,7 @@ const nav = [
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [dark, setDark] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return document.documentElement.classList.contains("dark");
@@ -35,6 +36,15 @@ export function AppShell({ children }: { children: ReactNode }) {
     const next = !dark;
     setDark(next);
     document.documentElement.classList.toggle("dark", next);
+  };
+
+  const onLanding = pathname === "/";
+  if (onLanding) return <>{children}</>;
+
+  const logout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/");
+    router.refresh();
   };
 
   return (
@@ -55,6 +65,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <input placeholder="Search (page-local)" className="w-full max-w-xs rounded border px-2 py-1 text-xs" disabled />
             <button className="rounded border px-2 py-1 text-xs" onClick={() => location.reload()}>Refresh</button>
             <button className="rounded border px-2 py-1 text-xs" onClick={toggleTheme}>{dark ? "Light" : "Dark"}</button>
+            <button className="rounded border px-2 py-1 text-xs" onClick={logout}>Logout</button>
           </div>
           {children}
         </main>
