@@ -34,6 +34,24 @@ const benefits = [
   "Bessere Investmententscheidungen",
 ];
 
+const storySteps = [
+  {
+    eyebrow: "01 · Capture",
+    title: "Marktbewegungen früher sehen",
+    text: "Neue Inserate, kleine Quellen und frische Marktbewegungen landen schneller in deinem Feed statt erst spät in manuellen Suchen.",
+  },
+  {
+    eyebrow: "02 · Rank",
+    title: "Relevanz automatisch priorisieren",
+    text: "Deal Score, Investment Signale und Sichtbarkeitsdaten helfen dir, gute Chancen sofort von Rauschen zu trennen.",
+  },
+  {
+    eyebrow: "03 · Act",
+    title: "Mit mehr Kontext schneller handeln",
+    text: "Preisverlauf, Source-Signale und Investment-Metriken geben dir direkt eine belastbare Entscheidungsbasis.",
+  },
+];
+
 export default function LandingPage() {
   const [open, setOpen] = useState(false);
   const [mobileMenu, setMobileMenu] = useState(false);
@@ -171,6 +189,20 @@ export default function LandingPage() {
                   </div>
                   <h3 className="mb-3 text-xl font-semibold text-slate-950">{feature.title}</h3>
                   <p className="leading-relaxed text-slate-500">{feature.text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] py-20 lg:py-28">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="grid gap-6 lg:grid-cols-3">
+              {storySteps.map((step) => (
+                <div key={step.eyebrow} data-reveal className="motion-reveal rounded-[2rem] border border-white/80 bg-white/90 p-7 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-700">{step.eyebrow}</p>
+                  <h3 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">{step.title}</h3>
+                  <p className="mt-3 leading-relaxed text-slate-600">{step.text}</p>
                 </div>
               ))}
             </div>

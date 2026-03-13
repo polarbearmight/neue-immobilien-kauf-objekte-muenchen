@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Listing, API_URL, parseBadges } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { MiniBarChart } from "@/components/mini-bar-chart";
+import { MetricTile, prettyJson, SectionCard } from "@/components/listing-detail-sections";
 
 const eur = (v?: number | null) => (v == null ? "-" : new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(v));
 const normalizeExternalUrl = (value?: string | null) => {
@@ -70,18 +71,28 @@ export function ListingDrawer({ listing, onClose }: { listing: Listing | null; o
 
   const badgeList = parseBadges(l.badges);
 
+  const scoreExplainPretty = prettyJson(l.score_explain);
+  const investmentExplainPretty = prettyJson(l.investment_explain);
+  const offMarketExplainPretty = prettyJson(l.off_market_explain);
+  const aiFlagsPretty = prettyJson(l.ai_flags);
+  const isSeed = l.source === "seed" || (l.title || "").toLowerCase().includes("seed-datensatz");
+
   return (
     <div className="fixed inset-0 z-50 flex">
-      <button className="flex-1 bg-black/30" onClick={onClose} aria-label="Close" />
-      <aside className="h-full w-full max-w-2xl overflow-y-auto border-l bg-background p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Listing Details</h2>
+      <button className="flex-1 bg-slate-950/40 backdrop-blur-sm" onClick={onClose} aria-label="Close" />
+      <aside className="h-full w-full max-w-3xl overflow-y-auto border-l border-white/60 bg-[linear-gradient(180deg,#f8fafc_0%,#ffffff_100%)] p-4 sm:p-6">
+        <div className="mb-4 flex items-center justify-between rounded-[1.6rem] border border-white/70 bg-white/85 px-4 py-3 shadow-[0_16px_40px_rgba(15,23,42,0.08)] backdrop-blur-2xl">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Listing Details</p>
+            <h2 className="mt-1 text-lg font-semibold text-slate-950">{l.display_title || l.title || "Ohne Titel"}</h2>
+          </div>
           <Button variant="outline" size="sm" onClick={onClose}>Schließen</Button>
         </div>
 
         <div className="space-y-4 text-sm">
-          <p className="text-base font-semibold">{l.display_title || l.title || "Ohne Titel"}</p>
-          <p className="text-muted-foreground">{l.district || "-"} · {l.source}</p>
+          <div className="rounded-[1.8rem] border border-white/70 bg-white/90 p-5 shadow-[0_20px_50px_rgba(15,23,42,0.08)] backdrop-blur-2xl">
+            {isSeed ? <div className="mb-3 inline-flex rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">Seed-/Fallback-Datensatz</div> : null}
+            <p className="text-sm text-slate-500">{l.district || "-"} · {l.source}</p>
           {listingUrl ? (
             <a href={listingUrl} target="_blank" rel="noreferrer" className="block truncate text-xs text-blue-600 underline underline-offset-2">{listingUrl}</a>
           ) : (
@@ -91,66 +102,67 @@ export function ListingDrawer({ listing, onClose }: { listing: Listing | null; o
             {badgeList.length ? badgeList.map((b) => <span key={b} className="rounded-full border px-2 py-0.5 text-xs">{b}</span>) : <span className="text-xs text-muted-foreground">No badges</span>}
           </div>
 
-          <div className="grid grid-cols-2 gap-3 rounded-lg border p-3">
-            <div><p className="text-muted-foreground">Preis</p><p className="font-medium">{eur(l.price_eur)}</p></div>
-            <div><p className="text-muted-foreground">€/m²</p><p className="font-medium">{eur(l.price_per_sqm)}</p></div>
-            <div><p className="text-muted-foreground">Fläche</p><p className="font-medium">{l.area_sqm || "-"} m²</p></div>
-            <div><p className="text-muted-foreground">Zimmer</p><p className="font-medium">{l.rooms || "-"}</p></div>
-            <div><p className="text-muted-foreground">Adresse</p><p className="font-medium">{l.address || "-"}</p></div>
-            <div><p className="text-muted-foreground">Score</p><p className="font-medium">{Math.round(l.deal_score || 0)}</p></div>
-            <div><p className="text-muted-foreground">First Seen</p><p className="font-medium">{l.first_seen_at ? new Date(l.first_seen_at).toLocaleString("de-DE") : "-"}</p></div>
-            <div><p className="text-muted-foreground">Posted At</p><p className="font-medium">{l.posted_at ? new Date(l.posted_at).toLocaleString("de-DE") : "-"}</p></div>
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <MetricTile label="Preis" value={eur(l.price_eur)} emphasize />
+            <MetricTile label="€/m²" value={eur(l.price_per_sqm)} />
+            <MetricTile label="Fläche" value={`${l.area_sqm || "-"} m²`} />
+            <MetricTile label="Zimmer" value={l.rooms || "-"} />
+            <MetricTile label="Adresse" value={l.address || "-"} />
+            <MetricTile label="Score" value={Math.round(l.deal_score || 0)} emphasize />
+            <MetricTile label="First Seen" value={l.first_seen_at ? new Date(l.first_seen_at).toLocaleString("de-DE") : "-"} />
+            <MetricTile label="Posted At" value={l.posted_at ? new Date(l.posted_at).toLocaleString("de-DE") : "-"} />
+          </div>
           </div>
 
-          <details className="rounded border p-2" open>
-            <summary className="cursor-pointer font-medium">A) Score Explanation</summary>
-            <p className="mt-2 text-muted-foreground whitespace-pre-wrap">{l.score_explain || "-"}</p>
-          </details>
+          <SectionCard title="Score" subtitle="Warum der Deal so bewertet wurde">
+            <pre className="overflow-x-auto whitespace-pre-wrap rounded-2xl bg-slate-50 p-4 text-xs leading-6 text-slate-600">{scoreExplainPretty || "Keine Detail-Erklärung verfügbar."}</pre>
+          </SectionCard>
 
-          <details className="rounded border p-2" open>
-            <summary className="cursor-pointer font-medium">B) Source Information</summary>
-            <div className="mt-2 space-y-1 text-xs text-muted-foreground">
-              <p>Source: {detail?.source?.name || l.source}</p>
-              <p>Reliability: {detail?.source?.reliability_score ?? "-"}</p>
-              <p>Cluster members: {detail?.cluster?.members_count ?? 0}</p>
-              <p>Seen on: {(detail?.cluster?.sources || []).join(", ") || "-"}</p>
+          <SectionCard title="Quelle" subtitle="Herkunft und Sichtbarkeit des Angebots">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <MetricTile label="Source" value={detail?.source?.name || l.source} />
+              <MetricTile label="Reliability" value={detail?.source?.reliability_score ?? "-"} />
+              <MetricTile label="Cluster Members" value={detail?.cluster?.members_count ?? 0} />
+              <MetricTile label="Seen on" value={(detail?.cluster?.sources || []).join(", ") || "-"} />
             </div>
-          </details>
+          </SectionCard>
 
-          <details className="rounded border p-2" open>
-            <summary className="cursor-pointer font-medium">C) Price History</summary>
-            <div className="mt-2 space-y-2 text-xs text-muted-foreground">
-              <p>Old: {eur(detail?.price_history?.old_price)} · Current: {eur(detail?.price_history?.current_price)}</p>
-              {detail?.price_history?.has_price_drop ? <p className="text-green-700">PRICE DROP</p> : null}
+          <SectionCard title="Preisverlauf" subtitle="Historie und mögliche Preisänderungen">
+            <div className="space-y-3 text-xs text-slate-600">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <MetricTile label="Alt" value={eur(detail?.price_history?.old_price)} />
+                <MetricTile label="Aktuell" value={eur(detail?.price_history?.current_price)} emphasize />
+              </div>
+              {detail?.price_history?.has_price_drop ? <div className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">Price Drop erkannt</div> : null}
               {miniSeries.length ? <MiniBarChart data={miniSeries} /> : null}
-              {snapshots.length ? snapshots.slice(-8).reverse().map((s) => (
-                <p key={s.id}>{new Date(s.captured_at).toLocaleString("de-DE")} · {eur(s.price_eur)}</p>
-              )) : <p>-</p>}
+              <div className="space-y-2">
+                {snapshots.length ? snapshots.slice(-8).reverse().map((s) => (
+                  <div key={s.id} className="flex items-center justify-between rounded-2xl bg-slate-50 px-3 py-3"><span>{new Date(s.captured_at).toLocaleString("de-DE")}</span><span className="font-medium text-slate-900">{eur(s.price_eur)}</span></div>
+                )) : <p>-</p>}
+              </div>
             </div>
-          </details>
+          </SectionCard>
 
-          <details className="rounded border p-2" open>
-            <summary className="cursor-pointer font-medium">D) Investment Section</summary>
-            <div className="mt-2 space-y-1 text-xs text-muted-foreground">
-              <p>Estimated rent €/m²: {eur(l.estimated_rent_per_sqm)}</p>
-              <p>Estimated monthly rent: {eur(l.estimated_monthly_rent)}</p>
-              <p>Gross yield: {l.gross_yield_percent != null ? `${l.gross_yield_percent.toFixed(2)}%` : "-"}</p>
-              <p>Price-to-rent ratio: {l.price_to_rent_ratio != null ? l.price_to_rent_ratio.toFixed(2) : "-"}</p>
-              <p>Investment score: {l.investment_score != null ? Math.round(l.investment_score) : "-"}</p>
-              <p className="whitespace-pre-wrap">Explain: {l.investment_explain || "-"}</p>
+          <SectionCard title="Investment" subtitle="Mietpotenzial und Rendite-Einschätzung">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+              <MetricTile label="Rent €/m²" value={eur(l.estimated_rent_per_sqm)} />
+              <MetricTile label="Monthly Rent" value={eur(l.estimated_monthly_rent)} />
+              <MetricTile label="Gross Yield" value={l.gross_yield_percent != null ? `${l.gross_yield_percent.toFixed(2)}%` : "-"} emphasize />
+              <MetricTile label="Price-to-Rent" value={l.price_to_rent_ratio != null ? l.price_to_rent_ratio.toFixed(2) : "-"} />
+              <MetricTile label="Investment Score" value={l.investment_score != null ? Math.round(l.investment_score) : "-"} />
             </div>
-          </details>
+            <pre className="mt-3 overflow-x-auto whitespace-pre-wrap rounded-2xl bg-slate-50 p-4 text-xs leading-6 text-slate-600">{investmentExplainPretty || "Keine zusätzliche Investment-Erklärung verfügbar."}</pre>
+          </SectionCard>
 
-          <details className="rounded border p-2" open>
-            <summary className="cursor-pointer font-medium">E) Off-Market Analysis</summary>
-            <div className="mt-2 space-y-1 text-xs text-muted-foreground">
-              <p>Off-market score: {l.off_market_score != null ? Math.round(l.off_market_score) : "-"}</p>
-              <p>Exclusivity score: {l.exclusivity_score != null ? Math.round(l.exclusivity_score) : "-"}</p>
-              <p>Source popularity score: {l.source_popularity_score != null ? Math.round(l.source_popularity_score) : "-"}</p>
-              <p className="whitespace-pre-wrap">Flags: {l.off_market_flags || "-"}</p>
-              <p className="whitespace-pre-wrap">Explain: {l.off_market_explain || "-"}</p>
+          <SectionCard title="Off-Market" subtitle="Exklusivität und Sichtbarkeits-Signale">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <MetricTile label="Off-market Score" value={l.off_market_score != null ? Math.round(l.off_market_score) : "-"} emphasize />
+              <MetricTile label="Exclusivity" value={l.exclusivity_score != null ? Math.round(l.exclusivity_score) : "-"} />
+              <MetricTile label="Source Popularity" value={l.source_popularity_score != null ? Math.round(l.source_popularity_score) : "-"} />
             </div>
-          </details>
+            <div className="mt-3 flex flex-wrap gap-2">{parseBadges(l.off_market_flags).length ? parseBadges(l.off_market_flags).map((flag) => <span key={flag} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-700">{flag}</span>) : <span className="text-xs text-slate-500">Keine Off-Market-Flags</span>}</div>
+            <pre className="mt-3 overflow-x-auto whitespace-pre-wrap rounded-2xl bg-slate-50 p-4 text-xs leading-6 text-slate-600">{offMarketExplainPretty || "Keine zusätzliche Off-Market-Erklärung verfügbar."}</pre>
+          </SectionCard>
 
           {(detail?.cluster?.members || []).length > 1 ? (
             <details className="rounded border p-2" open>
@@ -173,12 +185,11 @@ export function ListingDrawer({ listing, onClose }: { listing: Listing | null; o
             </details>
           ) : null}
 
-          <details className="rounded border p-2" open>
-            <summary className="cursor-pointer font-medium">AI Flags</summary>
-            <p className="mt-2 text-muted-foreground whitespace-pre-wrap">{l.ai_flags || "-"}</p>
-          </details>
+          <SectionCard title="AI Flags" subtitle="Automatische Hinweise aus dem Analyse-Flow">
+            <pre className="overflow-x-auto whitespace-pre-wrap rounded-2xl bg-slate-50 p-4 text-xs leading-6 text-slate-600">{aiFlagsPretty || "Keine AI Flags vorhanden."}</pre>
+          </SectionCard>
 
-          <div className="sticky bottom-0 flex flex-wrap gap-2 border-t bg-background pt-3">
+          <div className="sticky bottom-0 flex flex-wrap gap-2 border-t border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0)_0%,rgba(255,255,255,0.96)_24%)] pt-4 pb-1">
             {listingUrl ? <a href={listingUrl} target="_blank" rel="noreferrer" className="inline-block rounded bg-black px-3 py-2 text-sm text-white hover:opacity-90">Open listing ↗</a> : null}
             <button className="inline-block rounded border px-3 py-2 text-sm hover:bg-muted" onClick={async () => {
               try { await navigator.clipboard.writeText(listingUrl || l.url || ""); } catch {}
