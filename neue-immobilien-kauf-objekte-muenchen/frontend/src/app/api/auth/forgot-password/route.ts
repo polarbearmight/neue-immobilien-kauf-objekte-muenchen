@@ -4,7 +4,7 @@ const API_BASE = process.env.BACKEND_ORIGIN || process.env.NEXT_PUBLIC_API_URL |
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
-  const res = await fetch(`${API_BASE}/api/auth/reset-password`, {
+  const res = await fetch(`${API_BASE}/api/auth/forgot-password`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),

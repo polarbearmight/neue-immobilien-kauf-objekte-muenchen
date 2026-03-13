@@ -4,7 +4,7 @@ import re
 import threading
 import time
 
-from fastapi import Depends, FastAPI, Query
+from fastapi import Depends, FastAPI, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import desc, func, select, case
@@ -12,8 +12,8 @@ from collections import defaultdict
 from sqlalchemy.orm import Session
 
 from app.db import Base, SessionLocal, engine, ensure_schema
-from app.models import AlertRule, Listing, ListingSnapshot, Source, SourceRun, Watchlist
-from app.schemas import AlertRuleIn, ContactSalesIn, ListingOut, SourceOut
+from app.models import AlertRule, ContactLead, Listing, ListingSnapshot, PasswordResetToken, Source, SourceRun, User, Watchlist
+from app.schemas import AlertRuleIn, ChangePasswordIn, ContactSalesIn, ForgotPasswordIn, ListingOut, LoginIn, ProfileUpdateIn, ResetPasswordIn, SourceOut
 from app.source_reliability import attach_reliability, compute_reliability
 from app.time_utils import utc_now
 from app.investment import recompute_investments
@@ -30,6 +30,7 @@ from app.ai_deal_analyzer import analyze_listing, serialize_flags
 from app.dedup import assign_clusters
 from collectors.source_discovery import SEED_SOURCES, discover_source_card, write_source_report
 from collectors.source_validator import validate_source
+from app.auth import hash_password, hash_reset_token, issue_reset_token, legal_contact_payload, read_frontend_env_password, reset_token_expiry, verify_password
 
 app = FastAPI(title="Neue Kauf Objekte München API")
 app.add_middleware(
@@ -42,9 +43,53 @@ app.add_middleware(
 Base.metadata.create_all(bind=engine)
 ensure_schema()
 
+login_attempts: dict[str, list[float]] = defaultdict(list)
+contact_attempts: dict[str, list[float]] = defaultdict(list)
+
+
+def _client_key(request: Request, fallback: str = "unknown") -> str:
+    forwarded = request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+    return forwarded or (request.client.host if request.client else fallback)
+
+
+def _rate_limited(bucket: dict[str, list[float]], key: str, window_seconds: int, limit: int) -> bool:
+    now = time.time()
+    bucket[key] = [ts for ts in bucket.get(key, []) if now - ts < window_seconds]
+    if len(bucket[key]) >= limit:
+        return True
+    bucket[key].append(now)
+    return False
+
+
+def _seed_default_user():
+    db = SessionLocal()
+    try:
+        seed_username = os.getenv("MDF_USERNAME", "admin")
+        seed_password = read_frontend_env_password("admin123")
+        existing = db.execute(select(User).where(User.username == seed_username)).scalar_one_or_none()
+        if existing:
+            if not verify_password(seed_password, existing.password_hash):
+                existing.password_hash = hash_password(seed_password)
+                existing.updated_at = utc_now()
+                db.commit()
+            return
+        user = User(
+            username=seed_username,
+            email=os.getenv("MDF_USER_EMAIL", "admin@immodealfinder.de"),
+            display_name=os.getenv("MDF_USER_DISPLAY_NAME", "Marius"),
+            company=os.getenv("MDF_USER_COMPANY", "ImmoDealFinder"),
+            password_hash=hash_password(seed_password),
+            is_active=True,
+        )
+        db.add(user)
+        db.commit()
+    finally:
+        db.close()
+
 
 @app.on_event("startup")
 def _startup_scheduler():
+    _seed_default_user()
     if scheduler_state.get("enabled", True):
         t = threading.Thread(target=_auto_scan_loop, daemon=True)
         t.start()
@@ -514,21 +559,124 @@ def listing_detail_expanded(listing_id: int, db: Session = Depends(get_db)):
     }
 
 
+@app.post("/api/auth/login")
+def api_auth_login(payload: LoginIn, request: Request, db: Session = Depends(get_db)):
+    if _rate_limited(login_attempts, _client_key(request, payload.username), window_seconds=300, limit=10):
+        return JSONResponse(status_code=429, content={"ok": False, "error": "too_many_login_attempts"})
+    user = db.execute(select(User).where(User.username == payload.username, User.is_active == True)).scalar_one_or_none()
+    if not user or not verify_password(payload.password, user.password_hash):
+        return JSONResponse(status_code=401, content={"ok": False, "error": "invalid_credentials"})
+    return {"ok": True, "user": {"username": user.username, "email": user.email, "display_name": user.display_name, "company": user.company}}
+
+
+@app.get("/api/auth/users/{username}")
+def api_auth_user(username: str, db: Session = Depends(get_db)):
+    user = db.execute(select(User).where(User.username == username, User.is_active == True)).scalar_one_or_none()
+    if not user:
+        return JSONResponse(status_code=404, content={"ok": False, "error": "user_not_found"})
+    return {"ok": True, "user": {"username": user.username, "email": user.email, "display_name": user.display_name, "company": user.company}}
+
+
+@app.post("/api/auth/change-password")
+def api_auth_change_password(username: str, payload: ChangePasswordIn, db: Session = Depends(get_db)):
+    user = db.execute(select(User).where(User.username == username, User.is_active == True)).scalar_one_or_none()
+    if not user:
+        return JSONResponse(status_code=404, content={"ok": False, "error": "user_not_found"})
+    if not verify_password(payload.current_password, user.password_hash):
+        return JSONResponse(status_code=401, content={"ok": False, "error": "invalid_current_password"})
+    if len(payload.new_password) < 8:
+        return JSONResponse(status_code=400, content={"ok": False, "error": "password_too_short"})
+    user.password_hash = hash_password(payload.new_password)
+    user.updated_at = utc_now()
+    db.commit()
+    return {"ok": True}
+
+
+@app.put("/api/auth/profile")
+def api_auth_profile(username: str, payload: ProfileUpdateIn, db: Session = Depends(get_db)):
+    user = db.execute(select(User).where(User.username == username, User.is_active == True)).scalar_one_or_none()
+    if not user:
+        return JSONResponse(status_code=404, content={"ok": False, "error": "user_not_found"})
+    user.display_name = payload.display_name or user.display_name
+    user.email = payload.email
+    user.company = payload.company
+    user.updated_at = utc_now()
+    db.commit()
+    return {"ok": True, "user": {"username": user.username, "email": user.email, "display_name": user.display_name, "company": user.company}}
+
+
+@app.post("/api/auth/forgot-password")
+def api_auth_forgot_password(payload: ForgotPasswordIn, request: Request, db: Session = Depends(get_db)):
+    if _rate_limited(contact_attempts, f"forgot:{_client_key(request, payload.email)}", window_seconds=3600, limit=5):
+        return JSONResponse(status_code=429, content={"ok": False, "error": "too_many_requests"})
+    user = db.execute(select(User).where(User.email == payload.email, User.is_active == True)).scalar_one_or_none()
+    if not user:
+        return {"ok": True, "message": "Wenn ein Konto mit dieser E-Mail existiert, wurde ein Reset vorbereitet."}
+    raw_token, token_hash = issue_reset_token()
+    db.add(PasswordResetToken(user_id=user.id, token_hash=token_hash, expires_at=reset_token_expiry()))
+    db.commit()
+    return {"ok": True, "message": "Reset vorbereitet.", "reset_token": raw_token}
+
+
+@app.post("/api/auth/reset-password")
+def api_auth_reset_password(payload: ResetPasswordIn, db: Session = Depends(get_db)):
+    if len(payload.new_password) < 8:
+        return JSONResponse(status_code=400, content={"ok": False, "error": "password_too_short"})
+    token = db.execute(select(PasswordResetToken).where(PasswordResetToken.token_hash == hash_reset_token(payload.token))).scalar_one_or_none()
+    expires_at = token.expires_at.replace(tzinfo=utc_now().tzinfo) if token and token.expires_at.tzinfo is None else (token.expires_at if token else None)
+    if not token or token.used_at is not None or expires_at < utc_now():
+        return JSONResponse(status_code=400, content={"ok": False, "error": "invalid_or_expired_token"})
+    user = db.execute(select(User).where(User.id == token.user_id, User.is_active == True)).scalar_one_or_none()
+    if not user:
+        return JSONResponse(status_code=404, content={"ok": False, "error": "user_not_found"})
+    user.password_hash = hash_password(payload.new_password)
+    user.updated_at = utc_now()
+    token.used_at = utc_now()
+    db.commit()
+    return {"ok": True}
+
+
+@app.get("/api/legal/contact")
+def api_legal_contact():
+    return {"ok": True, "legal": legal_contact_payload()}
+
+
 @app.post("/api/contact-sales")
-def api_contact_sales(payload: ContactSalesIn):
+def api_contact_sales(payload: ContactSalesIn, request: Request, db: Session = Depends(get_db)):
+    if _rate_limited(contact_attempts, f"lead:{_client_key(request, payload.email)}", window_seconds=3600, limit=6):
+        return JSONResponse(status_code=429, content={"ok": False, "error": "too_many_requests"})
+    lead = ContactLead(
+        name=payload.name.strip(),
+        email=payload.email.strip().lower(),
+        company=(payload.company or "").strip() or None,
+        message=payload.message.strip(),
+        status="new",
+        source="website",
+    )
+    db.add(lead)
+    db.commit()
+
     target_path = os.path.join(os.path.dirname(__file__), "..", "reports", "contact-sales-leads.jsonl")
     os.makedirs(os.path.dirname(target_path), exist_ok=True)
     record = {
         "received_at": utc_now().isoformat(),
-        "name": payload.name,
-        "email": payload.email,
-        "company": payload.company,
-        "message": payload.message,
+        "id": lead.id,
+        "name": lead.name,
+        "email": lead.email,
+        "company": lead.company,
+        "message": lead.message,
+        "status": lead.status,
     }
     with open(target_path, "a", encoding="utf-8") as f:
         import json
         f.write(json.dumps(record, ensure_ascii=False) + "\n")
-    return {"ok": True, "message": "Vielen Dank. Wir melden uns zeitnah."}
+    return {"ok": True, "message": "Vielen Dank. Wir melden uns zeitnah.", "lead_id": lead.id}
+
+
+@app.get("/api/admin/contact-leads")
+def api_admin_contact_leads(limit: int = Query(50, ge=1, le=200), db: Session = Depends(get_db)):
+    rows = db.execute(select(ContactLead).order_by(desc(ContactLead.created_at)).limit(limit)).scalars().all()
+    return {"ok": True, "items": [{"id": x.id, "name": x.name, "email": x.email, "company": x.company, "message": x.message, "status": x.status, "created_at": x.created_at.isoformat()} for x in rows]}
 
 
 @app.post("/api/collect/run")

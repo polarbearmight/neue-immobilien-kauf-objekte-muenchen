@@ -5,7 +5,7 @@ export async function POST() {
   res.cookies.set("mdf_auth", "", {
     httpOnly: true,
     sameSite: "lax",
-    secure: false,
+    secure: true,
     path: "/",
     maxAge: 0,
   });
