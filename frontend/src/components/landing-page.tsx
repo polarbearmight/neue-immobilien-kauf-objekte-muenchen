@@ -192,7 +192,7 @@ export default function LandingPage() {
                 <h2 className="mt-3 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl xl:text-5xl">Ein Workspace für Marktüberblick, Deal-Erkennung und schnelle Entscheidungen</h2>
                 <p className="mt-4 text-lg leading-relaxed text-slate-600 xl:max-w-2xl">Statt dutzende Quellen manuell zu prüfen, bündelt DealFinder Listings, Preisverläufe, Investment-Signale und Off-Market-Hinweise in einer Oberfläche.</p>
               </div>
-              <div className="rounded-[2rem] border border-white/80 bg-white/70 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+              <div className="desktop-luxury-hover rounded-[2rem] border border-white/80 bg-white/70 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl">
                 <div className="grid gap-4 sm:grid-cols-3">
                   <div><div className="text-xs uppercase tracking-[0.2em] text-slate-400">Coverage</div><div className="mt-2 text-3xl font-semibold text-slate-950">Multi-Source</div></div>
                   <div><div className="text-xs uppercase tracking-[0.2em] text-slate-400">Decision Layer</div><div className="mt-2 text-3xl font-semibold text-slate-950">Deal + Investment</div></div>
