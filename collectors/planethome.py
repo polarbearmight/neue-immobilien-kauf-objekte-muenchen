@@ -1,3 +1,4 @@
+import json
 import re
 from bs4 import BeautifulSoup
 
@@ -27,15 +28,44 @@ def _to_num(val) -> float | None:
         return None
 
 
-def _extract_detail_price(client: httpx.Client, url: str) -> float | None:
+def _extract_detail_fields(client: httpx.Client, url: str) -> dict:
     try:
         html = client.get(url).text
     except Exception:
-        return None
+        return {"price": None, "district": None, "postal_code": None, "address": None, "structured_data_json": None}
     soup = BeautifulSoup(html, "html.parser")
     text = soup.get_text(" ", strip=True)
     m = re.search(r"([\d\.,]{3,})\s*€", text)
-    return _to_num(m.group(1)) if m else None
+    price = _to_num(m.group(1)) if m else None
+
+    district = None
+    title = (soup.title.get_text(" ", strip=True) if soup.title else "") or text[:300]
+    for pattern in (
+        r"München[-\s/]([A-ZÄÖÜa-zäöüß\-]+)",
+        r"in\s+München[-\s/]([A-ZÄÖÜa-zäöüß\-]+)",
+        r"\b(Glockenbach|Neuperlach|Fröttmaning|Bogenhausen|Schwabing|Hadern|Pasing|Sendling|Laim|Solln|Harlaching|Giesing|Perlach|Riem|Trudering|Nymphenburg|Neuhausen)\b",
+    ):
+        mm = re.search(pattern, title, flags=re.I)
+        if mm:
+            district = mm.group(1)
+            break
+
+    postal_match = re.search(r"\b(8\d{4})\b", text)
+    postal = postal_match.group(1) if postal_match else None
+    address = f"{postal} München" if postal else None
+
+    structured = None
+    for sc in soup.select("script[type='application/ld+json']"):
+        raw = (sc.string or sc.get_text() or "").strip()
+        if not raw:
+            continue
+        try:
+            structured = json.loads(raw)
+            break
+        except Exception:
+            continue
+
+    return {"price": price, "district": district, "postal_code": postal, "address": address, "structured_data_json": structured}
 
 
 def collect_planethome_listings() -> list[dict]:
@@ -141,24 +171,36 @@ def collect_planethome_listings() -> list[dict]:
                     ppsqm = round(price / area, 2)
 
                 detail_url = f"https://planethome.de/objekt-detailseite?propertyId={provider_id}&portal=ph-de"
+                title = (it.get("title") or "").strip()[:300] or None
+                needs_detail = price is None or not addr.get("zipcode") or (title and "münchen-" in title.lower()) or (title and "/münchen" in title.lower())
+                detail = _extract_detail_fields(client, detail_url) if needs_detail else {"price": None, "district": None, "postal_code": None, "address": None, "structured_data_json": None}
                 if price is None:
-                    price = _extract_detail_price(client, detail_url)
+                    price = detail.get("price")
                     if (ppsqm is None or ppsqm <= 0) and price and area:
                         ppsqm = round(price / area, 2)
+
+                district = detail.get("district") or city or None
+                postal_code = detail.get("postal_code") or (addr.get("zipcode") or None)
+                address = detail.get("address")
 
                 rows.append(
                     {
                         "source": "planethome",
                         "source_listing_id": provider_id,
                         "url": detail_url,
-                        "title": (it.get("title") or "").strip()[:300] or None,
+                        "title": title,
                         "description": (it.get("description") or "")[:500] or None,
                         "image_url": prop.get("mainImagePublicUrl"),
-                        "district": city or None,
+                        "district": district,
+                        "raw_district_text": district,
+                        "postal_code": postal_code,
+                        "address": address,
+                        "city": city or None,
                         "price_eur": price,
                         "area_sqm": area,
                         "rooms": rooms,
                         "price_per_sqm": ppsqm,
+                        "source_payload_debug": {"structured_data_json": detail.get("structured_data_json"), "raw_address": address, "raw_district_text": district, "city": city or None},
                         "first_seen_at": utc_now(),
                         "last_seen_at": utc_now(),
                     }

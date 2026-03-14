@@ -59,6 +59,22 @@ def test_immowelt_filters_surrounding_municipalities(monkeypatch):
     assert rows == []
 
 
+def test_immowelt_detail_enriches_postal_code(monkeypatch):
+    list_html = """
+    <a data-testid='card-mfe-covering-link-testid' href='/expose/123' title='Wohnung zum Kauf - München - 900.000 € - 3 Zimmer, 80 m²'></a>
+    """
+    detail_html = "<html><head><meta property='og:image' content='https://mms.immowelt.de/img.jpg'></head><body><p>80331 München</p></body></html>"
+    monkeypatch.setattr(immowelt.SafeCollector, "assert_allowed", lambda *a, **k: None)
+    def fake_get(self, url):
+        return detail_html if '/expose/' in url else list_html
+    monkeypatch.setattr(immowelt.SafeCollector, "get", fake_get)
+    monkeypatch.setattr(immowelt, "is_probable_property_photo", lambda *_: True)
+    rows = immowelt.collect_immowelt_listings()
+    assert len(rows) == 1
+    assert rows[0]["postal_code"] == "80331"
+    assert rows[0]["address"] == "80331 München"
+
+
 def test_ohne_makler_keeps_numeric_detail_urls(monkeypatch):
     html = """
     <a href='/immobilien/wohnung-kaufen'>list</a>
@@ -133,7 +149,7 @@ def test_planethome_graphql_parses_only_purchase_munich(monkeypatch):
                     {
                         "id": "1",
                         "providerPropertyId": "p1",
-                        "title": "Wohnung",
+                        "title": "Wohnung in München-Neuperlach",
                         "description": "desc",
                         "tradeType": "PURCHASE",
                         "usageType": "LIVING",
@@ -180,9 +196,11 @@ def test_planethome_graphql_parses_only_purchase_munich(monkeypatch):
             return DummyResp(payload)
 
     monkeypatch.setattr(planethome.httpx, "Client", lambda timeout=30: DummyClient())
+    monkeypatch.setattr(planethome, "_extract_detail_fields", lambda *a, **k: {"price": None, "district": "Neuperlach", "postal_code": "81737", "address": "81737 München", "structured_data_json": {"@type": "Residence"}})
     rows = planethome.collect_planethome_listings()
     assert len(rows) == 1
-    assert rows[0]["district"] == "München"
+    assert rows[0]["district"] == "Neuperlach"
+    assert rows[0]["postal_code"] == "81737"
     assert_source_shape(rows[0])
 
 

@@ -1,3 +1,4 @@
+import json
 import re
 from urllib.parse import urljoin
 from app.time_utils import utc_now
@@ -62,30 +63,49 @@ def _extract_best_image(a_tag):
     return candidates[0] if candidates else None
 
 
-def _extract_detail_image(collector: SafeCollector, url: str) -> str | None:
+def _extract_detail_fields(collector: SafeCollector, url: str) -> dict:
     try:
         html = collector.get(url)
     except Exception:
-        return None
+        return {"image_url": None, "district": None, "postal_code": None, "city": None, "address": None, "structured_data_json": None}
 
     soup = BeautifulSoup(html, "html.parser")
+    text = soup.get_text(" ", strip=True)
 
-    # 1) OpenGraph image (often hero object image)
+    image_url = None
     og = soup.select_one("meta[property='og:image']")
     if og and og.get("content"):
         cand = urljoin(url, og.get("content"))
         if "mms.immowelt.de" in cand.lower():
-            return cand
+            image_url = cand
+    if not image_url:
+        for img in soup.select("img"):
+            cand = _candidate_from_img_tag(img)
+            if not cand:
+                continue
+            if "mms.immowelt.de" in cand.lower():
+                image_url = cand
+                break
 
-    # 2) First gallery-like image hosted on immowelt media CDN
-    for img in soup.select("img"):
-        cand = _candidate_from_img_tag(img)
-        if not cand:
+    postal_match = _zip_re.search(text)
+    postal = postal_match.group(1) if postal_match else None
+    district, _, city = _extract_location_parts(text)
+    if district == "OUTSIDE_MUNICH":
+        district = "OUTSIDE_MUNICH"
+    address = f"{postal} München" if postal else None
+
+    structured = None
+    for sc in soup.select("script[type='application/ld+json']"):
+        raw = (sc.string or sc.get_text() or "").strip()
+        if not raw:
             continue
-        if "mms.immowelt.de" in cand.lower():
-            return cand
+        try:
+            structured = json.loads(raw)
+            break
+        except Exception:
+            continue
 
-    return None
+    return {"image_url": image_url, "district": district, "postal_code": postal, "city": city, "address": address, "structured_data_json": structured}
 
 
 def _extract_location_parts(*texts: str | None) -> tuple[str | None, str | None, str | None]:
@@ -158,22 +178,24 @@ def collect_immowelt_listings() -> list[dict]:
             desc = parent.get_text(" ", strip=True)[:500] or None
 
         img = _extract_best_image(a)
-        # If card image is missing/suspicious, enrich from expose detail page
-        if (not img or "mms.immowelt.de" not in img.lower()) and idx < 40:
-            detail_img = _extract_detail_image(c, url)
-            if detail_img:
-                img = detail_img
+        detail = _extract_detail_fields(c, url) if idx < 40 else {"image_url": None, "district": None, "postal_code": None, "city": None, "address": None, "structured_data_json": None}
+        if (not img or "mms.immowelt.de" not in img.lower()) and detail.get("image_url"):
+            img = detail.get("image_url")
 
         # Final content-based check: skip broker logos, keep probable property photo
         if img and not is_probable_property_photo(img):
-            detail_img = _extract_detail_image(c, url)
-            if detail_img and is_probable_property_photo(detail_img):
-                img = detail_img
+            replacement = detail.get("image_url")
+            if replacement and is_probable_property_photo(replacement):
+                img = replacement
             else:
                 img = None
 
         price, area, rooms, price_per_sqm = _extract_numbers(title_attr or desc or "")
         district, postal_code, city = _extract_location_parts(title_attr, desc, title)
+        district = detail.get("district") or district
+        postal_code = detail.get("postal_code") or postal_code
+        city = detail.get("city") or city
+        address = detail.get("address")
         if district == "OUTSIDE_MUNICH":
             continue
 
@@ -186,12 +208,15 @@ def collect_immowelt_listings() -> list[dict]:
                 "description": desc,
                 "image_url": img,
                 "district": district,
+                "raw_district_text": district,
                 "postal_code": postal_code,
                 "city": city,
+                "address": address,
                 "price_eur": price,
                 "area_sqm": area,
                 "rooms": rooms,
                 "price_per_sqm": price_per_sqm,
+                "source_payload_debug": {"structured_data_json": detail.get("structured_data_json"), "raw_address": address, "raw_district_text": district, "city": city},
                 "first_seen_at": utc_now(),
                 "last_seen_at": utc_now(),
             }
