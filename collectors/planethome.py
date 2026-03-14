@@ -121,8 +121,9 @@ def collect_planethome_listings() -> list[dict]:
                 prop = it.get("property") or {}
                 addr = prop.get("address") or {}
                 city = (addr.get("city") or "").strip()
-                # keep dataset focused on Munich listings
-                if "münchen" not in city.lower() and "muenchen" not in city.lower():
+                city_low = city.lower()
+                # keep dataset focused on the city of Munich, not surrounding municipalities like Garching bei München
+                if city_low not in {"münchen", "muenchen"}:
                     continue
 
                 provider_id = str(it.get("providerPropertyId") or it.get("id") or "")

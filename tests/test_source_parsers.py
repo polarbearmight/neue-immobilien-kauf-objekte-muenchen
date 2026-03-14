@@ -44,7 +44,19 @@ def test_immowelt_extracts_expose_only(monkeypatch):
     rows = immowelt.collect_immowelt_listings()
     assert len(rows) == 1
     assert rows[0]["source_listing_id"] == "123"
+    assert rows[0]["district"] == "München"
     assert_source_shape(rows[0])
+
+
+def test_immowelt_filters_surrounding_municipalities(monkeypatch):
+    html = """
+    <a data-testid='card-mfe-covering-link-testid' href='/expose/123' title='Wohnung zum Kauf - Garching bei München - 900.000 € - 3 Zimmer, 80 m²'></a>
+    """
+    monkeypatch.setattr(immowelt.SafeCollector, "assert_allowed", lambda *a, **k: None)
+    monkeypatch.setattr(immowelt.SafeCollector, "get", lambda *a, **k: html)
+    monkeypatch.setattr(immowelt, "is_probable_property_photo", lambda *_: True)
+    rows = immowelt.collect_immowelt_listings()
+    assert rows == []
 
 
 def test_ohne_makler_keeps_numeric_detail_urls(monkeypatch):
@@ -103,6 +115,8 @@ def test_sis_collects_detail_pages(monkeypatch):
     rows = sis.collect_sis_listings()
     assert len(rows) == 1
     assert rows[0]["district"] == "München"
+    assert rows[0]["postal_code"] == "80331"
+    assert rows[0]["address"] == "80331 München"
     assert_source_shape(rows[0])
 
 
@@ -131,6 +145,23 @@ def test_planethome_graphql_parses_only_purchase_munich(monkeypatch):
                             "area": {"livingArea": 60},
                             "premises": {"roomNumbers": {"numberOfRooms": 2}},
                             "address": {"zipcode": "80331", "city": "München"},
+                        },
+                    },
+                    {
+                        "id": "2",
+                        "providerPropertyId": "p2",
+                        "title": "Nicht München",
+                        "description": "desc",
+                        "tradeType": "PURCHASE",
+                        "usageType": "LIVING",
+                        "sold": False,
+                        "hide": False,
+                        "price": {"totalPurchasePrice": 500000, "purchasePricePerSqm": 8000},
+                        "property": {
+                            "mainImagePublicUrl": "https://img2",
+                            "area": {"livingArea": 60},
+                            "premises": {"roomNumbers": {"numberOfRooms": 2}},
+                            "address": {"zipcode": "85748", "city": "Garching bei München"},
                         },
                     }
                 ],

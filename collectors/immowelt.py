@@ -10,6 +10,8 @@ SEARCH_URL = "https://www.immowelt.de/suche/kaufen/immobilien/privat/bayern/munc
 _price_re = re.compile(r"([\d\.,]{3,})\s*€")
 _area_re = re.compile(r"([\d\.,]{1,6})\s*m²")
 _rooms_re = re.compile(r"(\d+[\.,]?\d*)\s*Zimmer")
+_non_munich_re = re.compile(r"\b(garching(?:\s+bei\s+münchen)?|garching(?:\s+bei\s+muenchen)?|oberschleißheim|oberschleissheim|haar|unterhaching|dachau|karlsfeld|ismaning|grünwald|gruenwald|olching|germering|fürstenfeldbruck|fuerstenfeldbruck)\b", re.IGNORECASE)
+_zip_re = re.compile(r"\b(8\d{4})\b")
 
 
 def _to_num(val: str | None) -> float | None:
@@ -86,6 +88,19 @@ def _extract_detail_image(collector: SafeCollector, url: str) -> str | None:
     return None
 
 
+def _extract_location_parts(*texts: str | None) -> tuple[str | None, str | None, str | None]:
+    hay = " | ".join(t for t in texts if t)
+    if not hay:
+        return None, None, None
+    postal_match = _zip_re.search(hay)
+    postal = postal_match.group(1) if postal_match else None
+    if _non_munich_re.search(hay):
+        return "OUTSIDE_MUNICH", postal, None
+    if "münchen" in hay.lower() or "muenchen" in hay.lower():
+        return "München", postal, "München"
+    return None, postal, None
+
+
 def collect_immowelt_listings() -> list[dict]:
     c = SafeCollector()
     c.assert_allowed("https://www.immowelt.de/robots.txt", "/suche/muenchen/wohnungen/kaufen")
@@ -158,6 +173,9 @@ def collect_immowelt_listings() -> list[dict]:
                 img = None
 
         price, area, rooms, price_per_sqm = _extract_numbers(title_attr or desc or "")
+        district, postal_code, city = _extract_location_parts(title_attr, desc, title)
+        if district == "OUTSIDE_MUNICH":
+            continue
 
         rows.append(
             {
@@ -167,6 +185,9 @@ def collect_immowelt_listings() -> list[dict]:
                 "title": title,
                 "description": desc,
                 "image_url": img,
+                "district": district,
+                "postal_code": postal_code,
+                "city": city,
                 "price_eur": price,
                 "area_sqm": area,
                 "rooms": rooms,

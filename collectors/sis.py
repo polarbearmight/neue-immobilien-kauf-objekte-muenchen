@@ -82,9 +82,15 @@ def collect_sis_listings() -> list[dict]:
             rooms = _to_num(_rooms_re.search(url.replace('-', ' ')).group(1) if _rooms_re.search(url.replace('-', ' ')) else None)
 
         district = None
+        address = None
+        postal_code = None
         loc = soup.select_one("[class*='location'], [class*='city'], [itemprop='addressLocality']")
         if loc:
             district = loc.get_text(" ", strip=True)[:120] or None
+        postal_match = re.search(r"\b(8\d{4})\b", full_text)
+        if postal_match:
+            postal_code = postal_match.group(1)
+            address = f"{postal_code} München"
         if not district:
             m = _city_re.search(full_text)
             if m:
@@ -108,6 +114,8 @@ def collect_sis_listings() -> list[dict]:
                 "description": full_text[:500],
                 "image_url": img,
                 "district": district,
+                "address": address,
+                "postal_code": postal_code,
                 "price_eur": price,
                 "area_sqm": area,
                 "rooms": rooms,
