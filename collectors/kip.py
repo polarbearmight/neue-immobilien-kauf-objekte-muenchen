@@ -14,6 +14,7 @@ SEARCH_URLS = [
     "https://www.kip.net/bayern/muenchen/kaufen/eigentumswohnungen",
     "https://www.kip.net/bayern/muenchen/bauen/grundstuecke",
 ]
+_DETAIL_PATH_RE = re.compile(r'/bayern/muenchen/(?:kaufen|bauen)/[^\"\'\s<>]+_[A-Z]\d+', re.I)
 
 
 def _to_num(val: str | None) -> float | None:
@@ -32,10 +33,15 @@ def _to_num(val: str | None) -> float | None:
         return None
 
 
+def _search(pattern: str, text: str, flags: int = 0) -> str | None:
+    m = re.search(pattern, text, flags=flags)
+    return m.group(1) if m else None
+
+
 def _extract_numbers(text: str):
-    price = _to_num(re.search(r"Kaufpreis\s*([\d\.,]+)", text, flags=re.I).group(1) if re.search(r"Kaufpreis\s*([\d\.,]+)", text, flags=re.I) else None)
-    area = _to_num(re.search(r"Wohnfl[äa]che.*?([\d\.,]+)\s*m²", text, flags=re.I | re.S).group(1) if re.search(r"Wohnfl[äa]che.*?([\d\.,]+)\s*m²", text, flags=re.I | re.S) else None)
-    rooms = _to_num(re.search(r"Zimmer\s*([\d\.,]+)", text, flags=re.I).group(1) if re.search(r"Zimmer\s*([\d\.,]+)", text, flags=re.I) else None)
+    price = _to_num(_search(r"Kaufpreis\s*[:]?\s*([\d\.,]+)", text, flags=re.I))
+    area = _to_num(_search(r"(?:Wohnfl[äa]che|Fl[äa]che)\s*[:]?\s*([\d\.,]+)\s*m²", text, flags=re.I | re.S))
+    rooms = _to_num(_search(r"Zimmer\s*[:]?\s*([\d\.,]+)", text, flags=re.I))
     ppsqm = round(price / area, 2) if price and area else None
     return price, area, rooms, ppsqm
 
@@ -47,8 +53,45 @@ def _provider_is_private_like(text: str) -> bool:
         "von privat",
         "privat",
         "angebot von",
+        "eigentümer",
+        "eigentumer",
     ]
-    return any(h in t for h in hints) and "immobilienmakler" not in t
+    return any(h in t for h in hints) and "immobilienmakler" not in t and "makler" not in t
+
+
+def _extract_provider_text(text: str) -> str:
+    for pattern in (
+        r"Anbieter\s+(.*?)\s+Ansprechpartner",
+        r"Anbieter\s+(.*?)\s+Objektbeschreibung",
+        r"Anbieter\s+(.*?)\s+Kosten",
+    ):
+        m = re.search(pattern, text, flags=re.S | re.I)
+        if m:
+            return re.sub(r"\s+", " ", m.group(1)).strip()
+    return "KIP München"
+
+
+def _extract_address(text: str, soup: BeautifulSoup) -> str | None:
+    match = re.search(r"([A-Za-zÄÖÜäöüß\-\. ]+,\s*8\d{4}\s+München(?:\s*\([^\)]+\))?)", text)
+    if match:
+        return match.group(1).strip()
+
+    match = re.search(r"(8\d{4}\s+München(?:\s*\([^\)]+\))?)", text)
+    if match:
+        return match.group(1).strip()
+
+    addr_el = soup.find(string=re.compile(r"8\d{4}\s+München|München", re.I))
+    if addr_el:
+        return str(addr_el).strip()[:200]
+    return None
+
+
+def _extract_district(text: str, address: str | None) -> str | None:
+    for hay in filter(None, [text, address]):
+        m = re.search(r"München\s*\(([^\)]+)\)", hay)
+        if m:
+            return m.group(1).strip()
+    return None
 
 
 def _collect_detail(url: str, session: requests.Session):
@@ -57,12 +100,7 @@ def _collect_detail(url: str, session: requests.Session):
     soup = BeautifulSoup(r.text, "html.parser")
     text = soup.get_text("\n", strip=True)
 
-    provider_text = ""
-    m_provider = re.search(r"Anbieter\s+(.*?)\s+Ansprechpartner", text, flags=re.S | re.I)
-    if m_provider:
-        provider_text = re.sub(r"\s+", " ", m_provider.group(1)).strip()
-    if not provider_text:
-        provider_text = "KIP München"
+    provider_text = _extract_provider_text(text)
 
     title = None
     if soup.title:
@@ -71,11 +109,7 @@ def _collect_detail(url: str, session: requests.Session):
         h1 = soup.find(["h1", "h2"])
         title = h1.get_text(" ", strip=True)[:300] if h1 else None
 
-    address_match = re.search(r"(8\d{4}\s+München[^\n]*)", text)
-    address = address_match.group(1).strip() if address_match else None
-    if not address:
-        addr_el = soup.find(string=re.compile(r"München", re.I))
-        address = str(addr_el).strip()[:200] if addr_el else None
+    address = _extract_address(text, soup)
     if not address or "München" not in address:
         return None
 
@@ -89,10 +123,9 @@ def _collect_detail(url: str, session: requests.Session):
     if og and og.get("content"):
         image = urljoin(url, og.get("content"))
 
-    district = None
-    m = re.search(r"München\s*\(([^\)]+)\)", text)
-    if m:
-        district = m.group(1).strip()
+    district = _extract_district(text, address)
+    postal_match = re.search(r"\b(8\d{4})\b", address or "")
+    postal = postal_match.group(1) if postal_match else None
 
     now = utc_now()
     return {
@@ -100,7 +133,7 @@ def _collect_detail(url: str, session: requests.Session):
         "source_listing_id": sid,
         "url": url,
         "title": title[:300] if title else None,
-        "description": text[:800],
+        "description": text[:1200],
         "image_url": image,
         "price_eur": price,
         "area_sqm": area,
@@ -108,9 +141,9 @@ def _collect_detail(url: str, session: requests.Session):
         "price_per_sqm": ppsqm,
         "address": address[:500] if address else None,
         "city": "München",
-        "district": district or "München",
+        "district": district or (f"{postal} München" if postal else "München"),
         "raw_district_text": district,
-        "postal_code": re.search(r"\b(8\d{4})\b", address or "").group(1) if re.search(r"\b(8\d{4})\b", address or "") else None,
+        "postal_code": postal,
         "source_payload_debug": {
             "provider_text": provider_text[:1000],
             "provider_private_like": _provider_is_private_like(provider_text),
@@ -132,7 +165,7 @@ def collect_kip_munich_listings() -> list[dict]:
         r = session.get(page, timeout=30)
         r.raise_for_status()
         html = r.text
-        for path in re.findall(r'/bayern/muenchen/kaufen/[A-Za-zÄÖÜäöü]+_[A-Z]\d+|/bayern/muenchen/bauen/[A-Za-zÄÖÜäöü]+_[A-Z]\d+', html):
+        for path in _DETAIL_PATH_RE.findall(html):
             if path not in seen:
                 seen.add(path)
                 detail_paths.append(path)

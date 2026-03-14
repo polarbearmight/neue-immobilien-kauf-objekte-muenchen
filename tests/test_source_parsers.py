@@ -1,4 +1,4 @@
-from collectors import sz, immowelt, ohne_makler, wohnungsboerse, sis, planethome
+from collectors import sz, immowelt, ohne_makler, wohnungsboerse, sis, planethome, immoscout, kip
 
 
 REQUIRED_SOURCE_SHAPE_KEYS = {"source", "source_listing_id", "url", "title", "price_eur", "area_sqm", "rooms"}
@@ -153,3 +153,79 @@ def test_planethome_graphql_parses_only_purchase_munich(monkeypatch):
     assert len(rows) == 1
     assert rows[0]["district"] == "München"
     assert_source_shape(rows[0])
+
+
+def test_immoscout_parses_exported_next_data_when_live_is_blocked(monkeypatch, tmp_path):
+    html = """
+    <html><body>
+      <script id='__NEXT_DATA__' type='application/json'>
+      {
+        "props": {
+          "pageProps": {
+            "entries": [
+              {
+                "listingId": 123456789,
+                "title": "Provisionsfreie Wohnung in Harlaching",
+                "resultlistEntryPath": "/expose/123456789",
+                "address": {"postcode": "81545", "city": "München", "quarter": "Harlaching"},
+                "price": {"value": 995000},
+                "realEstate": {"livingSpace": {"value": 95}, "numberOfRooms": 3}
+              }
+            ]
+          }
+        }
+      }
+      </script>
+    </body></html>
+    """
+    export_path = tmp_path / "immoscout_export.html"
+    export_path.write_text(html, encoding="utf-8")
+
+    monkeypatch.setattr(immoscout.SafeCollector, "assert_allowed", lambda *a, **k: None)
+    monkeypatch.setattr(immoscout.SafeCollector, "get", lambda *a, **k: "Ich bin kein Roboter")
+    monkeypatch.setenv("IMMOSCOUT_HTML_EXPORT_PATH", str(export_path))
+
+    rows = immoscout.collect_immoscout_private_filtered_listings()
+    assert len(rows) == 1
+    assert rows[0]["source_listing_id"] == "123456789"
+    assert rows[0]["district"] == "Harlaching"
+    assert rows[0]["price_eur"] == 995000.0
+    assert_source_shape(rows[0])
+
+
+def test_kip_collect_detail_extracts_postal_and_private_hint(monkeypatch):
+    detail_html = """
+    <html>
+      <head>
+        <title>Familienwohnung in Harlaching</title>
+        <meta property='og:image' content='/image.jpg' />
+      </head>
+      <body>
+        <h1>Familienwohnung in Harlaching</h1>
+        <div>Anbieter Von Privat Ansprechpartner Max Mustermann</div>
+        <div>Adresse Candidplatz 5, 81543 München (Untergiesing)</div>
+        <div>Objekt-ID: H8925077</div>
+        <div>Kaufpreis 1.250.000</div>
+        <div>Wohnfläche 125 m²</div>
+        <div>Zimmer 4</div>
+      </body>
+    </html>
+    """
+
+    class DummyRespText:
+        def __init__(self, text):
+            self.text = text
+
+        def raise_for_status(self):
+            return None
+
+    class DummySession:
+        def get(self, url, timeout=30):
+            return DummyRespText(detail_html)
+
+    row = kip._collect_detail("https://www.kip.net/bayern/muenchen/kaufen/wohnung_H8925077", DummySession())
+    assert row is not None
+    assert row["source_listing_id"] == "H8925077"
+    assert row["postal_code"] == "81543"
+    assert row["district"] == "Untergiesing"
+    assert row["source_payload_debug"]["provider_private_like"] is True

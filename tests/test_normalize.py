@@ -1,4 +1,4 @@
-from collectors.normalize import dedupe_rows, normalize_listing_row
+from collectors.normalize import dedupe_rows, normalize_listing_row, normalize_location
 
 
 def test_normalize_rejects_social_noise():
@@ -55,6 +55,29 @@ def test_normalize_rejects_kleinanzeigen_without_price():
         "rooms": 3,
     }
     assert normalize_listing_row(row) is None
+
+
+def test_normalize_location_prefers_explicit_district_over_zip_city():
+    assert normalize_location("81545 München (Harlaching) Objekt-ID: H123") == "Harlaching"
+
+
+def test_normalize_uses_postal_code_for_munich_address_without_district():
+    row = {
+        "source": "kip_muenchen",
+        "source_listing_id": "k1",
+        "url": "https://example.com/expose/k1",
+        "title": "Wohnung zum Kauf in München",
+        "description": "Kaufpreis 980.000 € Wohnfläche 98 m² Zimmer 3 81543 München",
+        "district": "81543 München",
+        "address": "81543 München",
+        "price_eur": 980000,
+        "area_sqm": 98,
+        "rooms": 3,
+    }
+    out = normalize_listing_row(row)
+    assert out is not None
+    assert out["district"] == "Untergiesing-Harlaching"
+    assert out["postal_code"] == "81543"
 
 
 def test_dedupe_rows_drops_secondary_duplicates_same_source():
