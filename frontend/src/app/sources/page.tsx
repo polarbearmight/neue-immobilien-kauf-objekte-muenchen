@@ -7,6 +7,7 @@ type Source = { id: number; name: string; health_status: string; reliability_sco
 type SourceRun = { id: number; started_at: string; status: string; new_count: number; updated_count: number; notes?: string };
 type DistrictQuality = { total: number; assigned_pct: number; coordinates_pct: number; postal_code_pct: number; title_only_pct: number; unknown_pct: number };
 type SourceQualityRow = { count: number; missing_title: number; missing_district: number; missing_postal_code: number; missing_address: number; missing_price: number; missing_area: number; missing_rooms: number; missing_coords: number; invalid_url: number; unknown_location: number; duplicate_clustered_pct?: number; parse_error_count?: number; usable_price_pct?: number; usable_sqm_pct?: number };
+type ImmoScoutExportStatus = { ok: boolean; path: string; exists: boolean; size_bytes: number; updated_at?: number | null };
 
 export default function SourcesPage() {
   const [sources, setSources] = useState<Source[]>([]);
@@ -15,6 +16,7 @@ export default function SourcesPage() {
   const [sourceQuality, setSourceQuality] = useState<Record<string, SourceQualityRow>>({});
   const [runningSourceName, setRunningSourceName] = useState<string | null>(null);
   const [runNotice, setRunNotice] = useState<string | null>(null);
+  const [immoscoutExport, setImmoscoutExport] = useState<ImmoScoutExportStatus | null>(null);
 
   const load = async () => {
     const r = await fetch(`${API_URL}/api/sources`, { cache: "no-store" });
@@ -35,16 +37,19 @@ export default function SourcesPage() {
     setRunsBySource(Object.fromEntries(entries));
 
     try {
-      const [qr, sqr] = await Promise.all([
+      const [qr, sqr, is24r] = await Promise.all([
         fetch(`${API_URL}/api/district-quality`, { cache: "no-store" }),
         fetch(`${API_URL}/api/source-quality`, { cache: "no-store" }),
+        fetch(`${API_URL}/api/sources/immoscout/export-status`, { cache: "no-store" }),
       ]);
       setQuality(await qr.json());
       const sq = await sqr.json();
       setSourceQuality((sq?.by_source || {}) as Record<string, SourceQualityRow>);
+      setImmoscoutExport(await is24r.json());
     } catch {
       setQuality(null);
       setSourceQuality({});
+      setImmoscoutExport(null);
     }
   };
 
@@ -84,6 +89,32 @@ export default function SourcesPage() {
     }
   };
 
+  const importImmoScoutHtml = async () => {
+    const html = window.prompt("IS24 HTML hier einfügen (kompletter Page Source)");
+    if (!html) return;
+    setRunningSourceName("immoscout_private_filtered");
+    setRunNotice(null);
+    try {
+      const res = await fetch(`${API_URL}/api/sources/immoscout/import-html`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ html, run_import: true, dry_run: false }),
+      });
+      const data = await res.json();
+      if (!res.ok || data?.ok === false) {
+        setRunNotice(`IS24 import failed: ${data?.error ?? "unknown"}`);
+        return;
+      }
+      const result = data?.collector_result;
+      setRunNotice(`IS24 import finished: +${result?.new ?? 0} new / ~${result?.updated ?? 0} updated / ${result?.normalized ?? 0} normalized`);
+      await load();
+    } catch {
+      setRunNotice("IS24 import failed");
+    } finally {
+      setRunningSourceName(null);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold tracking-tight">Sources</h1>
@@ -97,6 +128,21 @@ export default function SourcesPage() {
           <p>Postal code: <strong>{quality.postal_code_pct}%</strong></p>
           <p>Title only: <strong>{quality.title_only_pct}%</strong></p>
           <p>Unknown: <strong>{quality.unknown_pct}%</strong></p>
+        </div>
+      ) : null}
+
+      {immoscoutExport ? (
+        <div className="rounded-xl border p-3 text-xs text-muted-foreground">
+          <p><strong>IS24 Export</strong> · {immoscoutExport.exists ? "vorhanden" : "fehlt"} · {immoscoutExport.path}</p>
+          <p>Size: {immoscoutExport.size_bytes} bytes {immoscoutExport.updated_at ? `· updated ${new Date(immoscoutExport.updated_at * 1000).toLocaleString("de-DE")}` : ""}</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button className="rounded border px-2 py-1" onClick={importImmoScoutHtml} disabled={runningSourceName === "immoscout_private_filtered"}>
+              {runningSourceName === "immoscout_private_filtered" ? "Importing…" : "IS24 HTML importieren"}
+            </button>
+            <button className="rounded border px-2 py-1" onClick={() => runSourceNow("immoscout_private_filtered")} disabled={runningSourceName === "immoscout_private_filtered"}>
+              IS24 jetzt laufen lassen
+            </button>
+          </div>
         </div>
       ) : null}
 
@@ -132,7 +178,7 @@ export default function SourcesPage() {
               </div>
               <div className="flex gap-2">
                 <button className="rounded border px-2 py-1" onClick={() => selfTest(s.id)}>Self-test</button>
-                {s.name === "kleinanzeigen" ? (
+                {s.name === "kleinanzeigen" || s.name === "immoscout_private_filtered" ? (
                   <button
                     className="rounded border px-2 py-1"
                     onClick={() => runSourceNow(s.name)}

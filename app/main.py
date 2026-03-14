@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.db import Base, SessionLocal, engine, ensure_schema
 from app.models import AlertRule, ContactLead, Listing, ListingSnapshot, PasswordResetToken, Source, SourceRun, User, Watchlist
-from app.schemas import AlertRuleIn, ChangePasswordIn, ContactSalesIn, ForgotPasswordIn, ListingOut, LoginIn, ProfileUpdateIn, ResetPasswordIn, SourceOut
+from app.schemas import AlertRuleIn, ChangePasswordIn, ContactSalesIn, ForgotPasswordIn, ImmoScoutHtmlImportIn, ListingOut, LoginIn, ProfileUpdateIn, ResetPasswordIn, SourceOut
 from app.source_reliability import attach_reliability, compute_reliability
 from app.time_utils import utc_now
 from app.investment import recompute_investments
@@ -25,6 +25,7 @@ from app.geo_heatmap import geo_hotspots, geo_summary
 from app.district_name_map import canonicalize_district_name
 from collectors.image_tools import hash_distance
 from collectors.run_collect import COLLECTOR_MAP, run_one_source_isolated
+from collectors.immoscout import export_status as immoscout_export_status, save_export_html as save_immoscout_export_html
 from app.scoring import recompute_scores
 from app.ai_deal_analyzer import analyze_listing, serialize_flags
 from app.dedup import assign_clusters
@@ -689,6 +690,31 @@ def api_collect_run(source: str = Query("all"), dry_run: bool = Query(False)):
             continue
         summary.append(run_one_source_isolated(name, dry_run=dry_run))
     return {"ok": True, "dry_run": dry_run, "summary": summary}
+
+
+@app.get("/api/sources/immoscout/export-status")
+def api_immoscout_export_status():
+    return {"ok": True, **immoscout_export_status()}
+
+
+@app.post("/api/sources/immoscout/import-html")
+def api_immoscout_import_html(payload: ImmoScoutHtmlImportIn):
+    html = (payload.html or "").strip()
+    if len(html) < 200:
+        return JSONResponse(status_code=400, content={"ok": False, "error": "html_too_short"})
+
+    path = save_immoscout_export_html(html)
+    result = None
+    if payload.run_import:
+        result = run_one_source_isolated("immoscout_private_filtered", dry_run=payload.dry_run, force=True, capture_fixture=False)
+
+    return {
+        "ok": True,
+        "path": str(path),
+        "run_import": payload.run_import,
+        "dry_run": payload.dry_run,
+        "collector_result": result,
+    }
 
 
 @app.post("/api/scan/run")

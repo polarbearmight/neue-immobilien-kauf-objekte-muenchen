@@ -61,6 +61,12 @@ class ResetPasswordIn(BaseModel):
     new_password: str
 
 
+class ImmoScoutHtmlImportIn(BaseModel):
+    html: str
+    run_import: bool = True
+    dry_run: bool = False
+
+
 class ListingOut(BaseModel):
     id: int
     source: str

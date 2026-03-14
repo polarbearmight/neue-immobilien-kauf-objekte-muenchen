@@ -12,6 +12,7 @@ from app.time_utils import utc_now
 SEARCH_URL = "https://www.immobilienscout24.de/Suche/de/bayern/muenchen/provisionsfreie-wohnung-kaufen"
 SEARCH_PATH = "/Suche/de/bayern/muenchen/provisionsfreie-wohnung-kaufen"
 _EXPORT_ENV = "IMMOSCOUT_HTML_EXPORT_PATH"
+_DEFAULT_EXPORT_PATH = Path("tmp/immoscout_export.html")
 
 
 def _anti_bot_detected(html: str | None) -> bool:
@@ -193,15 +194,32 @@ def _parse_html(html: str) -> list[dict]:
     return rows
 
 
-def _load_export_html() -> str | None:
+def get_export_path() -> Path:
     export_path = os.getenv(_EXPORT_ENV, "").strip()
-    if not export_path:
-        default = Path("tmp/immoscout_export.html")
-        if default.exists():
-            export_path = str(default)
-    if not export_path:
-        return None
-    p = Path(export_path)
+    return Path(export_path) if export_path else _DEFAULT_EXPORT_PATH
+
+
+def export_status() -> dict:
+    p = get_export_path()
+    exists = p.exists()
+    stat = p.stat() if exists else None
+    return {
+        "path": str(p),
+        "exists": exists,
+        "size_bytes": stat.st_size if stat else 0,
+        "updated_at": stat.st_mtime if stat else None,
+    }
+
+
+def save_export_html(html: str) -> Path:
+    p = get_export_path()
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(html or "", encoding="utf-8")
+    return p
+
+
+def _load_export_html() -> str | None:
+    p = get_export_path()
     if not p.exists():
         print(f"WARN immoscout_private_filtered export missing: {p}")
         return None
