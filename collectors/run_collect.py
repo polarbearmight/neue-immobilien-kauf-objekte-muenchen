@@ -69,6 +69,10 @@ DEVELOPER_PROJECT_SOURCES = {
     "broker_ehret_klein",
 }
 
+AUTO_APPROVED_SOURCES = {
+    "kleinanzeigen",
+}
+
 
 def _source_profile(name: str) -> tuple[str, int]:
     """Returns (discovery_method, rate_limit_seconds)."""
@@ -175,15 +179,16 @@ def get_or_create_source(db, name: str, base_url: str) -> Source:
         return src
 
     approval_required = os.getenv("APPROVAL_REQUIRED", "true").lower() in ("1", "true", "yes")
+    auto_approved = name in AUTO_APPROVED_SOURCES
     src = Source(
         name=name,
         base_url=base_url,
         kind="html",
         discovery_method=discovery_method,
         robots_status="unknown",
-        approved=(not approval_required),
-        enabled=(not approval_required),
-        health_status="disabled" if approval_required else "healthy",
+        approved=(auto_approved or not approval_required),
+        enabled=(auto_approved or not approval_required),
+        health_status="healthy" if (auto_approved or not approval_required) else "disabled",
         rate_limit_seconds=rate_limit_seconds,
     )
     db.add(src)
