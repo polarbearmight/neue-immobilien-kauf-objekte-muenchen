@@ -10,7 +10,7 @@ SEARCH_URL = "https://www.immowelt.de/suche/kaufen/immobilien/privat/bayern/munc
 _price_re = re.compile(r"([\d\.,]{3,})\s*€")
 _area_re = re.compile(r"([\d\.,]{1,6})\s*m²")
 _rooms_re = re.compile(r"(\d+[\.,]?\d*)\s*Zimmer")
-_non_munich_re = re.compile(r"\b(garching(?:\s+bei\s+münchen)?|garching(?:\s+bei\s+muenchen)?|oberschleißheim|oberschleissheim|haar|unterhaching|dachau|karlsfeld|ismaning|grünwald|gruenwald|olching|germering|fürstenfeldbruck|fuerstenfeldbruck)\b", re.IGNORECASE)
+_non_munich_re = re.compile(r"\b(garching(?:\s+bei\s+münchen)?|garching(?:\s+bei\s+muenchen)?|oberschleißheim|oberschleissheim|haar|putzbrunn|unterhaching|dachau|karlsfeld|ismaning|grünwald|gruenwald|olching|germering|fürstenfeldbruck|fuerstenfeldbruck|aschheim|kirchheim|ottobrunn|taufkirchen)\b", re.IGNORECASE)
 _zip_re = re.compile(r"\b(8\d{4})\b")
 
 

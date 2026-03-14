@@ -1,4 +1,4 @@
-from collectors import sz, immowelt, ohne_makler, wohnungsboerse, sis, planethome, immoscout, kip
+from collectors import sz, immowelt, ohne_makler, wohnungsboerse, sis, planethome, immoscout, kip, brokers
 
 
 REQUIRED_SOURCE_SHAPE_KEYS = {"source", "source_listing_id", "url", "title", "price_eur", "area_sqm", "rooms"}
@@ -260,3 +260,22 @@ def test_kip_collect_detail_extracts_postal_and_private_hint(monkeypatch):
     assert row["postal_code"] == "81543"
     assert row["district"] == "Untergiesing"
     assert row["source_payload_debug"]["provider_private_like"] is True
+
+
+def test_broker_filters_marketing_pages_for_graf_and_dahler():
+    assert brokers._is_probable_listing_detail(
+        "broker_graf",
+        "https://www.grafimmo.de/wohnung-verkaufen-muenchen/",
+        "Wohnung verkaufen München ✅ Wohnungsverkauf mit Makler",
+        "verkaufen service kontakt",
+        False,
+        None,
+    ) is False
+    assert brokers._is_probable_listing_detail(
+        "broker_dahler_muenchen",
+        "https://www.dahlercompany.com/de/immobilie-kaufen/wohnimmobilien/bayern/muenchen",
+        "Immobilie kaufen München | DAHLER",
+        "landing page",
+        False,
+        None,
+    ) is False

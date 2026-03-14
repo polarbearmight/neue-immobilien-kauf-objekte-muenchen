@@ -63,6 +63,10 @@ SOURCE_DENY_URL_PATTERNS: dict[str, tuple[str, ...]] = {
     "broker_engel_voelkers_muenchen": ("/webinar", "/immobilienbewertung", "/karriere", "/ueber", "/blog"),
     "broker_immo_muenchen": ("/immobilienzentrum", "/service", "/kontakt", "/impressum", "/datenschutz"),
     "broker_rohrer": ("/stadtteil/", "/immobilien-vermarktung", "/service", "/kontakt", "/impressum", "/datenschutz"),
+    "broker_graf": ("/verkaufen", "/vermarkten", "/ratgeber", "/blog", "/kontakt", "/impressum", "/datenschutz"),
+    "broker_dahler_muenchen": ("/immobilie-verkaufen/", "/blog/", "/ratgeber/", "/kontakt", "/impressum", "/datenschutz"),
+    "broker_duken_wangenheim": ("/leistungen/", "/blog/", "/kontakt", "/impressum", "/datenschutz"),
+    "broker_riedel": ("/verkaufen", "/ratgeber", "/kontakt", "/impressum", "/datenschutz"),
 }
 
 CLASSIFIED_DISCOVERY_SOURCES: dict[str, list[str]] = {
@@ -402,6 +406,20 @@ def _is_probable_listing_detail(source_name: str, detail_url: str, title: str | 
 
     if source_name == "broker_riedel":
         if "/objekte/" not in l:
+            return False
+
+    if source_name == "broker_graf":
+        if not any(token in l for token in ("/immobilien/", "/objekt", "/expose", "/angebote/")):
+            return False
+
+    if source_name == "broker_duken_wangenheim":
+        if not any(token in l for token in ("/immobilien/", "/objekt", "/expose", "/angebote/")):
+            return False
+
+    if source_name == "broker_dahler_muenchen":
+        if "/immobilie-kaufen/" not in l and "/expose/" not in l:
+            return False
+        if l.rstrip('/').endswith('/muenchen') or l.rstrip('/').endswith('/bayern'):
             return False
 
     if source_name == "broker_engel_voelkers_muenchen":
