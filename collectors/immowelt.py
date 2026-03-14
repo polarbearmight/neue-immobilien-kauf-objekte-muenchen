@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 from collectors.base import SafeCollector, AccessBlockedError
 from collectors.image_tools import is_probable_property_photo
 
-SEARCH_URL = "https://www.immowelt.de/suche/muenchen/wohnungen/kaufen"
+SEARCH_URL = "https://www.immowelt.de/suche/kaufen/immobilien/privat/bayern/munchen-80331/ad08de6345"
 
 _price_re = re.compile(r"([\d\.,]{3,})\s*€")
 _area_re = re.compile(r"([\d\.,]{1,6})\s*m²")
@@ -161,7 +161,7 @@ def collect_immowelt_listings() -> list[dict]:
 
         rows.append(
             {
-                "source": "immowelt",
+                "source": "immowelt_privat",
                 "source_listing_id": source_id,
                 "url": url,
                 "title": title,

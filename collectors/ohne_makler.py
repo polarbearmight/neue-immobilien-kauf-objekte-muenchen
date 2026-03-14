@@ -72,7 +72,7 @@ def collect_ohne_makler_listings() -> list[dict]:
 
         rows.append(
             {
-                "source": "ohne_makler",
+                "source": "ohne_makler_privat",
                 "source_listing_id": sid,
                 "url": url,
                 "title": title,

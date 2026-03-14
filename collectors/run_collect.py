@@ -13,6 +13,8 @@ from app.models import Listing, ListingSnapshot, Source, SourceRun, SourceState
 from collectors.image_tools import compute_phash_from_url
 from collectors.sz import collect_sz_listings
 from collectors.immowelt import collect_immowelt_listings
+from collectors.immoscout import collect_immoscout_private_filtered_listings
+from collectors.kip import collect_kip_munich_listings
 from collectors.ohne_makler import collect_ohne_makler_listings
 from collectors.wohnungsboerse import collect_wohnungsboerse_listings
 from collectors.sis import collect_sis_listings
@@ -39,8 +41,10 @@ from app.time_utils import ensure_utc
 
 COLLECTOR_MAP = {
     "sz": (collect_sz_listings, "https://immobilienmarkt.sueddeutsche.de"),
-    "immowelt": (collect_immowelt_listings, "https://www.immowelt.de"),
-    "ohne_makler": (collect_ohne_makler_listings, "https://www.ohne-makler.net"),
+    "immowelt_privat": (collect_immowelt_listings, "https://www.immowelt.de"),
+    "immoscout_private_filtered": (collect_immoscout_private_filtered_listings, "https://www.immobilienscout24.de"),
+    "kip_muenchen": (collect_kip_munich_listings, "https://www.kip.net/bayern/muenchen"),
+    "ohne_makler_privat": (collect_ohne_makler_listings, "https://www.ohne-makler.net"),
     "wohnungsboerse": (collect_wohnungsboerse_listings, "https://www.wohnungsboerse.net"),
     "sis": (collect_sis_listings, "https://www.sis.de"),
     "planethome": (collect_planethome_listings, "https://planethome.de"),
@@ -78,6 +82,9 @@ DEVELOPER_PROJECT_SOURCES = {
 AUTO_APPROVED_SOURCES = {
     "kleinanzeigen",
     "auction_zvg_portal",
+    "immowelt_privat",
+    "ohne_makler_privat",
+    "kip_muenchen",
 }
 
 
@@ -166,6 +173,7 @@ def get_or_create_source(db, name: str, base_url: str) -> Source:
     src = db.execute(select(Source).where(Source.name == name)).scalar_one_or_none()
     if not src:
         src = db.execute(select(Source).where(Source.base_url == base_url)).scalar_one_or_none()
+    auto_approved = name in AUTO_APPROVED_SOURCES
     if src:
         changed = False
         if src.name != name:
@@ -180,13 +188,17 @@ def get_or_create_source(db, name: str, base_url: str) -> Source:
         if int(src.rate_limit_seconds or 0) != int(rate_limit_seconds):
             src.rate_limit_seconds = int(rate_limit_seconds)
             changed = True
+        if auto_approved and (not src.approved or not src.enabled or src.health_status != "healthy"):
+            src.approved = True
+            src.enabled = True
+            src.health_status = "healthy"
+            changed = True
         if changed:
             src.updated_at = datetime.now(timezone.utc)
             db.commit()
         return src
 
     approval_required = os.getenv("APPROVAL_REQUIRED", "true").lower() in ("1", "true", "yes")
-    auto_approved = name in AUTO_APPROVED_SOURCES
     src = Source(
         name=name,
         base_url=base_url,
