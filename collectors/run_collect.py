@@ -17,6 +17,7 @@ from collectors.ohne_makler import collect_ohne_makler_listings
 from collectors.wohnungsboerse import collect_wohnungsboerse_listings
 from collectors.sis import collect_sis_listings
 from collectors.planethome import collect_planethome_listings
+from collectors.zvg import collect_zvg_munich_listings
 from collectors.brokers import (
     AUCTION_DISCOVERY_SOURCES,
     BROKER_SOURCES,
@@ -43,6 +44,7 @@ COLLECTOR_MAP = {
     "wohnungsboerse": (collect_wohnungsboerse_listings, "https://www.wohnungsboerse.net"),
     "sis": (collect_sis_listings, "https://www.sis.de"),
     "planethome": (collect_planethome_listings, "https://planethome.de"),
+    "auction_zvg_portal": (collect_zvg_munich_listings, "https://www.zvg-portal.de/"),
 }
 
 for _name, _url in BROKER_SOURCES.items():
@@ -54,10 +56,14 @@ def _canonical_base(url: str) -> str:
 
 
 for _name, _seed_urls in CLASSIFIED_DISCOVERY_SOURCES.items():
+    if _name in COLLECTOR_MAP:
+        continue
     # canonical base_url should stay on host root so existing seed rows are reused/migrated
     COLLECTOR_MAP[_name] = (make_multi_seed_collector(_name, _seed_urls), _canonical_base(_seed_urls[0]))
 
 for _name, _seed_urls in AUCTION_DISCOVERY_SOURCES.items():
+    if _name in COLLECTOR_MAP:
+        continue
     COLLECTOR_MAP[_name] = (make_multi_seed_collector(_name, _seed_urls), _canonical_base(_seed_urls[0]))
 
 
@@ -71,6 +77,7 @@ DEVELOPER_PROJECT_SOURCES = {
 
 AUTO_APPROVED_SOURCES = {
     "kleinanzeigen",
+    "auction_zvg_portal",
 }
 
 
