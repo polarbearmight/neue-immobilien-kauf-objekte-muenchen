@@ -129,6 +129,32 @@ def _extract_price_from_text(text: str, strict_kaufpreis: bool = False) -> float
     return None
 
 
+def _extract_kleinanzeigen_exact_price(html: str, body_text: str) -> float | None:
+    candidates: list[float] = []
+
+    for m in re.findall(r'"ExactPreis"\s*:\s*"?(\d{4,})"?', html, flags=re.IGNORECASE):
+        v = _to_num(m)
+        if v:
+            candidates.append(v)
+
+    for m in re.findall(r'"price"\s*:\s*"?(\d{4,})"?', html, flags=re.IGNORECASE):
+        v = _to_num(m)
+        if v:
+            candidates.append(v)
+
+    if not candidates:
+        strict = _extract_price_from_text(body_text, strict_kaufpreis=True)
+        if strict:
+            candidates.append(strict)
+
+    # Immobilienkauf: discard suspiciously tiny values that are usually Stellplatz/NK/etc.
+    candidates = [c for c in candidates if c >= 100000]
+    if not candidates:
+        return None
+
+    return max(candidates)
+
+
 def _flatten_json_ld(obj) -> list[dict]:
     out: list[dict] = []
     if isinstance(obj, dict):
@@ -466,8 +492,10 @@ def _parse_detail(source_name: str, detail_url: str, html: str) -> dict | None:
         lat = _to_num(geo.get("latitude"))
         lon = _to_num(geo.get("longitude"))
 
-    if source_name == "kleinanzeigen" and district is None:
-        district = _extract_kleinanzeigen_district(body_text)
+    if source_name == "kleinanzeigen":
+        price = _extract_kleinanzeigen_exact_price(html, body_text) or price
+        if district is None:
+            district = _extract_kleinanzeigen_district(body_text)
 
     if price is None:
         price = _extract_price_from_text(body_text, strict_kaufpreis=(source_name == "kleinanzeigen"))
@@ -548,6 +576,9 @@ def _extract_pagination_links(base_url: str, html: str, source_name: str | None 
         l = u.lower()
         rel = " ".join((a.get("rel") or [])).lower()
         if any(x in l for x in ("impressum", "datenschutz", "kontakt")):
+            continue
+
+        if "/s-anzeige/" in l:
             continue
 
         is_pagination = (
