@@ -82,6 +82,8 @@ def to_num(val) -> float | None:
 
 _zip_munich_re = re.compile(r"\b(8\d{4})\s*(m[üu]nchen)\b", re.IGNORECASE)
 _object_id_re = re.compile(r"\bobjekt(?:-|\s)?id\b.*$", re.IGNORECASE)
+_zip_only_re = re.compile(r"\b(8\d{4})\b")
+_district_in_parens_re = re.compile(r"m[üu]nchen\s*\(([^\)]+)\)", re.IGNORECASE)
 
 
 def normalize_location(text: str | None) -> str | None:
@@ -94,10 +96,19 @@ def normalize_location(text: str | None) -> str | None:
     # Remove noisy suffixes often seen in scraped locations
     t = _object_id_re.sub("", t).strip(" ,;-")
 
-    # Canonicalize Munich zip+city strings like "81545 München"
-    m = _zip_munich_re.search(t)
-    if m:
-        t = f"{m.group(1)} München"
+    # Prefer explicit district names over raw zip+city strings like "81545 München (Harlaching)"
+    district_match = _district_in_parens_re.search(t)
+    if district_match:
+        t = district_match.group(1).strip(" ,;-")
+    else:
+        # Canonicalize Munich zip+city strings like "81545 München"
+        m = _zip_munich_re.search(t)
+        if m:
+            t = f"{m.group(1)} München"
+        else:
+            zip_only = _zip_only_re.search(t)
+            if zip_only and ("münchen" in t.lower() or "muenchen" in t.lower()):
+                t = f"{zip_only.group(1)} München"
 
     if len(t) > 128:
         t = t[:128]

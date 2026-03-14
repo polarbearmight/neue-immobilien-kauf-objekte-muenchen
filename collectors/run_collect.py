@@ -41,9 +41,11 @@ from app.time_utils import ensure_utc
 
 COLLECTOR_MAP = {
     "sz": (collect_sz_listings, "https://immobilienmarkt.sueddeutsche.de"),
+    "immowelt": (collect_immowelt_listings, "https://www.immowelt.de"),
     "immowelt_privat": (collect_immowelt_listings, "https://www.immowelt.de"),
     "immoscout_private_filtered": (collect_immoscout_private_filtered_listings, "https://www.immobilienscout24.de"),
     "kip_muenchen": (collect_kip_munich_listings, "https://www.kip.net/bayern/muenchen"),
+    "ohne_makler": (collect_ohne_makler_listings, "https://www.ohne-makler.net"),
     "ohne_makler_privat": (collect_ohne_makler_listings, "https://www.ohne-makler.net"),
     "wohnungsboerse": (collect_wohnungsboerse_listings, "https://www.wohnungsboerse.net"),
     "sis": (collect_sis_listings, "https://www.sis.de"),
