@@ -1,4 +1,6 @@
 from datetime import timedelta
+import csv
+import io
 import os
 import re
 import threading
@@ -6,7 +8,7 @@ import time
 
 from fastapi import Depends, FastAPI, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from sqlalchemy import desc, func, select, case
 from collections import defaultdict
 from sqlalchemy.orm import Session
@@ -428,6 +430,78 @@ def listings(
         order = (Listing.price_eur.asc().nulls_last(), Listing.first_seen_at.desc())
 
     return db.execute(q.order_by(*order).offset(offset).limit(limit)).scalars().all()
+
+
+@app.get("/api/export.csv")
+def export_csv(
+    sort: str = Query("newest", pattern="^(newest|oldest|score|investment|ppsm|price)$"),
+    min_score: float = Query(0, ge=0, le=100),
+    district: str | None = None,
+    districts: str | None = None,
+    postal_code: str | None = None,
+    source: str | None = None,
+    first_seen_date: str | None = Query(None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    price_min: float | None = Query(None, ge=0),
+    price_max: float | None = Query(None, ge=0),
+    limit: int = Query(5000, ge=1, le=10000),
+    db: Session = Depends(get_db),
+):
+    rows = listings(
+        bucket="all",
+        sort=sort,
+        limit=limit,
+        offset=0,
+        min_score=min_score,
+        district=district,
+        districts=districts,
+        postal_code=postal_code,
+        source=source,
+        first_seen_date=first_seen_date,
+        brand_new=False,
+        just_listed=False,
+        price_min=price_min,
+        price_max=price_max,
+        sqm_min=None,
+        sqm_max=None,
+        rooms_min=None,
+        rooms_max=None,
+        include_inactive=False,
+        db=db,
+    )
+
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow([
+        "id", "source", "source_listing_id", "title", "district", "postal_code", "price_eur",
+        "area_sqm", "rooms", "price_per_sqm", "deal_score", "investment_score", "off_market_score",
+        "first_seen_at", "posted_at", "url",
+    ])
+    for r in rows:
+        writer.writerow([
+            r.id,
+            r.source,
+            r.source_listing_id,
+            r.title,
+            r.district,
+            r.postal_code,
+            r.price_eur,
+            r.area_sqm,
+            r.rooms,
+            r.price_per_sqm,
+            r.deal_score,
+            r.investment_score,
+            r.off_market_score,
+            r.first_seen_at.isoformat() if r.first_seen_at else None,
+            r.posted_at.isoformat() if r.posted_at else None,
+            r.url,
+        ])
+
+    filename = f"listings-export-{utc_now().strftime('%Y%m%d-%H%M%S')}.csv"
+    return StreamingResponse(
+        iter([buffer.getvalue()]),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @app.get("/api/listings/{listing_id}", response_model=ListingOut)
