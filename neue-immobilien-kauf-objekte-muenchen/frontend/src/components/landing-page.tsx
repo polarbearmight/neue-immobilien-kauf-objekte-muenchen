@@ -9,26 +9,26 @@ import { ContactSalesForm } from "@/components/contact-sales-form";
 const features = [
   {
     icon: Lock,
-    title: "Private Access",
-    text: "Kuratiertes Setup statt öffentlicher Massenmarkt-Oberfläche.",
+    title: "Off-market visibility",
+    text: "Mehr diskrete Chancen außerhalb des öffentlichen Portal-Standards.",
   },
   {
     icon: Sparkles,
-    title: "Signal over noise",
-    text: "Weniger Lautstärke, mehr relevante Chancen und klare Priorisierung.",
+    title: "All deals, one layer",
+    text: "Große Portale, kleinere Quellen und Signale in einer priorisierten Sicht.",
   },
   {
     icon: TrendingUp,
-    title: "Decision speed",
-    text: "Deal- und Investment-Signale direkt in einer ruhigen Oberfläche.",
+    title: "Faster than the market",
+    text: "Früher sehen, schneller filtern, vor der breiten Konkurrenz reagieren.",
   },
 ];
 
 const proofPoints = [
-  "Multi-source Marktüberblick",
-  "Deal- & Investment-Ranking",
-  "Diskrete Premium-Anmutung",
-  "Für schnelle Kaufentscheidungen gebaut",
+  "Off-market Chancen früher sehen",
+  "Alle relevanten Deals in einer Oberfläche",
+  "Multi-source Intelligence statt Portalsuche",
+  "Gebaut für schnelle Kaufentscheidungen",
 ];
 
 export default function LandingPage() {
@@ -114,11 +114,11 @@ export default function LandingPage() {
                 <Lock className="h-3.5 w-3.5 text-[#d2b77a]" />
                 Invite Only · München · Curated Access
               </div>
-              <h1 data-reveal className="motion-reveal max-w-4xl text-4xl font-semibold leading-tight tracking-[-0.05em] text-white sm:text-5xl lg:text-6xl xl:text-7xl">
-                Weniger Portal-Noise. Mehr Premium-Deals.
+              <h1 data-reveal className="motion-reveal max-w-5xl text-4xl font-semibold leading-tight tracking-[-0.05em] text-white sm:text-5xl lg:text-6xl xl:text-7xl">
+                Off-market Chancen und alle relevanten Deals — schneller sichtbar als für alle anderen.
               </h1>
-              <p data-reveal className="motion-reveal mt-6 max-w-2xl text-lg leading-relaxed text-white/62 sm:text-xl">
-                Eine ruhige, diskrete Oberfläche für Käufer und Entscheider, die relevante Kaufobjekte früher sehen und besser priorisieren wollen.
+              <p data-reveal className="motion-reveal mt-6 max-w-2xl text-lg leading-relaxed text-white/60 sm:text-xl">
+                DealFinder bündelt Marktquellen, diskrete Signale und priorisierte Kaufobjekte in einer ruhigen Intelligence-Oberfläche.
               </p>
               <div data-reveal className="motion-reveal mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
                 <button
@@ -137,9 +137,9 @@ export default function LandingPage() {
                 </a>
               </div>
               <div data-reveal className="motion-reveal mt-8 flex flex-wrap gap-3 text-sm text-white/52">
-                <span className="rounded-full border border-white/10 bg-white/[0.03] px-4 py-2">Private market intelligence</span>
-                <span className="rounded-full border border-white/10 bg-white/[0.03] px-4 py-2">High-signal sourcing</span>
-                <span className="rounded-full border border-white/10 bg-white/[0.03] px-4 py-2">Luxury minimal interface</span>
+                <span className="rounded-full border border-white/10 bg-white/[0.03] px-4 py-2">Off-market visibility</span>
+                <span className="rounded-full border border-white/10 bg-white/[0.03] px-4 py-2">All deals in one layer</span>
+                <span className="rounded-full border border-white/10 bg-white/[0.03] px-4 py-2">Luxury intelligence UI</span>
               </div>
             </div>
 
@@ -157,19 +157,19 @@ export default function LandingPage() {
                   <div className="rounded-[1.5rem] border border-white/8 bg-[#0f131a] p-5">
                     <div className="text-xs uppercase tracking-[0.22em] text-white/35">Coverage</div>
                     <div className="mt-3 text-3xl font-semibold text-white">24/7</div>
-                    <div className="mt-2 text-sm leading-relaxed text-white/55">Kontinuierliche Beobachtung von Portalen, kleineren Quellen und zusätzlichen Signalen.</div>
+                    <div className="mt-2 text-sm leading-relaxed text-white/55">Kontinuierliche Beobachtung von Portalen, kleineren Quellen und Off-market-Signalen.</div>
                   </div>
                   <div className="rounded-[1.5rem] border border-white/8 bg-[#0f131a] p-5">
-                    <div className="text-xs uppercase tracking-[0.22em] text-white/35">Decision Layer</div>
-                    <div className="mt-3 text-3xl font-semibold text-white">Deal + Inv</div>
-                    <div className="mt-2 text-sm leading-relaxed text-white/55">Klar priorisierte Listings statt unruhiger Massenmarkt-Feeds.</div>
+                    <div className="text-xs uppercase tracking-[0.22em] text-white/35">Advantage</div>
+                    <div className="mt-3 text-3xl font-semibold text-white">Earlier</div>
+                    <div className="mt-2 text-sm leading-relaxed text-white/55">Mehr relevante Kaufobjekte früher sehen und vor breiter Konkurrenz reagieren.</div>
                   </div>
                 </div>
 
                 <div className="mt-4 rounded-[1.5rem] border border-white/8 bg-[#0f131a] p-5">
                   <p className="text-xs uppercase tracking-[0.22em] text-white/35">Positioning</p>
                   <p className="mt-3 text-sm leading-relaxed text-white/58">
-                    DealFinder wirkt bewusst diskret, hochwertig und reduziert — mehr private office als Immobilienportal.
+                    Weniger Portalgefühl. Mehr private-market Intelligence für Käufer, die Off-market und Top-Deals schneller sehen wollen.
                   </p>
                 </div>
               </div>
@@ -181,7 +181,7 @@ export default function LandingPage() {
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="mb-10 max-w-2xl">
               <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#d2b77a]">Features</p>
-              <h2 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">Premium SaaS statt lauter Portal-Optik</h2>
+              <h2 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">Off-market und alle Deals. Schneller priorisiert.</h2>
             </div>
             <div className="grid gap-6 md:grid-cols-3">
               {features.map((feature) => (
@@ -205,9 +205,9 @@ export default function LandingPage() {
           <div className="mx-auto grid max-w-7xl gap-8 px-4 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#d2b77a]">Positioning</p>
-              <h2 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">Mehr Black / Gold Luxury. Weniger Marketing-Lärm.</h2>
+              <h2 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">High-end SaaS für Käufer mit Informationsvorsprung.</h2>
               <p className="mt-4 max-w-xl text-lg leading-relaxed text-white/60">
-                Die Oberfläche soll nach diskretem High-End-Tool aussehen — nicht nach öffentlichem Portal mit beliebigem Traffic-Fokus.
+                Die Botschaft ist klar: Mit dieser Software siehst du Off-market Chancen und alle relevanten Deals schneller als der Markt.
               </p>
             </div>
             <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-8 shadow-[0_24px_80px_rgba(0,0,0,0.22)] backdrop-blur-xl">
@@ -229,9 +229,9 @@ export default function LandingPage() {
           <div className="mx-auto grid max-w-6xl gap-10 px-4 sm:px-6 lg:grid-cols-[0.88fr_1.12fr] lg:px-8 xl:max-w-[88rem]">
             <div className="space-y-6">
               <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#d2b77a]">Concierge Access</p>
-              <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">Zugang anfragen oder direkt einloggen</h2>
+              <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">Private access für schnellere Deal-Entscheidungen</h2>
               <p className="text-lg leading-relaxed text-white/60">
-                Für ausgewählte Nutzer, Teams und Käufer mit Anspruch auf eine ruhigere, hochwertigere Deal-Oberfläche.
+                Zugang für Nutzer, die Off-market Opportunities und priorisierte Kaufobjekte früher sehen wollen als andere.
               </p>
               <div className="rounded-[1.6rem] border border-white/10 bg-white/[0.04] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.18)]">
                 <div className="text-xs uppercase tracking-[0.22em] text-white/35">Access philosophy</div>
