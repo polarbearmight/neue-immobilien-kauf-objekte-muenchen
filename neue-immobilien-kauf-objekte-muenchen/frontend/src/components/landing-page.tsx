@@ -115,10 +115,10 @@ export default function LandingPage() {
                 Invite Only · München · Curated Access
               </div>
               <h1 data-reveal className="motion-reveal max-w-5xl text-4xl font-semibold leading-tight tracking-[-0.05em] text-white sm:text-5xl lg:text-6xl xl:text-7xl">
-                Off-market Chancen und alle relevanten Deals — schneller sichtbar als für alle anderen.
+                Immobilien-Deals auf einer Plattform vereint — inklusive Off-market Chancen.
               </h1>
               <p data-reveal className="motion-reveal mt-6 max-w-2xl text-lg leading-relaxed text-white/60 sm:text-xl">
-                DealFinder bündelt Marktquellen, diskrete Signale und priorisierte Kaufobjekte in einer ruhigen Intelligence-Oberfläche.
+                DealFinder bündelt alle Immobilien Marktquellen, diskrete Signale und priorisierte Kaufobjekte in einer ruhigen Intelligence-Oberfläche.
               </p>
               <div data-reveal className="motion-reveal mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
                 <button
@@ -136,10 +136,10 @@ export default function LandingPage() {
                   Zugang anfragen
                 </a>
               </div>
-              <div data-reveal className="motion-reveal mt-8 flex flex-wrap gap-3 text-sm text-white/52">
-                <span className="rounded-full border border-white/10 bg-white/[0.03] px-4 py-2">Off-market visibility</span>
-                <span className="rounded-full border border-white/10 bg-white/[0.03] px-4 py-2">All deals in one layer</span>
-                <span className="rounded-full border border-white/10 bg-white/[0.03] px-4 py-2">Luxury intelligence UI</span>
+              <div data-reveal className="motion-reveal mt-8 flex flex-col items-center gap-3 text-sm text-white/52 sm:flex-row sm:flex-wrap sm:justify-start">
+                <span className="inline-flex min-w-[220px] justify-center rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-center sm:min-w-0">Off-market visibility</span>
+                <span className="inline-flex min-w-[220px] justify-center rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-center sm:min-w-0">All deals in one layer</span>
+                <span className="inline-flex min-w-[220px] justify-center rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-center sm:min-w-0">Luxury intelligence UI</span>
               </div>
             </div>
 
