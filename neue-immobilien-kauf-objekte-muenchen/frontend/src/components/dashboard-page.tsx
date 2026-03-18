@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { API_URL, Listing } from "@/lib/api";
 import { ListingDrawer } from "@/components/listing-drawer";
@@ -56,19 +56,33 @@ type ScanState = {
   coverage?: ScanCoverageRow[];
 };
 
+type FilterState = {
+  source: string;
+  sort: string;
+  selectedDistricts: string[];
+  minScore: number;
+  priceMin: number | "";
+  priceMax: number | "";
+};
+
+const defaultFilters = (): FilterState => ({
+  source: "all",
+  sort: "newest",
+  selectedDistricts: [],
+  minScore: 0,
+  priceMin: "",
+  priceMax: "",
+});
+
 export default function DashboardPage() {
   const [items, setItems] = useState<Listing[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
-  const [source, setSource] = useState("all");
-  const [sort, setSort] = useState("newest");
-  const [selectedDistricts, setSelectedDistricts] = useState<string[]>([]);
+  const [draftFilters, setDraftFilters] = useState<FilterState>(defaultFilters);
+  const [appliedFilters, setAppliedFilters] = useState<FilterState>(defaultFilters);
   const [allDistrictOptions, setAllDistrictOptions] = useState<string[]>([]);
-  const [minScore, setMinScore] = useState(0);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
-  const [priceMin, setPriceMin] = useState<number | "">("");
-  const [priceMax, setPriceMax] = useState<number | "">("");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Listing | null>(null);
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
@@ -82,9 +96,8 @@ export default function DashboardPage() {
   const prevScanStatus = useRef<string | null>(null);
   const prevScanSignature = useRef<string | null>(null);
   const listingsRef = useRef<HTMLDivElement | null>(null);
-  const debouncedMinScore = useDebouncedValue(minScore, 250);
-  const debouncedPriceMin = useDebouncedValue(priceMin, 400);
-  const debouncedPriceMax = useDebouncedValue(priceMax, 400);
+  const debouncedQuery = useDebouncedValue(query, 250);
+  const { source, sort, selectedDistricts, minScore, priceMin, priceMax } = appliedFilters;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -94,12 +107,12 @@ export default function DashboardPage() {
       else setIsFetching(true);
       setError(null);
       try {
-        const params = new URLSearchParams({ sort, limit: "500", min_score: String(debouncedMinScore) });
+        const params = new URLSearchParams({ sort, limit: "500", min_score: String(minScore) });
         if (source !== "all") params.set("source", source);
         if (selectedDay) params.set("first_seen_date", selectedDay);
         if (selectedDistricts.length) params.set("districts", selectedDistricts.join(","));
-        if (debouncedPriceMin !== "") params.set("price_min", String(debouncedPriceMin));
-        if (debouncedPriceMax !== "") params.set("price_max", String(debouncedPriceMax));
+        if (priceMin !== "") params.set("price_min", String(priceMin));
+        if (priceMax !== "") params.set("price_max", String(priceMax));
         const [lRes, sRes, aRes] = await Promise.all([
           fetch(`${API_URL}/api/listings?${params.toString()}`, { cache: "no-store", signal: controller.signal }),
           fetch(`${API_URL}/api/stats?days=7`, { cache: "no-store", signal: controller.signal }),
@@ -126,7 +139,7 @@ export default function DashboardPage() {
     };
     load();
     return () => controller.abort();
-  }, [source, sort, selectedDistricts, debouncedMinScore, debouncedPriceMin, debouncedPriceMax, selectedDay, refreshTick]);
+  }, [source, sort, selectedDistricts, minScore, priceMin, priceMax, selectedDay, refreshTick]);
 
   useEffect(() => {
     let noticeTimer: ReturnType<typeof setTimeout> | null = null;
@@ -187,10 +200,10 @@ export default function DashboardPage() {
   };
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = debouncedQuery.trim().toLowerCase();
     if (!q) return items;
     return items.filter((x) => `${x.title || ""} ${x.district || ""}`.toLowerCase().includes(q));
-  }, [items, query]);
+  }, [items, debouncedQuery]);
 
   const sources = useMemo(() => {
     const fromAnalytics = analytics?.source_distribution?.map((x) => x.source) || [];
@@ -222,6 +235,29 @@ export default function DashboardPage() {
     return Array.from(new Set(items)).sort((a, b) => a.localeCompare(b));
   }, [analytics, allDistrictOptions]);
 
+  const hasPendingFilterChanges = useMemo(() => {
+    return JSON.stringify(draftFilters) !== JSON.stringify(appliedFilters);
+  }, [draftFilters, appliedFilters]);
+
+  const applyFilters = useCallback(() => {
+    setAppliedFilters({
+      source: draftFilters.source,
+      sort: draftFilters.sort,
+      selectedDistricts: [...draftFilters.selectedDistricts],
+      minScore: draftFilters.minScore,
+      priceMin: draftFilters.priceMin,
+      priceMax: draftFilters.priceMax,
+    });
+  }, [draftFilters]);
+
+  const resetFilters = useCallback(() => {
+    const next = defaultFilters();
+    setDraftFilters(next);
+    setAppliedFilters(next);
+    setSelectedDay(null);
+    setQuery("");
+  }, []);
+
   return (
     <div className="space-y-5 pb-24 md:space-y-6 md:pb-0">
       <OnboardingCard />
@@ -232,9 +268,10 @@ export default function DashboardPage() {
         </div>
         <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
           <button className="min-h-11 rounded-xl border bg-background px-4 py-2 text-sm" onClick={() => setRefreshTick((v) => v + 1)}>Aktualisieren</button>
+          <button className="min-h-11 rounded-xl border bg-background px-4 py-2 text-sm" onClick={resetFilters}>Filter zurücksetzen</button>
           <button className="min-h-11 rounded-xl border bg-background px-4 py-2 text-sm" onClick={() => startScan("major")} disabled={scan?.running} title="Große Portale">{scan?.running ? "Scan läuft…" : "Große Quellen scannen"}</button>
           <button className="col-span-2 min-h-11 rounded-xl border bg-background px-4 py-2 text-sm sm:col-span-1" onClick={() => startScan("secondary")} disabled={scan?.running}>Sekundäre Quellen scannen</button>
-          <a className="col-span-2 inline-flex min-h-11 items-center justify-center rounded-xl border bg-background px-4 py-2 text-sm sm:col-span-1" href={`${API_URL}/api/export.csv?sort=${encodeURIComponent(sort)}&min_score=${encodeURIComponent(String(debouncedMinScore))}${source !== "all" ? `&source=${encodeURIComponent(source)}` : ""}${selectedDay ? `&first_seen_date=${encodeURIComponent(selectedDay)}` : ""}${selectedDistricts.length ? `&districts=${encodeURIComponent(selectedDistricts.join(","))}` : ""}${debouncedPriceMin !== "" ? `&price_min=${encodeURIComponent(String(debouncedPriceMin))}` : ""}${debouncedPriceMax !== "" ? `&price_max=${encodeURIComponent(String(debouncedPriceMax))}` : ""}`} target="_blank" rel="noreferrer">CSV exportieren</a>
+          <a className="col-span-2 inline-flex min-h-11 items-center justify-center rounded-xl border bg-background px-4 py-2 text-sm sm:col-span-1" href={`${API_URL}/api/export.csv?sort=${encodeURIComponent(sort)}&min_score=${encodeURIComponent(String(minScore))}${source !== "all" ? `&source=${encodeURIComponent(source)}` : ""}${selectedDay ? `&first_seen_date=${encodeURIComponent(selectedDay)}` : ""}${selectedDistricts.length ? `&districts=${encodeURIComponent(selectedDistricts.join(","))}` : ""}${priceMin !== "" ? `&price_min=${encodeURIComponent(String(priceMin))}` : ""}${priceMax !== "" ? `&price_max=${encodeURIComponent(String(priceMax))}` : ""}`} target="_blank" rel="noreferrer">CSV exportieren</a>
         </div>
       </div>
 
@@ -284,13 +321,10 @@ export default function DashboardPage() {
               activeLabel={selectedDay}
               onBarClick={(point) => {
                 setSelectedDay(point.label);
-                setSource("all");
-                setSelectedDistricts([]);
-                setMinScore(0);
-                setPriceMin("");
-                setPriceMax("");
+                const next = defaultFilters();
+                setDraftFilters(next);
+                setAppliedFilters(next);
                 setQuery("");
-                setSort("newest");
                 requestAnimationFrame(() => {
                   listingsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
                 });
@@ -305,18 +339,22 @@ export default function DashboardPage() {
           <CardTitle>Filter</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-7">
-          <label className="text-sm">Quelle<select className="mt-1 w-full rounded border px-2 py-1" value={source} onChange={(e) => setSource(e.target.value)}>{sources.map((s) => <option key={s} value={s}>{s}</option>)}</select></label>
-          <label className="text-sm">Sortierung<select className="mt-1 w-full rounded border px-2 py-1" value={sort} onChange={(e) => setSort(e.target.value)}><option value="newest">newest</option><option value="score">score</option><option value="investment">investment</option></select></label>
-          <label className="text-sm">Mindest-Score: {minScore}<input className="mt-1 w-full" type="range" min={0} max={100} value={minScore} onChange={(e) => setMinScore(Number(e.target.value))} /></label>
-          <label className="text-sm">Preis min<input className="mt-1 w-full rounded border px-2 py-1" type="number" value={priceMin} onChange={(e) => setPriceMin(e.target.value === "" ? "" : Number(e.target.value))} /></label>
-          <label className="text-sm">Preis max<input className="mt-1 w-full rounded border px-2 py-1" type="number" value={priceMax} onChange={(e) => setPriceMax(e.target.value === "" ? "" : Number(e.target.value))} /></label>
+          <label className="text-sm">Quelle<select className="mt-1 w-full rounded border px-2 py-1" value={draftFilters.source} onChange={(e) => setDraftFilters((prev) => ({ ...prev, source: e.target.value }))}>{sources.map((s) => <option key={s} value={s}>{s}</option>)}</select></label>
+          <label className="text-sm">Sortierung<select className="mt-1 w-full rounded border px-2 py-1" value={draftFilters.sort} onChange={(e) => setDraftFilters((prev) => ({ ...prev, sort: e.target.value }))}><option value="newest">newest</option><option value="score">score</option><option value="investment">investment</option></select></label>
+          <label className="text-sm">Mindest-Score: {draftFilters.minScore}<input className="mt-1 w-full" type="range" min={0} max={100} value={draftFilters.minScore} onChange={(e) => setDraftFilters((prev) => ({ ...prev, minScore: Number(e.target.value) }))} /></label>
+          <label className="text-sm">Preis min<input className="mt-1 w-full rounded border px-2 py-1" type="number" value={draftFilters.priceMin} onChange={(e) => setDraftFilters((prev) => ({ ...prev, priceMin: e.target.value === "" ? "" : Number(e.target.value) }))} /></label>
+          <label className="text-sm">Preis max<input className="mt-1 w-full rounded border px-2 py-1" type="number" value={draftFilters.priceMax} onChange={(e) => setDraftFilters((prev) => ({ ...prev, priceMax: e.target.value === "" ? "" : Number(e.target.value) }))} /></label>
           <label className="text-sm md:col-span-2">Suche<input className="mt-1 w-full rounded border px-2 py-1" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Titel oder Stadtteil" /></label>
           <div className="text-sm md:col-span-7">
             <p className="mb-2 text-muted-foreground">Stadtteile</p>
             <div className="flex flex-wrap gap-2">{districtOptions.map((district) => {
-              const active = selectedDistricts.includes(district);
-              return <button key={district} className={`rounded-full border px-3 py-1 text-xs ${active ? "bg-primary text-primary-foreground" : "bg-background"}`} onClick={() => setSelectedDistricts((prev) => active ? prev.filter((d) => d !== district) : [...prev, district])}>{district}</button>;
+              const active = draftFilters.selectedDistricts.includes(district);
+              return <button key={district} className={`rounded-full border px-3 py-1 text-xs ${active ? "bg-primary text-primary-foreground" : "bg-background"}`} onClick={() => setDraftFilters((prev) => ({ ...prev, selectedDistricts: active ? prev.selectedDistricts.filter((d) => d !== district) : [...prev.selectedDistricts, district] }))}>{district}</button>;
             })}</div>
+          </div>
+          <div className="md:col-span-7 flex items-center gap-2">
+            <button className="rounded-xl bg-slate-950 px-4 py-2 text-sm font-medium text-white disabled:opacity-50" onClick={applyFilters} disabled={!hasPendingFilterChanges}>Filter anwenden</button>
+            {hasPendingFilterChanges ? <span className="text-xs text-slate-500">Nicht angewendete Änderungen</span> : null}
           </div>
         </CardContent>
       </Card>
@@ -339,20 +377,20 @@ export default function DashboardPage() {
       <MobileStickyActions onOpenFilters={() => setMobileFiltersOpen(true)} onRefresh={() => setRefreshTick((v) => v + 1)} resultCount={filtered.length} />
       <MobileFilterSheet open={mobileFiltersOpen} onClose={() => setMobileFiltersOpen(false)}>
         <div className="grid gap-4">
-          <label className="text-sm">Quelle<select className="mt-1 w-full rounded-xl border px-3 py-3" value={source} onChange={(e) => setSource(e.target.value)}>{sources.map((s) => <option key={s} value={s}>{s}</option>)}</select></label>
-          <label className="text-sm">Sortierung<select className="mt-1 w-full rounded-xl border px-3 py-3" value={sort} onChange={(e) => setSort(e.target.value)}><option value="newest">newest</option><option value="score">score</option><option value="investment">investment</option></select></label>
-          <label className="text-sm">Mindest-Score: {minScore}<input className="mt-2 w-full" type="range" min={0} max={100} value={minScore} onChange={(e) => setMinScore(Number(e.target.value))} /></label>
-          <label className="text-sm">Preis min<input className="mt-1 w-full rounded-xl border px-3 py-3" type="number" value={priceMin} onChange={(e) => setPriceMin(e.target.value === "" ? "" : Number(e.target.value))} /></label>
-          <label className="text-sm">Preis max<input className="mt-1 w-full rounded-xl border px-3 py-3" type="number" value={priceMax} onChange={(e) => setPriceMax(e.target.value === "" ? "" : Number(e.target.value))} /></label>
+          <label className="text-sm">Quelle<select className="mt-1 w-full rounded-xl border px-3 py-3" value={draftFilters.source} onChange={(e) => setDraftFilters((prev) => ({ ...prev, source: e.target.value }))}>{sources.map((s) => <option key={s} value={s}>{s}</option>)}</select></label>
+          <label className="text-sm">Sortierung<select className="mt-1 w-full rounded-xl border px-3 py-3" value={draftFilters.sort} onChange={(e) => setDraftFilters((prev) => ({ ...prev, sort: e.target.value }))}><option value="newest">newest</option><option value="score">score</option><option value="investment">investment</option></select></label>
+          <label className="text-sm">Mindest-Score: {draftFilters.minScore}<input className="mt-2 w-full" type="range" min={0} max={100} value={draftFilters.minScore} onChange={(e) => setDraftFilters((prev) => ({ ...prev, minScore: Number(e.target.value) }))} /></label>
+          <label className="text-sm">Preis min<input className="mt-1 w-full rounded-xl border px-3 py-3" type="number" value={draftFilters.priceMin} onChange={(e) => setDraftFilters((prev) => ({ ...prev, priceMin: e.target.value === "" ? "" : Number(e.target.value) }))} /></label>
+          <label className="text-sm">Preis max<input className="mt-1 w-full rounded-xl border px-3 py-3" type="number" value={draftFilters.priceMax} onChange={(e) => setDraftFilters((prev) => ({ ...prev, priceMax: e.target.value === "" ? "" : Number(e.target.value) }))} /></label>
           <label className="text-sm">Suche<input className="mt-1 w-full rounded-xl border px-3 py-3" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Titel oder Stadtteil" /></label>
           <div className="text-sm">
             <p className="mb-2 text-muted-foreground">Stadtteile</p>
             <div className="flex flex-wrap gap-2">{districtOptions.map((district) => {
-              const active = selectedDistricts.includes(district);
-              return <button key={district} className={`rounded-full border px-3 py-2 text-xs ${active ? "bg-primary text-primary-foreground" : "bg-background"}`} onClick={() => setSelectedDistricts((prev) => active ? prev.filter((d) => d !== district) : [...prev, district])}>{district}</button>;
+              const active = draftFilters.selectedDistricts.includes(district);
+              return <button key={district} className={`rounded-full border px-3 py-2 text-xs ${active ? "bg-primary text-primary-foreground" : "bg-background"}`} onClick={() => setDraftFilters((prev) => ({ ...prev, selectedDistricts: active ? prev.selectedDistricts.filter((d) => d !== district) : [...prev.selectedDistricts, district] }))}>{district}</button>;
             })}</div>
           </div>
-          <button className="min-h-11 rounded-2xl bg-slate-950 px-4 py-2 text-sm font-medium text-white" onClick={() => setMobileFiltersOpen(false)}>Filter anwenden</button>
+          <button className="min-h-11 rounded-2xl bg-slate-950 px-4 py-2 text-sm font-medium text-white disabled:opacity-50" onClick={() => { applyFilters(); setMobileFiltersOpen(false); }} disabled={!hasPendingFilterChanges}>Filter anwenden</button>
         </div>
       </MobileFilterSheet>
 
