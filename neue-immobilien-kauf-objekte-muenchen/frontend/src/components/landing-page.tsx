@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { ArrowRight, Building2, Check, Lock, Sparkles, TrendingUp } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ArrowLeft, ArrowRight, Building2, Check, ChevronDown, Lock, Sparkles, TrendingUp } from "lucide-react";
 import { LoginModal } from "@/components/login-modal";
 import { ContactSalesForm } from "@/components/contact-sales-form";
+import { PremiumProductMockup } from "@/components/premium-product-mockup";
 
 const features = [
   {
@@ -14,13 +15,13 @@ const features = [
   },
   {
     icon: Sparkles,
-    title: "All deals, one layer",
-    text: "Große Portale, kleinere Quellen und Signale in einer priorisierten Sicht.",
+    title: "Alle Deals in einer Sicht",
+    text: "Große Portale, kleinere Quellen und diskrete Signale in einer priorisierten Oberfläche.",
   },
   {
     icon: TrendingUp,
-    title: "Faster than the market",
-    text: "Früher sehen, schneller filtern, vor der breiten Konkurrenz reagieren.",
+    title: "Schneller als der Markt",
+    text: "Früher sehen, schneller filtern und vor breiter Konkurrenz reagieren.",
   },
 ];
 
@@ -31,9 +32,44 @@ const proofPoints = [
   "Gebaut für schnelle Kaufentscheidungen",
 ];
 
+const reviews = [
+  {
+    quote: "Zum ersten Mal sehe ich Portale, kleinere Quellen und diskrete Chancen in einer Oberfläche statt in zehn offenen Tabs.",
+    name: "Tobias R.",
+    role: "Privatinvestor · München",
+  },
+  {
+    quote: "Die Stärke ist nicht nur das Design, sondern dass relevante Deals deutlich früher und klarer priorisiert auftauchen.",
+    name: "Anna K.",
+    role: "Investment Buyer",
+  },
+  {
+    quote: "Für mich fühlt es sich eher wie ein Intelligence-Tool an als wie ein klassisches Immobilienportal. Genau das ist der Vorteil.",
+    name: "David M.",
+    role: "Family Office Research",
+  },
+];
+
+const faqs = [
+  {
+    q: "Was ist der Hauptvorteil gegenüber normalen Immobilienportalen?",
+    a: "DealFinder bündelt mehrere Marktquellen und priorisiert relevante Kaufobjekte in einer Oberfläche. Dadurch siehst du Off-market Chancen und alle wichtigen Deals schneller und mit mehr Kontext.",
+  },
+  {
+    q: "Geht es nur um Off-market Immobilien?",
+    a: "Nein. Der Kernnutzen ist, öffentliche Portale, kleinere Quellen und diskrete Signale gemeinsam sichtbar zu machen — also nicht nur Off-market, sondern alle relevanten Deals in einer priorisierten Sicht.",
+  },
+  {
+    q: "Für wen ist die Plattform gedacht?",
+    a: "Für Käufer, Investoren, Family Offices, Makler oder Suchende mit Anspruch auf Informationsvorsprung, saubere Priorisierung und eine ruhigere Premium-Oberfläche.",
+  },
+];
+
 export default function LandingPage() {
   const [open, setOpen] = useState(false);
   const [mobileMenu, setMobileMenu] = useState(false);
+  const [reviewIndex, setReviewIndex] = useState(0);
+  const [openFaq, setOpenFaq] = useState<number>(0);
 
   useEffect(() => {
     const nodes = Array.from(document.querySelectorAll<HTMLElement>("[data-reveal]"));
@@ -48,6 +84,8 @@ export default function LandingPage() {
     nodes.forEach((node) => observer.observe(node));
     return () => observer.disconnect();
   }, []);
+
+  const activeReview = useMemo(() => reviews[reviewIndex % reviews.length], [reviewIndex]);
 
   return (
     <div className="min-h-screen bg-[#050608] text-white">
@@ -67,7 +105,8 @@ export default function LandingPage() {
 
           <nav className="hidden items-center gap-8 text-sm text-white/55 md:flex">
             <a href="#features" className="transition hover:text-white">Features</a>
-            <a href="#positioning" className="transition hover:text-white">Positioning</a>
+            <a href="#reviews" className="transition hover:text-white">Reviews</a>
+            <a href="#faq" className="transition hover:text-white">Q&amp;A</a>
             <a href="#zugang" className="transition hover:text-white">Zugang</a>
           </nav>
 
@@ -94,7 +133,8 @@ export default function LandingPage() {
         <div className="fixed inset-x-4 top-20 z-40 rounded-3xl border border-white/10 bg-[rgba(10,12,16,0.92)] p-4 shadow-[0_24px_80px_rgba(0,0,0,0.4)] backdrop-blur-2xl md:hidden">
           <div className="flex flex-col gap-3 text-sm text-white/70">
             <a href="#features" onClick={() => setMobileMenu(false)}>Features</a>
-            <a href="#positioning" onClick={() => setMobileMenu(false)}>Positioning</a>
+            <a href="#reviews" onClick={() => setMobileMenu(false)}>Reviews</a>
+            <a href="#faq" onClick={() => setMobileMenu(false)}>Q&amp;A</a>
             <a href="#zugang" onClick={() => setMobileMenu(false)}>Zugang</a>
           </div>
         </div>
@@ -108,7 +148,7 @@ export default function LandingPage() {
             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
           </div>
 
-          <div className="relative z-10 mx-auto grid max-w-7xl gap-10 px-4 py-20 sm:px-6 sm:py-28 lg:grid-cols-[1.06fr_0.94fr] lg:px-8 xl:max-w-[88rem] xl:py-32">
+          <div className="relative z-10 mx-auto grid max-w-7xl gap-10 px-4 py-20 sm:px-6 sm:py-28 lg:grid-cols-[1.02fr_0.98fr] lg:px-8 xl:max-w-[88rem] xl:py-32">
             <div className="flex flex-col justify-center">
               <div data-reveal className="motion-reveal mb-5 inline-flex w-fit items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-[11px] font-medium uppercase tracking-[0.28em] text-white/70 backdrop-blur">
                 <Lock className="h-3.5 w-3.5 text-[#d2b77a]" />
@@ -144,34 +184,15 @@ export default function LandingPage() {
             </div>
 
             <div data-reveal className="motion-reveal flex items-center justify-center lg:justify-end">
-              <div className="w-full max-w-xl rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06)_0%,rgba(255,255,255,0.03)_100%)] p-6 shadow-[0_32px_120px_rgba(0,0,0,0.42)] backdrop-blur-2xl">
-                <div className="mb-6 flex items-center justify-between">
+              <div className="w-full max-w-2xl">
+                <div className="mb-4 flex items-center justify-between px-1">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.28em] text-white/35">Access Layer</p>
-                    <h2 className="mt-2 text-2xl font-semibold tracking-tight text-white">Calm outside. Strong inside.</h2>
+                    <p className="text-xs uppercase tracking-[0.28em] text-white/35">Tool preview</p>
+                    <h2 className="mt-2 text-2xl font-semibold tracking-tight text-white">Alle Deals. Ein Workspace.</h2>
                   </div>
-                  <div className="rounded-2xl border border-[#d2b77a]/25 bg-[#d2b77a]/10 px-3 py-2 text-xs font-medium uppercase tracking-[0.2em] text-[#e7d2a4]">Premium</div>
+                  <div className="rounded-2xl border border-[#d2b77a]/25 bg-[#d2b77a]/10 px-3 py-2 text-xs font-medium uppercase tracking-[0.2em] text-[#e7d2a4]">Live Preview</div>
                 </div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-[1.5rem] border border-white/8 bg-[#0f131a] p-5">
-                    <div className="text-xs uppercase tracking-[0.22em] text-white/35">Coverage</div>
-                    <div className="mt-3 text-3xl font-semibold text-white">24/7</div>
-                    <div className="mt-2 text-sm leading-relaxed text-white/55">Kontinuierliche Beobachtung von Portalen, kleineren Quellen und Off-market-Signalen.</div>
-                  </div>
-                  <div className="rounded-[1.5rem] border border-white/8 bg-[#0f131a] p-5">
-                    <div className="text-xs uppercase tracking-[0.22em] text-white/35">Advantage</div>
-                    <div className="mt-3 text-3xl font-semibold text-white">Earlier</div>
-                    <div className="mt-2 text-sm leading-relaxed text-white/55">Mehr relevante Kaufobjekte früher sehen und vor breiter Konkurrenz reagieren.</div>
-                  </div>
-                </div>
-
-                <div className="mt-4 rounded-[1.5rem] border border-white/8 bg-[#0f131a] p-5">
-                  <p className="text-xs uppercase tracking-[0.22em] text-white/35">Positioning</p>
-                  <p className="mt-3 text-sm leading-relaxed text-white/58">
-                    Weniger Portalgefühl. Mehr private-market Intelligence für Käufer, die Off-market und Top-Deals schneller sehen wollen.
-                  </p>
-                </div>
+                <PremiumProductMockup />
               </div>
             </div>
           </div>
@@ -221,6 +242,83 @@ export default function LandingPage() {
                   </li>
                 ))}
               </ul>
+            </div>
+          </div>
+        </section>
+
+        <section id="reviews" className="border-t border-white/8 bg-[#0c1015] py-20 lg:py-28">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+            <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div className="max-w-2xl">
+                <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#d2b77a]">Top Reviews</p>
+                <h2 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">Warum Nutzer die Plattform als Vorsprung empfinden</h2>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-white/70 transition hover:bg-white/[0.06]"
+                  onClick={() => setReviewIndex((v) => (v - 1 + reviews.length) % reviews.length)}
+                  aria-label="Vorherige Review"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-white/70 transition hover:bg-white/[0.06]"
+                  onClick={() => setReviewIndex((v) => (v + 1) % reviews.length)}
+                  aria-label="Nächste Review"
+                >
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-8 shadow-[0_24px_80px_rgba(0,0,0,0.22)] backdrop-blur-xl">
+              <p className="text-xl leading-relaxed text-white/82 sm:text-2xl">“{activeReview.quote}”</p>
+              <div className="mt-8 flex items-center justify-between gap-4 border-t border-white/10 pt-6">
+                <div>
+                  <div className="text-base font-semibold text-white">{activeReview.name}</div>
+                  <div className="mt-1 text-sm text-white/45">{activeReview.role}</div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {reviews.map((_, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setReviewIndex(idx)}
+                      className={`h-2.5 rounded-full transition ${idx === reviewIndex ? "w-8 bg-[#d2b77a]" : "w-2.5 bg-white/20"}`}
+                      aria-label={`Review ${idx + 1}`}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="faq" className="border-t border-white/8 bg-[#10141b] py-20 lg:py-28">
+          <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+            <div className="mb-10 max-w-2xl">
+              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#d2b77a]">Q&amp;A</p>
+              <h2 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">Häufige Fragen zur Plattform</h2>
+            </div>
+            <div className="space-y-4">
+              {faqs.map((item, idx) => {
+                const active = openFaq === idx;
+                return (
+                  <div key={item.q} className="rounded-[1.6rem] border border-white/10 bg-white/[0.04] backdrop-blur-xl">
+                    <button
+                      type="button"
+                      onClick={() => setOpenFaq(active ? -1 : idx)}
+                      className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left"
+                    >
+                      <span className="text-base font-semibold text-white">{item.q}</span>
+                      <ChevronDown className={`h-5 w-5 shrink-0 text-white/50 transition ${active ? "rotate-180" : "rotate-0"}`} />
+                    </button>
+                    {active ? <div className="px-6 pb-6 text-sm leading-relaxed text-white/60">{item.a}</div> : null}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </section>
