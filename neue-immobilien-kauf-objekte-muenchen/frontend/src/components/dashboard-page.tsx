@@ -60,6 +60,7 @@ export default function DashboardPage() {
   const [items, setItems] = useState<Listing[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
   const [source, setSource] = useState("all");
   const [sort, setSort] = useState("newest");
   const [selectedDistricts, setSelectedDistricts] = useState<string[]>([]);
@@ -79,6 +80,7 @@ export default function DashboardPage() {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [mobileKpiMode, setMobileKpiMode] = useState<"market" | "deals" | "sources">("market");
   const prevScanStatus = useRef<string | null>(null);
+  const prevScanSignature = useRef<string | null>(null);
   const listingsRef = useRef<HTMLDivElement | null>(null);
   const debouncedMinScore = useDebouncedValue(minScore, 250);
   const debouncedPriceMin = useDebouncedValue(priceMin, 400);
@@ -87,7 +89,9 @@ export default function DashboardPage() {
   useEffect(() => {
     const controller = new AbortController();
     const load = async () => {
-      setLoading(true);
+      const isInitialLoad = items.length === 0 && !stats && !analytics;
+      if (isInitialLoad) setLoading(true);
+      else setIsFetching(true);
       setError(null);
       try {
         const params = new URLSearchParams({ sort, limit: "500", min_score: String(debouncedMinScore) });
@@ -114,7 +118,10 @@ export default function DashboardPage() {
           setItems([]);
         }
       } finally {
-        if (!controller.signal.aborted) setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+          setIsFetching(false);
+        }
       }
     };
     load();
@@ -122,34 +129,44 @@ export default function DashboardPage() {
   }, [source, sort, selectedDistricts, debouncedMinScore, debouncedPriceMin, debouncedPriceMax, selectedDay, refreshTick]);
 
   useEffect(() => {
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    const controller = new AbortController();
+    let noticeTimer: ReturnType<typeof setTimeout> | null = null;
+    let nextPollTimer: ReturnType<typeof setTimeout> | null = null;
+    let stopped = false;
 
     const poll = async () => {
+      const controller = new AbortController();
       try {
         const res = await fetch(`${API_URL}/api/scan/status`, { cache: "no-store", signal: controller.signal });
-        if (!res.ok) return;
+        if (!res.ok || stopped) return;
         const data = await res.json();
         const next: ScanState | null = data?.scan || null;
-        setScan(next);
+        const signature = JSON.stringify(next || null);
+        if (signature !== prevScanSignature.current) {
+          setScan(next);
+          prevScanSignature.current = signature;
+        }
 
         if (next?.status === "done" && prevScanStatus.current !== "done") {
           setScanNotice("Scan abgeschlossen");
           setRefreshTick((v) => v + 1);
-          timer = setTimeout(() => setScanNotice(null), 2500);
+          noticeTimer = setTimeout(() => setScanNotice(null), 2500);
         } else if (next?.status === "error" && prevScanStatus.current !== "error") {
           setScanNotice("Scan fehlgeschlagen");
         }
         prevScanStatus.current = next?.status || null;
-      } catch {}
+
+        const delay = next?.running ? 2000 : 15000;
+        if (!stopped) nextPollTimer = setTimeout(poll, delay);
+      } catch {
+        if (!stopped) nextPollTimer = setTimeout(poll, 15000);
+      }
     };
 
     poll();
-    const id = setInterval(poll, 2000);
     return () => {
-      clearInterval(id);
-      controller.abort();
-      if (timer) clearTimeout(timer);
+      stopped = true;
+      if (nextPollTimer) clearTimeout(nextPollTimer);
+      if (noticeTimer) clearTimeout(noticeTimer);
     };
   }, []);
 
@@ -217,12 +234,13 @@ export default function DashboardPage() {
           <button className="min-h-11 rounded-xl border bg-background px-4 py-2 text-sm" onClick={() => setRefreshTick((v) => v + 1)}>Aktualisieren</button>
           <button className="min-h-11 rounded-xl border bg-background px-4 py-2 text-sm" onClick={() => startScan("major")} disabled={scan?.running} title="Große Portale">{scan?.running ? "Scan läuft…" : "Große Quellen scannen"}</button>
           <button className="col-span-2 min-h-11 rounded-xl border bg-background px-4 py-2 text-sm sm:col-span-1" onClick={() => startScan("secondary")} disabled={scan?.running}>Sekundäre Quellen scannen</button>
-          <a className="col-span-2 inline-flex min-h-11 items-center justify-center rounded-xl border bg-background px-4 py-2 text-sm sm:col-span-1" href={`${API_URL}/api/export.csv`} target="_blank" rel="noreferrer">CSV exportieren</a>
+          <a className="col-span-2 inline-flex min-h-11 items-center justify-center rounded-xl border bg-background px-4 py-2 text-sm sm:col-span-1" href={`${API_URL}/api/export.csv?sort=${encodeURIComponent(sort)}&min_score=${encodeURIComponent(String(debouncedMinScore))}${source !== "all" ? `&source=${encodeURIComponent(source)}` : ""}${selectedDay ? `&first_seen_date=${encodeURIComponent(selectedDay)}` : ""}${selectedDistricts.length ? `&districts=${encodeURIComponent(selectedDistricts.join(","))}` : ""}${debouncedPriceMin !== "" ? `&price_min=${encodeURIComponent(String(debouncedPriceMin))}` : ""}${debouncedPriceMax !== "" ? `&price_max=${encodeURIComponent(String(debouncedPriceMax))}` : ""}`} target="_blank" rel="noreferrer">CSV exportieren</a>
         </div>
       </div>
 
       {scanNotice ? <div className="rounded-xl border px-3 py-2 text-sm">{scanNotice}</div> : null}
       {scan ? <div className="rounded-xl border px-3 py-2 text-xs text-muted-foreground">Status: {scan.status} · Quelle: {scan.current_source || "-"} · {scan.completed_sources}/{scan.total_sources} · new {scan.new_listings_count} · updated {scan.updated_count} · errors {scan.error_count}</div> : null}
+      {isFetching && !loading ? <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">Filter werden aktualisiert…</div> : null}
       {error ? <StateCard title="Daten konnten nicht geladen werden" body="Die API hat gerade keine vollständige Antwort geliefert. Bitte aktualisieren oder den Scan erneut starten." tone="error" action={<button className="rounded-xl border border-red-300 bg-white px-4 py-2 text-sm" onClick={() => setRefreshTick((v) => v + 1)}>Erneut laden</button>} /> : null}
 
       <div className="rounded-xl border px-3 py-2 text-xs text-muted-foreground">Aktive Immobilien in der lokalen Datenbank: {items.length || 0} geladene Treffer · Live-Daten aus der aktuellen lokalen Immobilien-Datenbank.</div>
