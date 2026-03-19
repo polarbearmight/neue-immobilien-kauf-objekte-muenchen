@@ -1,9 +1,17 @@
 "use client";
 
 import { memo } from "react";
+import { Heart, MapPin, Ruler, Wallet } from "lucide-react";
 import { API_URL, Listing } from "@/lib/api";
 
 const eur = (v?: number | null) => (v == null ? "-" : new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(v));
+
+function scoreTone(score?: number | null) {
+  const v = score || 0;
+  if (v >= 80) return "bg-emerald-500 text-white";
+  if (v >= 60) return "bg-amber-400 text-[#17181c]";
+  return "bg-rose-500 text-white";
+}
 
 function MobileListingCardsInner({ rows, onDetails }: { rows: Listing[]; onDetails: (l: Listing) => void }) {
   if (!rows.length) return null;
@@ -11,22 +19,39 @@ function MobileListingCardsInner({ rows, onDetails }: { rows: Listing[]; onDetai
   return (
     <div className="grid gap-3 md:hidden">
       {rows.map((row) => (
-        <div key={row.id} className="rounded-[1.6rem] border border-white/70 bg-white/90 p-4 shadow-[0_16px_40px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+        <div key={row.id} className="rounded-[1.75rem] border border-white/12 bg-[rgba(10,12,16,0.96)] p-4 shadow-[0_18px_50px_rgba(0,0,0,0.24)] backdrop-blur-xl transition duration-200 active:scale-[0.99]">
           <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-base font-semibold text-slate-950">{row.title || "Ohne Titel"}</p>
-              <p className="mt-1 text-sm text-slate-500">{row.district || "München"} · {row.rooms ?? "-"} Zi. · {row.area_sqm ?? "-"} m²</p>
+            <div className="min-w-0 flex-1">
+              <p className="line-clamp-2 text-base font-semibold leading-snug text-white">{row.title || "Ohne Titel"}</p>
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-white/52">
+                <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{row.district || "München"}</span>
+                <span>·</span>
+                <span>{row.rooms ?? "-"} Zi.</span>
+                <span>·</span>
+                <span>{row.area_sqm ?? "-"} m²</span>
+              </div>
             </div>
-            <div className="rounded-2xl bg-slate-950 px-3 py-2 text-sm font-semibold text-white">{Math.round(row.deal_score || 0)}</div>
+            <div className={`rounded-2xl px-3 py-2 text-sm font-semibold ${scoreTone(row.deal_score)}`}>{Math.round(row.deal_score || 0)}</div>
           </div>
-          <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-            <div className="rounded-2xl bg-slate-50 px-3 py-3"><div className="text-slate-500">Preis</div><div className="mt-1 font-semibold">{eur(row.price_eur)}</div></div>
-            <div className="rounded-2xl bg-slate-50 px-3 py-3"><div className="text-slate-500">€/m²</div><div className="mt-1 font-semibold">{row.price_per_sqm ? `${Math.round(row.price_per_sqm)} €/m²` : "-"}</div></div>
+
+          <div className="mt-4 grid grid-cols-3 gap-2 text-sm">
+            <div className="rounded-2xl border border-white/8 bg-white/[0.04] px-3 py-3">
+              <div className="inline-flex items-center gap-1 text-[11px] uppercase tracking-[0.16em] text-white/35"><Wallet className="h-3.5 w-3.5" />Preis</div>
+              <div className="mt-2 text-sm font-semibold text-white">{eur(row.price_eur)}</div>
+            </div>
+            <div className="rounded-2xl border border-white/8 bg-white/[0.04] px-3 py-3">
+              <div className="text-[11px] uppercase tracking-[0.16em] text-white/35">€/m²</div>
+              <div className="mt-2 text-sm font-semibold text-white">{row.price_per_sqm ? `${Math.round(row.price_per_sqm)} €` : "-"}</div>
+            </div>
+            <div className="rounded-2xl border border-white/8 bg-white/[0.04] px-3 py-3">
+              <div className="inline-flex items-center gap-1 text-[11px] uppercase tracking-[0.16em] text-white/35"><Ruler className="h-3.5 w-3.5" />Quelle</div>
+              <div className="mt-2 truncate text-sm font-semibold text-white">{row.source}</div>
+            </div>
           </div>
+
           <div className="mt-4 grid grid-cols-2 gap-2">
-            <a className="inline-flex min-h-11 items-center justify-center rounded-2xl border px-4 py-2 text-sm font-medium" href={row.url} target="_blank" rel="noreferrer">Öffnen</a>
-            <button className="min-h-11 rounded-2xl bg-slate-950 px-4 py-2 text-sm font-medium text-white" onClick={() => onDetails(row)}>Details</button>
-            <button className="col-span-2 min-h-11 rounded-2xl border px-4 py-2 text-sm font-medium" onClick={async () => { if (!row.id) return; await fetch(`${API_URL}/api/watchlist/${row.id}`, { method: "POST" }); }}>Merken</button>
+            <button className="min-h-11 rounded-2xl bg-[#d2b77a] px-4 py-2 text-sm font-medium text-[#17181c]" onClick={() => onDetails(row)}>Details</button>
+            <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-white/12 px-4 py-2 text-sm font-medium text-white/80" onClick={async () => { if (!row.id) return; await fetch(`${API_URL}/api/watchlist/${row.id}`, { method: "POST" }); }}><Heart className="h-4 w-4" />Merken</button>
           </div>
         </div>
       ))}

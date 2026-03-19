@@ -266,7 +266,7 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
           <p className="text-sm text-muted-foreground">Kaufobjekte München · neueste zuerst · lokale Datenbank</p>
         </div>
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+        <div className="hidden grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center md:grid">
           <button className="min-h-11 rounded-xl border bg-background px-4 py-2 text-sm" onClick={() => setRefreshTick((v) => v + 1)}>Aktualisieren</button>
           <button className="min-h-11 rounded-xl border bg-background px-4 py-2 text-sm" onClick={resetFilters}>Filter zurücksetzen</button>
           <button className="min-h-11 rounded-xl border bg-background px-4 py-2 text-sm" onClick={() => startScan("major")} disabled={scan?.running} title="Große Portale">{scan?.running ? "Scan läuft…" : "Große Quellen scannen"}</button>
@@ -281,6 +281,15 @@ export default function DashboardPage() {
       {error ? <StateCard title="Daten konnten nicht geladen werden" body="Die API hat gerade keine vollständige Antwort geliefert. Bitte aktualisieren oder den Scan erneut starten." tone="error" action={<button className="rounded-xl border border-red-300 bg-white px-4 py-2 text-sm" onClick={() => setRefreshTick((v) => v + 1)}>Erneut laden</button>} /> : null}
 
       <div className="rounded-xl border px-3 py-2 text-xs text-muted-foreground">Aktive Immobilien in der lokalen Datenbank: {items.length || 0} geladene Treffer · Live-Daten aus der aktuellen lokalen Immobilien-Datenbank.</div>
+      <div className="md:hidden rounded-[1.4rem] border border-white/10 bg-[rgba(10,12,16,0.92)] px-4 py-3 text-sm text-white/70 shadow-[0_14px_30px_rgba(0,0,0,0.18)]">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">Quick actions</div>
+            <div className="mt-1 font-medium text-white">Filter, Export, Scan</div>
+          </div>
+          <button className="rounded-xl border border-white/12 px-3 py-2 text-sm text-white" onClick={() => setMobileFiltersOpen(true)}>Filter öffnen</button>
+        </div>
+      </div>
 
       <MobileKpiSwitcher active={mobileKpiMode} setActive={setMobileKpiMode} />
       {loading ? (
@@ -376,21 +385,32 @@ export default function DashboardPage() {
 
       <MobileStickyActions onOpenFilters={() => setMobileFiltersOpen(true)} onRefresh={() => setRefreshTick((v) => v + 1)} resultCount={filtered.length} />
       <MobileFilterSheet open={mobileFiltersOpen} onClose={() => setMobileFiltersOpen(false)}>
-        <div className="grid gap-4">
-          <label className="text-sm">Quelle<select className="mt-1 w-full rounded-xl border px-3 py-3" value={draftFilters.source} onChange={(e) => setDraftFilters((prev) => ({ ...prev, source: e.target.value }))}>{sources.map((s) => <option key={s} value={s}>{s}</option>)}</select></label>
-          <label className="text-sm">Sortierung<select className="mt-1 w-full rounded-xl border px-3 py-3" value={draftFilters.sort} onChange={(e) => setDraftFilters((prev) => ({ ...prev, sort: e.target.value }))}><option value="newest">newest</option><option value="score">score</option><option value="investment">investment</option></select></label>
-          <label className="text-sm">Mindest-Score: {draftFilters.minScore}<input className="mt-2 w-full" type="range" min={0} max={100} value={draftFilters.minScore} onChange={(e) => setDraftFilters((prev) => ({ ...prev, minScore: Number(e.target.value) }))} /></label>
-          <label className="text-sm">Preis min<input className="mt-1 w-full rounded-xl border px-3 py-3" type="number" value={draftFilters.priceMin} onChange={(e) => setDraftFilters((prev) => ({ ...prev, priceMin: e.target.value === "" ? "" : Number(e.target.value) }))} /></label>
-          <label className="text-sm">Preis max<input className="mt-1 w-full rounded-xl border px-3 py-3" type="number" value={draftFilters.priceMax} onChange={(e) => setDraftFilters((prev) => ({ ...prev, priceMax: e.target.value === "" ? "" : Number(e.target.value) }))} /></label>
-          <label className="text-sm">Suche<input className="mt-1 w-full rounded-xl border px-3 py-3" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Titel oder Stadtteil" /></label>
-          <div className="text-sm">
-            <p className="mb-2 text-muted-foreground">Stadtteile</p>
+        <div className="grid gap-5 text-white">
+          <div className="grid gap-4 rounded-[1.4rem] border border-white/10 bg-white/[0.03] p-4">
+            <div className="text-[11px] uppercase tracking-[0.18em] text-white/35">Deal Setup</div>
+            <label className="text-sm text-white/72">Quelle<select className="mt-2 w-full rounded-xl border border-white/12 bg-white/[0.03] px-3 py-3 text-white" value={draftFilters.source} onChange={(e) => setDraftFilters((prev) => ({ ...prev, source: e.target.value }))}>{sources.map((s) => <option key={s} value={s}>{s}</option>)}</select></label>
+            <label className="text-sm text-white/72">Sortierung<select className="mt-2 w-full rounded-xl border border-white/12 bg-white/[0.03] px-3 py-3 text-white" value={draftFilters.sort} onChange={(e) => setDraftFilters((prev) => ({ ...prev, sort: e.target.value }))}><option value="newest">newest</option><option value="score">score</option><option value="investment">investment</option></select></label>
+            <label className="text-sm text-white/72">Suche<input className="mt-2 w-full rounded-xl border border-white/12 bg-white/[0.03] px-3 py-3 text-white" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Titel oder Stadtteil" /></label>
+          </div>
+          <div className="grid gap-4 rounded-[1.4rem] border border-white/10 bg-white/[0.03] p-4">
+            <div className="text-[11px] uppercase tracking-[0.18em] text-white/35">Preis & Score</div>
+            <label className="text-sm text-white/72">Mindest-Score: {draftFilters.minScore}<input className="mt-3 w-full" type="range" min={0} max={100} value={draftFilters.minScore} onChange={(e) => setDraftFilters((prev) => ({ ...prev, minScore: Number(e.target.value) }))} /></label>
+            <label className="text-sm text-white/72">Preis min<input className="mt-2 w-full rounded-xl border border-white/12 bg-white/[0.03] px-3 py-3 text-white" type="number" value={draftFilters.priceMin} onChange={(e) => setDraftFilters((prev) => ({ ...prev, priceMin: e.target.value === "" ? "" : Number(e.target.value) }))} /></label>
+            <label className="text-sm text-white/72">Preis max<input className="mt-2 w-full rounded-xl border border-white/12 bg-white/[0.03] px-3 py-3 text-white" type="number" value={draftFilters.priceMax} onChange={(e) => setDraftFilters((prev) => ({ ...prev, priceMax: e.target.value === "" ? "" : Number(e.target.value) }))} /></label>
+          </div>
+          <div className="grid gap-4 rounded-[1.4rem] border border-white/10 bg-white/[0.03] p-4">
+            <div className="text-[11px] uppercase tracking-[0.18em] text-white/35">Lage</div>
             <div className="flex flex-wrap gap-2">{districtOptions.map((district) => {
               const active = draftFilters.selectedDistricts.includes(district);
-              return <button key={district} className={`rounded-full border px-3 py-2 text-xs ${active ? "bg-primary text-primary-foreground" : "bg-background"}`} onClick={() => setDraftFilters((prev) => ({ ...prev, selectedDistricts: active ? prev.selectedDistricts.filter((d) => d !== district) : [...prev.selectedDistricts, district] }))}>{district}</button>;
+              return <button key={district} className={`rounded-full border px-3 py-2 text-xs ${active ? "border-[#d2b77a]/35 bg-[#d2b77a] text-[#17181c]" : "border-white/12 bg-white/[0.03] text-white/72"}`} onClick={() => setDraftFilters((prev) => ({ ...prev, selectedDistricts: active ? prev.selectedDistricts.filter((d) => d !== district) : [...prev.selectedDistricts, district] }))}>{district}</button>;
             })}</div>
           </div>
-          <button className="min-h-11 rounded-2xl bg-slate-950 px-4 py-2 text-sm font-medium text-white disabled:opacity-50" onClick={() => { applyFilters(); setMobileFiltersOpen(false); }} disabled={!hasPendingFilterChanges}>Filter anwenden</button>
+          <div className="sticky bottom-0 -mx-4 border-t border-white/10 bg-[rgba(10,12,16,0.98)] px-4 pt-4">
+            <div className="flex gap-2">
+              <button className="min-h-11 flex-1 rounded-2xl border border-white/12 px-4 py-2 text-sm font-medium text-white/80" onClick={resetFilters}>Reset</button>
+              <button className="min-h-11 flex-1 rounded-2xl bg-[#d2b77a] px-4 py-2 text-sm font-medium text-[#17181c] disabled:opacity-50" onClick={() => { applyFilters(); setMobileFiltersOpen(false); }} disabled={!hasPendingFilterChanges}>Apply</button>
+            </div>
+          </div>
         </div>
       </MobileFilterSheet>
 
