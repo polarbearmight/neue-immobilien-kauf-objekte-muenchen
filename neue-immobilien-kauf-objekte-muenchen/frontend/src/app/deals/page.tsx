@@ -166,15 +166,15 @@ export default function DealsPage() {
             </div>
             <div>
               <label className="mb-1 block text-sm text-muted-foreground">Preis min</label>
-              <input className="w-full rounded-xl border border-border bg-background px-3 py-2" type="number" value={priceMin} onChange={(e) => setPriceMin(e.target.value === "" ? "" : Number(e.target.value))} />
+              <input className="w-full rounded-xl border border-border bg-background px-3 py-2 dark:border-amber-400/15 dark:bg-white/[0.03] dark:text-amber-50" type="number" value={priceMin} onChange={(e) => setPriceMin(e.target.value === "" ? "" : Number(e.target.value))} />
             </div>
             <div>
               <label className="mb-1 block text-sm text-muted-foreground">Preis max</label>
-              <input className="w-full rounded-xl border border-border bg-background px-3 py-2" type="number" value={priceMax} onChange={(e) => setPriceMax(e.target.value === "" ? "" : Number(e.target.value))} />
+              <input className="w-full rounded-xl border border-border bg-background px-3 py-2 dark:border-amber-400/15 dark:bg-white/[0.03] dark:text-amber-50" type="number" value={priceMax} onChange={(e) => setPriceMax(e.target.value === "" ? "" : Number(e.target.value))} />
             </div>
             <div>
               <label className="mb-1 block text-sm text-muted-foreground">Sortierung</label>
-              <select className="w-full rounded-xl border border-border bg-background px-3 py-2" value={sortBy} onChange={(e) => setSortBy(e.target.value as "score" | "investment") }>
+              <select className="w-full rounded-xl border border-border bg-background px-3 py-2 dark:border-amber-400/15 dark:bg-white/[0.03] dark:text-amber-50" value={sortBy} onChange={(e) => setSortBy(e.target.value as "score" | "investment") }>
                 <option value="score">Score</option>
                 <option value="investment">Investment-Score</option>
               </select>
@@ -245,10 +245,10 @@ export default function DealsPage() {
                 </div>
 
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <a href={listing.url} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-border px-4 py-2 text-sm font-medium dark:border-amber-400/20 dark:bg-white/[0.03]">
+                  <a href={listing.url} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-border px-4 py-2 text-sm font-medium dark:border-amber-400/20 dark:bg-white/[0.03] dark:text-amber-50">
                     Öffnen
                   </a>
-                  <button className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-border px-4 py-2 text-sm font-medium dark:border-amber-400/20 dark:bg-white/[0.03]" onClick={() => hideListing(listing.id)}>
+                  <button className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-border px-4 py-2 text-sm font-medium dark:border-amber-400/20 dark:bg-white/[0.03] dark:text-amber-50" onClick={() => hideListing(listing.id)}>
                     Ausblenden
                   </button>
                   <button
