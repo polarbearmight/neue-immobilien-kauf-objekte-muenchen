@@ -259,6 +259,18 @@ export default function DashboardPage() {
     setSavedFilters((prev) => [{ id, label, filters: { ...draftFilters, selectedDistricts: [...draftFilters.selectedDistricts] } }, ...prev].slice(0, 6));
   }, [draftFilters, savedFilters.length]);
   const dealDensity = useMemo(() => Math.round(((stats?.top_deals ?? 0) / Math.max(filtered.length, 1)) * 100), [stats?.top_deals, filtered.length]);
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (appliedFilters.source !== "all") count += 1;
+    if (appliedFilters.sort !== "newest") count += 1;
+    if (appliedFilters.minScore > 0) count += 1;
+    if (appliedFilters.priceMin !== "") count += 1;
+    if (appliedFilters.priceMax !== "") count += 1;
+    if (appliedFilters.selectedDistricts.length) count += 1;
+    if (debouncedQuery.trim()) count += 1;
+    if (selectedDay) count += 1;
+    return count;
+  }, [appliedFilters, debouncedQuery, selectedDay]);
 
   return (
     <div className="space-y-5 pb-24 md:space-y-6 md:pb-0">
@@ -308,16 +320,6 @@ export default function DashboardPage() {
       {scan ? <div className="rounded-xl border border-border px-3 py-2 text-xs text-muted-foreground">Status: {scan.status} · Quelle: {scan.current_source || "-"} · {scan.completed_sources}/{scan.total_sources} · new {scan.new_listings_count} · updated {scan.updated_count} · errors {scan.error_count}</div> : null}
       {isFetching && !loading ? <div className="rounded-xl border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">Filter werden aktualisiert…</div> : null}
       {error ? <StateCard title="Daten konnten nicht geladen werden" body="Die API hat gerade keine vollständige Antwort geliefert. Bitte aktualisieren oder den Scan erneut starten." tone="error" action={<button className="rounded-xl border border-red-300 bg-white px-4 py-2 text-sm" onClick={() => setRefreshTick((v) => v + 1)}>Erneut laden</button>} /> : null}
-
-      <div className="rounded-[1.4rem] border border-border/80 bg-card/95 px-4 py-3 text-sm shadow-[0_16px_40px_rgba(15,23,42,0.05)] md:hidden dark:border-white/10 dark:bg-[rgba(10,12,16,0.92)]">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Quick actions</div>
-            <div className="mt-1 font-medium">Filter, Export, Scan</div>
-          </div>
-          <button className="rounded-xl border border-border px-3 py-2 text-sm" onClick={() => setMobileFiltersOpen(true)}>Filter öffnen</button>
-        </div>
-      </div>
 
       {savedFilters.length ? (
         <div className="hidden rounded-[1.75rem] border border-border/80 bg-card/95 p-4 md:block">
@@ -391,26 +393,39 @@ export default function DashboardPage() {
         </>}
       </div>
 
-      <MobileStickyActions onOpenFilters={() => setMobileFiltersOpen(true)} onRefresh={() => setRefreshTick((v) => v + 1)} resultCount={filtered.length} />
+      <MobileStickyActions
+        onOpenFilters={() => setMobileFiltersOpen(true)}
+        onReset={resetFilters}
+        onApply={() => {
+          applyFilters();
+          setMobileFiltersOpen(false);
+        }}
+        resultCount={filtered.length}
+        activeFilterCount={activeFilterCount}
+        hasPendingChanges={hasPendingFilterChanges}
+      />
       <MobileFilterSheet open={mobileFiltersOpen} onClose={() => setMobileFiltersOpen(false)}>
         <div className="grid gap-5">
-          <div className="grid gap-4 rounded-[1.4rem] border border-border bg-muted/25 p-4 dark:border-white/10 dark:bg-white/[0.03]">
-            <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Deal Setup</div>
-            <label className="text-sm">Quelle<select className="mt-2 w-full rounded-xl border border-border bg-background px-3 py-3" value={draftFilters.source} onChange={(e) => setDraftFilters((prev) => ({ ...prev, source: e.target.value }))}>{sources.map((s) => <option key={s} value={s}>{s}</option>)}</select></label>
-            <label className="text-sm">Sortierung<select className="mt-2 w-full rounded-xl border border-border bg-background px-3 py-3" value={draftFilters.sort} onChange={(e) => setDraftFilters((prev) => ({ ...prev, sort: e.target.value }))}><option value="newest">newest</option><option value="score">score</option><option value="investment">investment</option></select></label>
-            <label className="text-sm">Suche<input className="mt-2 w-full rounded-xl border border-border bg-background px-3 py-3" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Titel oder Stadtteil" /></label>
+          <div className="grid gap-4 rounded-[1.55rem] border border-border/80 bg-muted/25 p-4 dark:border-amber-400/14 dark:bg-[linear-gradient(180deg,rgba(38,30,16,0.68),rgba(255,255,255,0.02))]">
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground dark:text-amber-100/72">Deal Setup</div>
+              <div className="rounded-full border border-border/70 px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-muted-foreground dark:border-amber-400/20 dark:text-amber-100/72">{filtered.length} Treffer</div>
+            </div>
+            <label className="text-sm">Quelle<select className="mt-2 w-full rounded-xl border border-border bg-background px-3 py-3 dark:border-amber-400/14 dark:bg-black/20" value={draftFilters.source} onChange={(e) => setDraftFilters((prev) => ({ ...prev, source: e.target.value }))}>{sources.map((s) => <option key={s} value={s}>{s}</option>)}</select></label>
+            <label className="text-sm">Sortierung<select className="mt-2 w-full rounded-xl border border-border bg-background px-3 py-3 dark:border-amber-400/14 dark:bg-black/20" value={draftFilters.sort} onChange={(e) => setDraftFilters((prev) => ({ ...prev, sort: e.target.value }))}><option value="newest">newest</option><option value="score">score</option><option value="investment">investment</option></select></label>
+            <label className="text-sm">Suche<input className="mt-2 w-full rounded-xl border border-border bg-background px-3 py-3 dark:border-amber-400/14 dark:bg-black/20" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Titel oder Stadtteil" /></label>
           </div>
-          <div className="grid gap-4 rounded-[1.4rem] border border-border bg-muted/25 p-4 dark:border-white/10 dark:bg-white/[0.03]">
-            <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Preis & Score</div>
-            <label className="text-sm">Mindest-Score: {draftFilters.minScore}<input className="mt-3 w-full" type="range" min={0} max={100} value={draftFilters.minScore} onChange={(e) => setDraftFilters((prev) => ({ ...prev, minScore: Number(e.target.value) }))} /></label>
-            <label className="text-sm">Preis min<input className="mt-2 w-full rounded-xl border border-border bg-background px-3 py-3" type="number" value={draftFilters.priceMin} onChange={(e) => setDraftFilters((prev) => ({ ...prev, priceMin: e.target.value === "" ? "" : Number(e.target.value) }))} /></label>
-            <label className="text-sm">Preis max<input className="mt-2 w-full rounded-xl border border-border bg-background px-3 py-3" type="number" value={draftFilters.priceMax} onChange={(e) => setDraftFilters((prev) => ({ ...prev, priceMax: e.target.value === "" ? "" : Number(e.target.value) }))} /></label>
+          <div className="grid gap-4 rounded-[1.55rem] border border-border/80 bg-muted/25 p-4 dark:border-amber-400/14 dark:bg-[linear-gradient(180deg,rgba(38,30,16,0.68),rgba(255,255,255,0.02))]">
+            <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground dark:text-amber-100/72">Preis & Score</div>
+            <label className="text-sm">Mindest-Score: {draftFilters.minScore}<input className="mt-3 w-full accent-amber-400" type="range" min={0} max={100} value={draftFilters.minScore} onChange={(e) => setDraftFilters((prev) => ({ ...prev, minScore: Number(e.target.value) }))} /></label>
+            <label className="text-sm">Preis min<input className="mt-2 w-full rounded-xl border border-border bg-background px-3 py-3 dark:border-amber-400/14 dark:bg-black/20" type="number" value={draftFilters.priceMin} onChange={(e) => setDraftFilters((prev) => ({ ...prev, priceMin: e.target.value === "" ? "" : Number(e.target.value) }))} /></label>
+            <label className="text-sm">Preis max<input className="mt-2 w-full rounded-xl border border-border bg-background px-3 py-3 dark:border-amber-400/14 dark:bg-black/20" type="number" value={draftFilters.priceMax} onChange={(e) => setDraftFilters((prev) => ({ ...prev, priceMax: e.target.value === "" ? "" : Number(e.target.value) }))} /></label>
           </div>
-          <div className="grid gap-4 rounded-[1.4rem] border border-border bg-muted/25 p-4 dark:border-white/10 dark:bg-white/[0.03]">
-            <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Lage</div>
-            <div className="flex flex-wrap gap-2">{districtOptions.map((district) => { const active = draftFilters.selectedDistricts.includes(district); return <button key={district} className={cn("rounded-full border px-3 py-2 text-xs", active ? "bg-primary text-primary-foreground" : "border-border bg-background text-muted-foreground")} onClick={() => setDraftFilters((prev) => ({ ...prev, selectedDistricts: active ? prev.selectedDistricts.filter((d) => d !== district) : [...prev.selectedDistricts, district] }))}>{district}</button>; })}</div>
+          <div className="grid gap-4 rounded-[1.55rem] border border-border/80 bg-muted/25 p-4 dark:border-amber-400/14 dark:bg-[linear-gradient(180deg,rgba(38,30,16,0.68),rgba(255,255,255,0.02))]">
+            <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground dark:text-amber-100/72">Lage</div>
+            <div className="flex flex-wrap gap-2">{districtOptions.map((district) => { const active = draftFilters.selectedDistricts.includes(district); return <button key={district} className={cn("rounded-full border px-3 py-2 text-xs", active ? "bg-primary text-primary-foreground dark:border-amber-300/45 dark:bg-amber-300 dark:text-[#1a1408]" : "border-border bg-background text-muted-foreground dark:border-amber-400/14 dark:bg-black/20 dark:text-amber-100/78")} onClick={() => setDraftFilters((prev) => ({ ...prev, selectedDistricts: active ? prev.selectedDistricts.filter((d) => d !== district) : [...prev.selectedDistricts, district] }))}>{district}</button>; })}</div>
           </div>
-          <div className="sticky bottom-0 -mx-4 border-t border-border bg-card px-4 pt-4 dark:border-white/10 dark:bg-[rgba(10,12,16,0.98)]">
+          <div className="sticky bottom-0 -mx-4 border-t border-border bg-card px-4 pt-4 dark:border-amber-400/14 dark:bg-[linear-gradient(180deg,rgba(34,27,14,0.96),rgba(10,12,16,0.98))]">
             <div className="flex gap-2">
               <button className="min-h-11 flex-1 rounded-2xl border border-border px-4 py-2 text-sm font-medium" onClick={resetFilters}>Reset</button>
               <button className="min-h-11 flex-1 rounded-2xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50" onClick={() => { applyFilters(); setMobileFiltersOpen(false); }} disabled={!hasPendingFilterChanges}>Apply</button>

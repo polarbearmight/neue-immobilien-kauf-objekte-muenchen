@@ -22,7 +22,6 @@ import {
   Sun,
   UserCircle2,
 } from "lucide-react";
-import { MobileTabBar } from "@/components/mobile-tab-bar";
 import { cn } from "@/lib/utils";
 
 type NavItem = {
@@ -155,49 +154,50 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </aside>
 
-        <main className="min-w-0 flex-1 px-3 py-3 pb-40 md:px-0 md:py-6 md:pb-8">
-          <div className="mb-3 rounded-[1.75rem] border border-border/80 bg-card/95 px-4 py-4 shadow-[0_16px_50px_rgba(15,23,42,0.06)] backdrop-blur dark:border-amber-400/16 dark:bg-[linear-gradient(180deg,rgba(31,25,15,0.94),rgba(10,12,16,0.94))] dark:shadow-[0_18px_60px_rgba(0,0,0,0.26)] md:mb-4 md:px-5">
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground dark:text-amber-100/70">DealFinder</p>
-                <p className="truncate text-base font-semibold md:text-lg">{activeItem?.label || "Workspace"}</p>
-                <p className="mt-1 hidden text-xs text-muted-foreground md:block">{activeItem ? `Aktiv: ${activeItem.label}` : "Alle Marktansichten bleiben direkt erreichbar."}</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-background/80 dark:border-amber-400/15 dark:bg-amber-300/10 dark:text-amber-50" onClick={toggleTheme} aria-label="Theme wechseln">{dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}</button>
-                <Link href="/account" className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-background/80 dark:border-amber-400/15 dark:bg-amber-300/10 dark:text-amber-50" aria-label="Account öffnen"><UserCircle2 className="h-4 w-4" /></Link>
-                <button className="hidden min-h-11 rounded-2xl border border-border bg-background px-4 py-2 text-sm dark:border-amber-400/15 dark:bg-amber-300/10 dark:text-amber-50 md:inline-flex" onClick={() => location.reload()}>Refresh</button>
-                <button className="hidden min-h-11 rounded-2xl border border-border bg-background px-4 py-2 text-sm dark:border-amber-400/15 dark:bg-amber-300/10 dark:text-amber-50 md:inline-flex" onClick={logout} disabled={loggingOut}>{loggingOut ? "Logout…" : "Logout"}</button>
-                <button className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-background/80 dark:border-amber-400/15 dark:bg-amber-300/10 dark:text-amber-50 md:hidden" onClick={logout} disabled={loggingOut} aria-label="Logout"><LogOut className="h-4 w-4" /></button>
+        <main className="min-w-0 flex-1 px-3 py-3 pb-28 md:px-0 md:py-6 md:pb-8">
+          <div className="sticky top-0 z-40 -mx-3 mb-4 border-b border-border/70 bg-background/82 px-3 pb-2 pt-3 backdrop-blur-xl dark:border-amber-400/10 dark:bg-[rgba(10,12,16,0.84)] md:static md:mx-0 md:mb-4 md:border-0 md:bg-transparent md:px-0 md:pb-0 md:pt-0 md:backdrop-blur-0">
+            <div className="rounded-[1.75rem] border border-border/80 bg-card/95 px-4 py-4 shadow-[0_16px_50px_rgba(15,23,42,0.06)] backdrop-blur dark:border-amber-400/16 dark:bg-[linear-gradient(180deg,rgba(31,25,15,0.94),rgba(10,12,16,0.94))] dark:shadow-[0_18px_60px_rgba(0,0,0,0.26)] md:px-5">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground dark:text-amber-100/70">DealFinder</p>
+                  <p className="truncate text-base font-semibold md:text-lg">{activeItem?.label || "Workspace"}</p>
+                  <p className="mt-1 hidden text-xs text-muted-foreground md:block">{activeItem ? `Aktiv: ${activeItem.label}` : "Alle Marktansichten bleiben direkt erreichbar."}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-background/80 dark:border-amber-400/15 dark:bg-amber-300/10 dark:text-amber-50" onClick={toggleTheme} aria-label="Theme wechseln">{dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}</button>
+                  <Link href="/account" className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-background/80 dark:border-amber-400/15 dark:bg-amber-300/10 dark:text-amber-50" aria-label="Account öffnen"><UserCircle2 className="h-4 w-4" /></Link>
+                  <button className="hidden min-h-11 rounded-2xl border border-border bg-background px-4 py-2 text-sm dark:border-amber-400/15 dark:bg-amber-300/10 dark:text-amber-50 md:inline-flex" onClick={() => location.reload()}>Refresh</button>
+                  <button className="hidden min-h-11 rounded-2xl border border-border bg-background px-4 py-2 text-sm dark:border-amber-400/15 dark:bg-amber-300/10 dark:text-amber-50 md:inline-flex" onClick={logout} disabled={loggingOut}>{loggingOut ? "Logout…" : "Logout"}</button>
+                  <button className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-background/80 dark:border-amber-400/15 dark:bg-amber-300/10 dark:text-amber-50 md:hidden" onClick={logout} disabled={loggingOut} aria-label="Logout"><LogOut className="h-4 w-4" /></button>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="mb-4 flex gap-2 overflow-x-auto pb-1 md:hidden">
-            {mobileQuickLinks.map(({ label, href, icon: Icon }) => {
-              const active = isActivePath(pathname, href);
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  className={cn(
-                    "inline-flex min-h-11 shrink-0 items-center gap-2 rounded-2xl border px-3 py-2 text-sm font-medium transition",
-                    active
-                      ? "border-primary bg-primary text-primary-foreground dark:border-amber-300/50 dark:bg-amber-300 dark:text-[#1a1408]"
-                      : "border-border bg-card/90 text-muted-foreground dark:border-amber-400/12 dark:bg-white/[0.03] dark:text-amber-100/78"
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  <span>{label}</span>
-                </Link>
-              );
-            })}
+            <div className="mt-3 flex gap-2 overflow-x-auto pb-1 md:hidden">
+              {mobileQuickLinks.map(({ label, href, icon: Icon }) => {
+                const active = isActivePath(pathname, href);
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={cn(
+                      "inline-flex min-h-11 shrink-0 items-center gap-2 rounded-2xl border px-3 py-2 text-sm font-medium transition",
+                      active
+                        ? "border-primary bg-primary text-primary-foreground dark:border-amber-300/50 dark:bg-amber-300 dark:text-[#1a1408]"
+                        : "border-border bg-card/90 text-muted-foreground dark:border-amber-400/12 dark:bg-white/[0.03] dark:text-amber-100/78"
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span>{label}</span>
+                  </Link>
+                );
+              })}
+            </div>
           </div>
 
           {children}
         </main>
       </div>
-      <MobileTabBar />
     </div>
   );
 }
