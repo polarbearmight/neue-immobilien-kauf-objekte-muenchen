@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, Heart, Sparkles } from "lucide-react";
 import { API_URL, Listing } from "@/lib/api";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
@@ -90,7 +90,7 @@ export default function DealsPage() {
     return () => window.clearTimeout(timer);
   }, [feedback]);
 
-  const saveToWatchlist = async (listingId?: number) => {
+  const saveToWatchlist = useCallback(async (listingId?: number) => {
     if (!listingId) return false;
     setSavingIds((prev) => ({ ...prev, [listingId]: true }));
     try {
@@ -103,14 +103,14 @@ export default function DealsPage() {
     } finally {
       setSavingIds((prev) => ({ ...prev, [listingId]: false }));
     }
-  };
+  }, []);
 
-  const cycleIndex = (direction: 1 | -1) => {
+  const cycleIndex = useCallback((direction: 1 | -1) => {
     if (!sortedListings.length) return;
     setActiveIndex((prev) => (prev + direction + sortedListings.length) % sortedListings.length);
-  };
+  }, [sortedListings.length]);
 
-  const rateActiveDeal = async (direction: "save" | "skip") => {
+  const rateActiveDeal = useCallback(async (direction: "save" | "skip") => {
     const listing = sortedListings[activeIndex];
     if (!listing) return;
 
@@ -127,7 +127,7 @@ export default function DealsPage() {
     } else {
       cycleIndex(1);
     }
-  };
+  }, [activeIndex, cycleIndex, sortedListings, saveToWatchlist]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -154,7 +154,7 @@ export default function DealsPage() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [activeIndex, sortedListings]);
+  }, [cycleIndex, rateActiveDeal]);
 
   const activeListing = sortedListings[activeIndex] || null;
   const stackListings = sortedListings.slice(activeIndex, activeIndex + 3);

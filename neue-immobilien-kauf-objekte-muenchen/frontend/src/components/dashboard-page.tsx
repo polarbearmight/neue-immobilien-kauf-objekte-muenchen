@@ -118,7 +118,7 @@ export default function DashboardPage() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
+  }, [savedFilters]);
 
   useEffect(() => {
     const controller = new AbortController();
