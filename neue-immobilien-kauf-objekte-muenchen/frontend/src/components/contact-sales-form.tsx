@@ -49,50 +49,47 @@ export function ContactSalesForm({ compact = false }: { compact?: boolean }) {
         <div>
           <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-white/55">
             <Lock className="h-3.5 w-3.5 text-[#d2b77a]" />
-            Concierge Access
+            Concierge Review
           </div>
-          <h3 className="mt-4 text-2xl font-semibold tracking-tight text-white">Request access</h3>
-          <p className="mt-2 text-sm leading-relaxed text-white/50">Für Nutzer, die Off-market Chancen und alle relevanten Deals früher sehen wollen.</p>
+          <h3 className="mt-4 text-2xl font-semibold tracking-tight text-white">Zugang anfragen</h3>
+          <p className="mt-2 text-sm leading-relaxed text-white/50">Private Onboarding für Käufer, Investoren und Teams mit Fokus auf München.</p>
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <label className="block text-sm font-medium text-white/70">Name
-          <input
-            required
-            className="mt-2 w-full rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-white outline-none transition placeholder:text-white/20 focus:border-[#d2b77a]/45 focus:ring-4 focus:ring-[#d2b77a]/10"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Name"
-          />
-        </label>
-        <label className="block text-sm font-medium text-white/70">E-Mail
-          <input
-            required
-            type="email"
-            className="mt-2 w-full rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-white outline-none transition placeholder:text-white/20 focus:border-[#d2b77a]/45 focus:ring-4 focus:ring-[#d2b77a]/10"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="E-Mail"
-          />
-        </label>
-      </div>
-      <label className="block text-sm font-medium text-white/70">Firma / Kontext
+      <label className="block text-sm font-medium text-white/70">Name
+        <input
+          required
+          className="mt-2 w-full rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-white outline-none transition placeholder:text-white/20 focus:border-[#d2b77a]/45 focus:ring-4 focus:ring-[#d2b77a]/10"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Name"
+        />
+      </label>
+      <label className="block text-sm font-medium text-white/70">E-Mail
+        <input
+          required
+          type="email"
+          className="mt-2 w-full rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-white outline-none transition placeholder:text-white/20 focus:border-[#d2b77a]/45 focus:ring-4 focus:ring-[#d2b77a]/10"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="E-Mail"
+        />
+      </label>
+      <label className="block text-sm font-medium text-white/70">Kontext
         <input
           className="mt-2 w-full rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-white outline-none transition placeholder:text-white/20 focus:border-[#d2b77a]/45 focus:ring-4 focus:ring-[#d2b77a]/10"
           value={company}
           onChange={(e) => setCompany(e.target.value)}
-          placeholder="Investor, Family Office, Makler, Suchprofil …"
+          placeholder="Privatinvestor, Family Office, Makler …"
         />
       </label>
-      <label className="block text-sm font-medium text-white/70">Nachricht
+      <label className="block text-sm font-medium text-white/70">Kurze Nachricht (optional)
         <textarea
-          required
           rows={4}
           className="mt-2 w-full rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-white outline-none transition placeholder:text-white/20 focus:border-[#d2b77a]/45 focus:ring-4 focus:ring-[#d2b77a]/10"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          placeholder="Kurz beschreiben, welche Deal-Arten oder Märkte relevant sind."
+          placeholder="Optional: Suchprofil, Markt oder Zielobjekte kurz beschreiben."
         />
       </label>
       {notice ? <p className="text-sm text-[#e7d2a4]">{notice}</p> : null}
@@ -103,10 +100,10 @@ export function ContactSalesForm({ compact = false }: { compact?: boolean }) {
           disabled={loading}
           className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#d2b77a] px-6 py-3 text-sm font-semibold text-[#17181c] transition hover:bg-[#dcc38d] disabled:opacity-60"
         >
-          {loading ? "Wird gesendet…" : "Access anfragen"}
+          {loading ? "Wird gesendet…" : "Zugang anfragen →"}
           {!loading ? <ArrowRight className="h-4 w-4" /> : null}
         </button>
-        <p className="text-xs uppercase tracking-[0.18em] text-white/32">Concierge review · private onboarding</p>
+        <p className="text-xs uppercase tracking-[0.18em] text-white/32">Concierge Review · Private Onboarding · Kein Spam</p>
       </div>
     </form>
   );
