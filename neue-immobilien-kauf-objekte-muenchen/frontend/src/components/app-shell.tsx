@@ -35,6 +35,7 @@ const nav = [
   ["Account", "/account", UserCircle2],
 ] as const;
 
+const mobileQuickLinks = nav.filter(([label]) => label !== "Account");
 const publicPaths = new Set(["/", "/contact", "/impressum", "/privacy", "/forgot-password", "/reset-password"]);
 const THEME_KEY = "munich-dealfinder-theme";
 
@@ -74,23 +75,23 @@ export function AppShell({ children }: { children: ReactNode }) {
   };
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,var(--background),color-mix(in_oklab,var(--background)_92%,var(--muted)))] text-foreground">
+    <div className="min-h-screen bg-[linear-gradient(180deg,var(--background),color-mix(in_oklab,var(--background)_92%,var(--muted)))] text-foreground dark:bg-[radial-gradient(circle_at_top,rgba(245,197,66,0.08),rgba(15,17,23,1)_30%,rgba(10,12,16,1)_100%)]">
       <div className="mx-auto flex w-full max-w-[1540px] flex-col md:flex-row md:gap-6 md:px-4 lg:px-6">
         <aside className="sticky top-0 hidden h-screen w-[290px] shrink-0 md:block">
           <div className="flex h-full flex-col gap-5 px-2 py-6">
-            <div className="rounded-[2rem] border border-border/80 bg-sidebar/92 p-5 shadow-[0_24px_70px_rgba(15,23,42,0.08)] backdrop-blur dark:border-white/10 dark:bg-[rgba(12,14,19,0.88)] dark:shadow-[0_28px_90px_rgba(0,0,0,0.32)]">
+            <div className="flex h-full flex-col gap-5 rounded-[2rem] border border-border/80 bg-sidebar/92 p-5 shadow-[0_24px_70px_rgba(15,23,42,0.08)] backdrop-blur dark:border-amber-400/14 dark:bg-[linear-gradient(180deg,rgba(29,24,15,0.96),rgba(12,14,19,0.94))] dark:shadow-[0_28px_90px_rgba(0,0,0,0.36)]">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <div className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">Munich Deal Engine</div>
+                  <div className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground dark:text-amber-100/70">Munich Deal Engine</div>
                   <div className="mt-2 text-xl font-semibold">Workspace</div>
-                  <p className="mt-2 text-sm text-muted-foreground">Licht als Standard. Premium-Dark nur bei aktivem Dark Mode.</p>
+                  <p className="mt-2 text-sm text-muted-foreground">Licht als Standard. Premium-Dark bleibt mit Goldakzenten aktiv.</p>
                 </div>
-                <button className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-background/80" onClick={toggleTheme} aria-label="Theme wechseln">
+                <button className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-background/80 dark:border-amber-400/15 dark:bg-amber-300/10 dark:text-amber-50" onClick={toggleTheme} aria-label="Theme wechseln">
                   {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
                 </button>
               </div>
 
-              <nav className="mt-5 space-y-1.5">
+              <nav className="mt-2 space-y-1.5">
                 {nav.map(([label, href, Icon]) => {
                   const active = pathname === href;
                   return (
@@ -100,8 +101,8 @@ export function AppShell({ children }: { children: ReactNode }) {
                       className={cn(
                         "group flex items-center gap-3 rounded-2xl px-3.5 py-3 text-sm transition",
                         active
-                          ? "bg-primary text-primary-foreground shadow-sm"
-                          : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                          ? "bg-primary text-primary-foreground shadow-sm dark:bg-amber-300 dark:text-[#1a1408]"
+                          : "text-muted-foreground hover:bg-accent hover:text-accent-foreground dark:hover:bg-amber-300/10 dark:hover:text-amber-50"
                       )}
                     >
                       <Icon className="h-4 w-4" />
@@ -110,34 +111,56 @@ export function AppShell({ children }: { children: ReactNode }) {
                   );
                 })}
               </nav>
-            </div>
 
-            <div className="rounded-[2rem] border border-border/80 bg-card/94 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.06)] dark:border-white/10 dark:bg-[rgba(12,14,19,0.84)]">
-              <div className="flex items-center gap-2 text-sm font-semibold"><Heart className="h-4 w-4 text-amber-500" /> Watchlist & Filter</div>
-              <div className="mt-4 grid gap-3 text-sm text-muted-foreground">
-                <Link href="/watchlist" className="rounded-2xl border border-border/80 bg-background/70 px-3 py-3 hover:bg-accent">★ Watchlist direkt öffnen</Link>
-                <Link href="/dashboard" className="rounded-2xl border border-border/80 bg-background/70 px-3 py-3 hover:bg-accent">Gespeicherte Filter im Dashboard</Link>
+              <div className="mt-auto rounded-[1.8rem] border border-border/80 bg-card/94 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.06)] dark:border-amber-400/14 dark:bg-[rgba(11,13,18,0.88)]">
+                <div className="flex items-center gap-2 text-sm font-semibold"><Heart className="h-4 w-4 text-amber-500" /> Watchlist & Filter</div>
+                <div className="mt-4 grid gap-3 text-sm text-muted-foreground">
+                  <Link href="/watchlist" className="rounded-2xl border border-border/80 bg-background/70 px-3 py-3 hover:bg-accent dark:border-amber-400/12 dark:bg-white/[0.03] dark:hover:bg-amber-300/10">★ Watchlist direkt öffnen</Link>
+                  <Link href="/dashboard" className="rounded-2xl border border-border/80 bg-background/70 px-3 py-3 hover:bg-accent dark:border-amber-400/12 dark:bg-white/[0.03] dark:hover:bg-amber-300/10">Gespeicherte Filter im Dashboard</Link>
+                </div>
               </div>
             </div>
           </div>
         </aside>
 
-        <main className="min-w-0 flex-1 px-3 py-3 pb-28 md:px-0 md:py-6 md:pb-8">
-          <div className="mb-4 rounded-[1.75rem] border border-border/80 bg-card/95 px-4 py-4 shadow-[0_16px_50px_rgba(15,23,42,0.06)] backdrop-blur dark:border-white/10 dark:bg-[rgba(10,12,16,0.92)] dark:shadow-[0_18px_60px_rgba(0,0,0,0.22)] md:px-5">
+        <main className="min-w-0 flex-1 px-3 py-3 pb-40 md:px-0 md:py-6 md:pb-8">
+          <div className="mb-3 rounded-[1.75rem] border border-border/80 bg-card/95 px-4 py-4 shadow-[0_16px_50px_rgba(15,23,42,0.06)] backdrop-blur dark:border-amber-400/16 dark:bg-[linear-gradient(180deg,rgba(31,25,15,0.94),rgba(10,12,16,0.94))] dark:shadow-[0_18px_60px_rgba(0,0,0,0.26)] md:mb-4 md:px-5">
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">DealFinder</p>
-                <p className="truncate text-base font-semibold">{activeItem?.[0] || "Workspace"}</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground dark:text-amber-100/70">DealFinder</p>
+                <p className="truncate text-base font-semibold md:text-lg">{activeItem?.[0] || "Workspace"}</p>
               </div>
               <div className="flex items-center gap-2">
-                <button className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-background/80" onClick={toggleTheme} aria-label="Theme wechseln">{dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}</button>
-                <Link href="/account" className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-background/80" aria-label="Account öffnen"><UserCircle2 className="h-4 w-4" /></Link>
-                <button className="hidden min-h-11 rounded-2xl border border-border bg-background px-4 py-2 text-sm md:inline-flex" onClick={() => location.reload()}>Refresh</button>
-                <button className="hidden min-h-11 rounded-2xl border border-border bg-background px-4 py-2 text-sm md:inline-flex" onClick={logout} disabled={loggingOut}>{loggingOut ? "Logout…" : "Logout"}</button>
-                <button className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-background/80 md:hidden" onClick={logout} disabled={loggingOut} aria-label="Logout"><LogOut className="h-4 w-4" /></button>
+                <button className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-background/80 dark:border-amber-400/15 dark:bg-amber-300/10 dark:text-amber-50" onClick={toggleTheme} aria-label="Theme wechseln">{dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}</button>
+                <Link href="/account" className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-background/80 dark:border-amber-400/15 dark:bg-amber-300/10 dark:text-amber-50" aria-label="Account öffnen"><UserCircle2 className="h-4 w-4" /></Link>
+                <button className="hidden min-h-11 rounded-2xl border border-border bg-background px-4 py-2 text-sm dark:border-amber-400/15 dark:bg-amber-300/10 dark:text-amber-50 md:inline-flex" onClick={() => location.reload()}>Refresh</button>
+                <button className="hidden min-h-11 rounded-2xl border border-border bg-background px-4 py-2 text-sm dark:border-amber-400/15 dark:bg-amber-300/10 dark:text-amber-50 md:inline-flex" onClick={logout} disabled={loggingOut}>{loggingOut ? "Logout…" : "Logout"}</button>
+                <button className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-background/80 dark:border-amber-400/15 dark:bg-amber-300/10 dark:text-amber-50 md:hidden" onClick={logout} disabled={loggingOut} aria-label="Logout"><LogOut className="h-4 w-4" /></button>
               </div>
             </div>
           </div>
+
+          <div className="mb-4 flex gap-2 overflow-x-auto pb-1 md:hidden">
+            {mobileQuickLinks.map(([label, href, Icon]) => {
+              const active = pathname === href;
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={cn(
+                    "inline-flex min-h-11 shrink-0 items-center gap-2 rounded-2xl border px-3 py-2 text-sm font-medium transition",
+                    active
+                      ? "border-primary bg-primary text-primary-foreground dark:border-amber-300/50 dark:bg-amber-300 dark:text-[#1a1408]"
+                      : "border-border bg-card/90 text-muted-foreground dark:border-amber-400/12 dark:bg-white/[0.03] dark:text-amber-100/78"
+                  )}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span>{label}</span>
+                </Link>
+              );
+            })}
+          </div>
+
           {children}
         </main>
       </div>
