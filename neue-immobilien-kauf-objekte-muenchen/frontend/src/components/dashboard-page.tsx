@@ -102,6 +102,19 @@ export default function DashboardPage() {
         event.preventDefault();
         setRefreshTick((v) => v + 1);
       }
+      if (event.key === "Escape" && !typing) {
+        event.preventDefault();
+        setQuery("");
+        setSelected(null);
+        setMobileFiltersOpen(false);
+      }
+      if (!typing && ["1", "2", "3"].includes(event.key)) {
+        const saved = savedFilters[Number(event.key) - 1];
+        if (!saved) return;
+        event.preventDefault();
+        setDraftFilters(saved.filters);
+        setAppliedFilters(saved.filters);
+      }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
@@ -281,6 +294,8 @@ export default function DashboardPage() {
             <span className="rounded-full border border-border px-3 py-1.5">F Filter</span>
             <span className="rounded-full border border-border px-3 py-1.5">T Toggle View</span>
             <span className="rounded-full border border-border px-3 py-1.5">R Refresh</span>
+            <span className="rounded-full border border-border px-3 py-1.5">1-3 Saved Filter</span>
+            <span className="rounded-full border border-border px-3 py-1.5">Esc Close</span>
           </div>
           <div className="flex items-center gap-2 justify-self-end">
             <button className={cn("inline-flex min-h-11 items-center gap-2 rounded-2xl border px-4 py-2 text-sm", desktopView === "cards" ? "bg-primary text-primary-foreground" : "border-border bg-background")} onClick={() => setDesktopView("cards")}><LayoutGrid className="h-4 w-4" />Cards</button>
