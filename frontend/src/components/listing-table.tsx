@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useReactTable, getCoreRowModel, flexRender, createColumnHelper } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { API_URL, Listing } from "@/lib/api";
@@ -16,14 +16,14 @@ export function ListingTable({ rows, onDetails }: { rows: Listing[]; onDetails: 
   const [savingIds, setSavingIds] = useState<Record<number, boolean>>({});
   const [savedIds, setSavedIds] = useState<Record<number, boolean>>({});
 
-  const toggleSort = (key: "area_sqm" | "price_eur" | "price_per_sqm" | "deal_score") => {
+  const toggleSort = useCallback((key: "area_sqm" | "price_eur" | "price_per_sqm" | "deal_score") => {
     if (sortKey === key) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
       return;
     }
     setSortKey(key);
     setSortDir(key === "area_sqm" ? "asc" : "desc");
-  };
+  }, [sortKey]);
 
   const sortedRows = useMemo(() => {
     if (!sortKey) return rows;
@@ -41,10 +41,10 @@ export function ListingTable({ rows, onDetails }: { rows: Listing[]; onDetails: 
     return arr;
   }, [rows, sortKey, sortDir]);
 
-  const sortIndicator = (key: "area_sqm" | "price_eur" | "price_per_sqm" | "deal_score") => {
+  const sortIndicator = useCallback((key: "area_sqm" | "price_eur" | "price_per_sqm" | "deal_score") => {
     if (sortKey !== key) return "↕";
     return sortDir === "asc" ? "↑" : "↓";
-  };
+  }, [sortDir, sortKey]);
 
   const saveToWatchlist = async (listingId?: number) => {
     if (!listingId) return;
@@ -134,7 +134,7 @@ export function ListingTable({ rows, onDetails }: { rows: Listing[]; onDetails: 
         },
       }),
     ],
-    [onDetails, sortKey, sortDir, savingIds, savedIds]
+    [onDetails, savedIds, savingIds, sortIndicator, toggleSort]
   );
 
   const table = useReactTable({ data: sortedRows, columns, getCoreRowModel: getCoreRowModel() });

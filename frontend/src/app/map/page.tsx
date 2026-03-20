@@ -37,11 +37,20 @@ type MarkerRow = {
 
 const munichCenter: [number, number] = [48.137154, 11.576124];
 
-const LMapContainer = dynamic(() => import("react-leaflet").then((m) => m.MapContainer), { ssr: false }) as unknown as ComponentType<any>;
-const LTileLayer = dynamic(() => import("react-leaflet").then((m) => m.TileLayer), { ssr: false }) as unknown as ComponentType<any>;
-const LGeoJSON = dynamic(() => import("react-leaflet").then((m) => m.GeoJSON), { ssr: false }) as unknown as ComponentType<any>;
-const LCircleMarker = dynamic(() => import("react-leaflet").then((m) => m.CircleMarker), { ssr: false }) as unknown as ComponentType<any>;
-const LPopup = dynamic(() => import("react-leaflet").then((m) => m.Popup), { ssr: false }) as unknown as ComponentType<any>;
+type MapComponentProps = Record<string, unknown>;
+type GeoJsonFeatureLike = { properties?: { name?: string } };
+type GeoJsonLike = { type: string; features?: GeoJsonFeatureLike[] };
+type InteractiveLayer = {
+  bindTooltip: (content: string) => void;
+  bindPopup: (content: string) => void;
+  on: (event: string, handler: () => void) => void;
+};
+
+const LMapContainer = dynamic(() => import("react-leaflet").then((m) => m.MapContainer), { ssr: false }) as unknown as ComponentType<MapComponentProps>;
+const LTileLayer = dynamic(() => import("react-leaflet").then((m) => m.TileLayer), { ssr: false }) as unknown as ComponentType<MapComponentProps>;
+const LGeoJSON = dynamic(() => import("react-leaflet").then((m) => m.GeoJSON), { ssr: false }) as unknown as ComponentType<MapComponentProps>;
+const LCircleMarker = dynamic(() => import("react-leaflet").then((m) => m.CircleMarker), { ssr: false }) as unknown as ComponentType<MapComponentProps>;
+const LPopup = dynamic(() => import("react-leaflet").then((m) => m.Popup), { ssr: false }) as unknown as ComponentType<MapComponentProps>;
 
 function colorForMode(mode: string, m?: DistrictMetric) {
   if (!m) return "#9ca3af";
@@ -81,7 +90,7 @@ export default function MapPage() {
   const [source, setSource] = useState("all");
   const [district, setDistrict] = useState("all");
   const [view, setView] = useState<"district" | "markers">("district");
-  const [geojson, setGeojson] = useState<object | null>(null);
+  const [geojson, setGeojson] = useState<GeoJsonLike | null>(null);
   const [districtRows, setDistrictRows] = useState<DistrictMetric[]>([]);
   const [markerRows, setMarkerRows] = useState<MarkerRow[]>([]);
   const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
@@ -122,16 +131,26 @@ export default function MapPage() {
 
   useEffect(() => {
     const d = selectedDistrict || (district !== "all" ? district : null);
-    if (!d) {
-      setSelectedDistrictListings([]);
-      return;
-    }
-    const q = new URLSearchParams({ window, min_score: String(minScore), district: d, limit: "200" });
-    if (source !== "all") q.set("source", source);
-    fetch(`${API_URL}/api/geo/listings?${q.toString()}`, { cache: "no-store" })
-      .then((r) => r.json())
-      .then((x) => setSelectedDistrictListings(x?.rows || []))
-      .catch(() => setSelectedDistrictListings([]));
+
+    const loadSelectedDistrictListings = async () => {
+      if (!d) {
+        setSelectedDistrictListings([]);
+        return;
+      }
+
+      const q = new URLSearchParams({ window, min_score: String(minScore), district: d, limit: "200" });
+      if (source !== "all") q.set("source", source);
+
+      try {
+        const response = await fetch(`${API_URL}/api/geo/listings?${q.toString()}`, { cache: "no-store" });
+        const data = await response.json();
+        setSelectedDistrictListings(data?.rows || []);
+      } catch {
+        setSelectedDistrictListings([]);
+      }
+    };
+
+    void loadSelectedDistrictListings();
   }, [selectedDistrict, district, window, minScore, source]);
 
   const districts = useMemo(() => ["all", ...Array.from(new Set(districtRows.map((x) => x.district))).sort((a, b) => a.localeCompare(b))], [districtRows]);
@@ -172,7 +191,7 @@ export default function MapPage() {
             {view === "district" && geojson ? (
               <LGeoJSON
                 data={geojson}
-                style={(feature: any) => {
+                style={(feature: GeoJsonFeatureLike | undefined) => {
                   const name = String(feature?.properties?.name || "");
                   return {
                     color: "#374151",
@@ -181,14 +200,15 @@ export default function MapPage() {
                     fillColor: colorForMode(mode, metricByDistrict.get(name)),
                   };
                 }}
-                onEachFeature={(feature: any, layer: any) => {
+                onEachFeature={(feature: GeoJsonFeatureLike | undefined, layer: unknown) => {
                   const name = String(feature?.properties?.name || "");
+                  const interactiveLayer = layer as InteractiveLayer;
                   const m = metricByDistrict.get(name);
-                  layer.bindTooltip(name);
-                  layer.bindPopup(
+                  interactiveLayer.bindTooltip(name);
+                  interactiveLayer.bindPopup(
                     `<strong>${name}</strong><br/>Listings: ${m?.listing_count ?? 0}<br/>Median €/m²: ${m?.median_price_per_sqm ?? "-"}<br/>Ø Score: ${Math.round(m?.average_deal_score ?? 0)}<br/>Top-Deals: ${m?.top_deal_count ?? 0}<br/>Off-Market: ${Math.round(m?.average_off_market_score ?? 0)}<br/>Hotspot: ${Math.round(m?.hotspot_score ?? 0)}`
                   );
-                  layer.on("click", () => {
+                  interactiveLayer.on("click", () => {
                     setSelectedDistrict(name);
                     setDistrict(name);
                     setSelectedMarker(null);
