@@ -80,21 +80,21 @@ export function ListingDrawer({ listing, onClose }: { listing: Listing | null; o
   return (
     <div className="fixed inset-0 z-50 flex">
       <button className="flex-1 bg-slate-950/40 backdrop-blur-sm" onClick={onClose} aria-label="Close" />
-      <aside className="h-full w-full max-w-3xl overflow-y-auto border-l border-white/60 bg-[linear-gradient(180deg,#f8fafc_0%,#ffffff_100%)] p-4 sm:p-6">
-        <div className="mb-4 flex items-center justify-between rounded-[1.6rem] border border-white/70 bg-white/85 px-4 py-3 shadow-[0_16px_40px_rgba(15,23,42,0.08)] backdrop-blur-2xl">
+      <aside className="h-full w-full max-w-3xl overflow-y-auto border-l border-white/60 bg-[linear-gradient(180deg,#f8fafc_0%,#ffffff_100%)] p-4 sm:p-6 dark:border-amber-400/16 dark:bg-[radial-gradient(circle_at_top,rgba(245,197,66,0.12),rgba(15,17,23,1)_26%,rgba(10,12,16,1)_100%)] dark:text-amber-50">
+        <div className="mb-4 flex items-center justify-between rounded-[1.6rem] border border-white/70 bg-white/85 px-4 py-3 shadow-[0_16px_40px_rgba(15,23,42,0.08)] backdrop-blur-2xl dark:border-amber-400/16 dark:bg-[rgba(34,27,14,0.78)] dark:shadow-[0_16px_50px_rgba(0,0,0,0.28)]">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Listing Details</p>
-            <h2 className="mt-1 text-lg font-semibold text-slate-950">{l.display_title || l.title || "Ohne Titel"}</h2>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-amber-100/68">Listing Details</p>
+            <h2 className="mt-1 text-lg font-semibold text-slate-950 dark:text-amber-50">{l.display_title || l.title || "Ohne Titel"}</h2>
           </div>
           <Button variant="outline" size="sm" onClick={onClose}>Schließen</Button>
         </div>
 
         <div className="space-y-4 text-sm">
           <div className="rounded-[1.8rem] border border-white/70 bg-white/90 p-5 shadow-[0_20px_50px_rgba(15,23,42,0.08)] backdrop-blur-2xl">
-            {isSeed ? <div className="mb-3 inline-flex rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">Seed-/Fallback-Datensatz</div> : null}
-            <p className="text-sm text-slate-500">{l.district || "-"} · {l.source}</p>
+            {isSeed ? <div className="mb-3 inline-flex rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800 dark:border-amber-300/28 dark:bg-amber-300/12 dark:text-amber-100">Seed-/Fallback-Datensatz</div> : null}
+            <p className="text-sm text-slate-500 dark:text-amber-100/68">{l.district || "-"} · {l.source}</p>
           {listingUrl ? (
-            <a href={listingUrl} target="_blank" rel="noreferrer" className="block truncate text-xs text-blue-600 underline underline-offset-2">{listingUrl}</a>
+            <a href={listingUrl} target="_blank" rel="noreferrer" className="block truncate text-xs text-blue-600 underline underline-offset-2 dark:text-amber-300">{listingUrl}</a>
           ) : (
             <p className="text-xs text-muted-foreground">Kein Link verfügbar</p>
           )}
@@ -115,7 +115,7 @@ export function ListingDrawer({ listing, onClose }: { listing: Listing | null; o
           </div>
 
           <SectionCard title="Score" subtitle="Warum der Deal so bewertet wurde">
-            <pre className="overflow-x-auto whitespace-pre-wrap rounded-2xl bg-slate-50 p-4 text-xs leading-6 text-slate-600">{scoreExplainPretty || "Keine Detail-Erklärung verfügbar."}</pre>
+            <pre className="overflow-x-auto whitespace-pre-wrap rounded-2xl bg-slate-50 p-4 text-xs leading-6 text-slate-600 dark:bg-white/[0.04] dark:text-amber-100/76">{scoreExplainPretty || "Keine Detail-Erklärung verfügbar."}</pre>
           </SectionCard>
 
           <SectionCard title="Quelle" subtitle="Herkunft und Sichtbarkeit des Angebots">
@@ -128,7 +128,7 @@ export function ListingDrawer({ listing, onClose }: { listing: Listing | null; o
           </SectionCard>
 
           <SectionCard title="Preisverlauf" subtitle="Historie und mögliche Preisänderungen">
-            <div className="space-y-3 text-xs text-slate-600">
+            <div className="space-y-3 text-xs text-slate-600 dark:text-amber-100/76">
               <div className="grid gap-3 sm:grid-cols-2">
                 <MetricTile label="Alt" value={eur(detail?.price_history?.old_price)} />
                 <MetricTile label="Aktuell" value={eur(detail?.price_history?.current_price)} emphasize />
@@ -137,7 +137,7 @@ export function ListingDrawer({ listing, onClose }: { listing: Listing | null; o
               {miniSeries.length ? <MiniBarChart data={miniSeries} /> : null}
               <div className="space-y-2">
                 {snapshots.length ? snapshots.slice(-8).reverse().map((s) => (
-                  <div key={s.id} className="flex items-center justify-between rounded-2xl bg-slate-50 px-3 py-3"><span>{new Date(s.captured_at).toLocaleString("de-DE")}</span><span className="font-medium text-slate-900">{eur(s.price_eur)}</span></div>
+                  <div key={s.id} className="flex items-center justify-between rounded-2xl bg-slate-50 px-3 py-3 dark:bg-white/[0.04]"><span>{new Date(s.captured_at).toLocaleString("de-DE")}</span><span className="font-medium text-slate-900 dark:text-amber-50">{eur(s.price_eur)}</span></div>
                 )) : <p>-</p>}
               </div>
             </div>
@@ -151,7 +151,7 @@ export function ListingDrawer({ listing, onClose }: { listing: Listing | null; o
               <MetricTile label="Price-to-Rent" value={l.price_to_rent_ratio != null ? l.price_to_rent_ratio.toFixed(2) : "-"} />
               <MetricTile label="Investment Score" value={l.investment_score != null ? Math.round(l.investment_score) : "-"} />
             </div>
-            <pre className="mt-3 overflow-x-auto whitespace-pre-wrap rounded-2xl bg-slate-50 p-4 text-xs leading-6 text-slate-600">{investmentExplainPretty || "Keine zusätzliche Investment-Erklärung verfügbar."}</pre>
+            <pre className="mt-3 overflow-x-auto whitespace-pre-wrap rounded-2xl bg-slate-50 p-4 text-xs leading-6 text-slate-600 dark:bg-white/[0.04] dark:text-amber-100/76">{investmentExplainPretty || "Keine zusätzliche Investment-Erklärung verfügbar."}</pre>
           </SectionCard>
 
           <SectionCard title="Off-Market" subtitle="Exklusivität und Sichtbarkeits-Signale">
@@ -160,24 +160,24 @@ export function ListingDrawer({ listing, onClose }: { listing: Listing | null; o
               <MetricTile label="Exclusivity" value={l.exclusivity_score != null ? Math.round(l.exclusivity_score) : "-"} />
               <MetricTile label="Source Popularity" value={l.source_popularity_score != null ? Math.round(l.source_popularity_score) : "-"} />
             </div>
-            <div className="mt-3 flex flex-wrap gap-2">{parseBadges(l.off_market_flags).length ? parseBadges(l.off_market_flags).map((flag) => <span key={flag} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-700">{flag}</span>) : <span className="text-xs text-slate-500">Keine Off-Market-Flags</span>}</div>
-            <pre className="mt-3 overflow-x-auto whitespace-pre-wrap rounded-2xl bg-slate-50 p-4 text-xs leading-6 text-slate-600">{offMarketExplainPretty || "Keine zusätzliche Off-Market-Erklärung verfügbar."}</pre>
+            <div className="mt-3 flex flex-wrap gap-2">{parseBadges(l.off_market_flags).length ? parseBadges(l.off_market_flags).map((flag) => <span key={flag} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-700 dark:border-amber-400/16 dark:bg-white/[0.04] dark:text-amber-100/78">{flag}</span>) : <span className="text-xs text-slate-500 dark:text-amber-100/62">Keine Off-Market-Flags</span>}</div>
+            <pre className="mt-3 overflow-x-auto whitespace-pre-wrap rounded-2xl bg-slate-50 p-4 text-xs leading-6 text-slate-600 dark:bg-white/[0.04] dark:text-amber-100/76">{offMarketExplainPretty || "Keine zusätzliche Off-Market-Erklärung verfügbar."}</pre>
           </SectionCard>
 
           {(detail?.cluster?.members || []).length > 1 ? (
             <SectionCard title="Seen on" subtitle="Weitere Quellen im gleichen Cluster">
-              <div className="space-y-2 text-xs text-slate-600">
+              <div className="space-y-2 text-xs text-slate-600 dark:text-amber-100/76">
                 {detail?.cluster?.members.map((m) => {
                   const memberUrl = normalizeExternalUrl(m.url);
                   return (
-                    <div key={m.id} className="flex flex-col gap-2 rounded-2xl bg-slate-50 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div key={m.id} className="flex flex-col gap-2 rounded-2xl bg-slate-50 px-3 py-3 dark:bg-white/[0.04] sm:flex-row sm:items-center sm:justify-between">
                       <div>
-                        <p className="font-medium text-slate-900">{m.source}{m.is_canonical ? " · canonical" : ""}</p>
+                        <p className="font-medium text-slate-900 dark:text-amber-50">{m.source}{m.is_canonical ? " · canonical" : ""}</p>
                         <p>{m.title || "-"}</p>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className="font-medium text-slate-900">{eur(m.price_eur)}</span>
-                        {memberUrl ? <a href={memberUrl} target="_blank" rel="noreferrer" className="text-blue-600 underline underline-offset-2">open</a> : null}
+                        <span className="font-medium text-slate-900 dark:text-amber-50">{eur(m.price_eur)}</span>
+                        {memberUrl ? <a href={memberUrl} target="_blank" rel="noreferrer" className="text-blue-600 underline underline-offset-2 dark:text-amber-300">open</a> : null}
                       </div>
                     </div>
                   );
@@ -187,11 +187,11 @@ export function ListingDrawer({ listing, onClose }: { listing: Listing | null; o
           ) : null}
 
           <SectionCard title="AI Flags" subtitle="Automatische Hinweise aus dem Analyse-Flow">
-            <pre className="overflow-x-auto whitespace-pre-wrap rounded-2xl bg-slate-50 p-4 text-xs leading-6 text-slate-600">{aiFlagsPretty || "Keine AI Flags vorhanden."}</pre>
+            <pre className="overflow-x-auto whitespace-pre-wrap rounded-2xl bg-slate-50 p-4 text-xs leading-6 text-slate-600 dark:bg-white/[0.04] dark:text-amber-100/76">{aiFlagsPretty || "Keine AI Flags vorhanden."}</pre>
           </SectionCard>
 
-          <div className="sticky bottom-0 flex flex-wrap gap-2 border-t border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0)_0%,rgba(255,255,255,0.96)_24%)] pt-4 pb-1">
-            {listingUrl ? <a href={listingUrl} target="_blank" rel="noreferrer" className="inline-block rounded bg-black px-3 py-2 text-sm text-white hover:opacity-90">Open listing ↗</a> : null}
+          <div className="sticky bottom-0 flex flex-wrap gap-2 border-t border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0)_0%,rgba(255,255,255,0.96)_24%)] pt-4 pb-1 dark:border-amber-400/16 dark:bg-[linear-gradient(180deg,rgba(10,12,16,0)_0%,rgba(10,12,16,0.96)_24%)]">
+            {listingUrl ? <a href={listingUrl} target="_blank" rel="noreferrer" className="inline-block rounded bg-black px-3 py-2 text-sm text-white hover:opacity-90 dark:bg-amber-300 dark:text-[#1a1408]">Open listing ↗</a> : null}
             <button className="inline-block rounded border px-3 py-2 text-sm hover:bg-muted" onClick={async () => {
               try { await navigator.clipboard.writeText(listingUrl || l.url || ""); } catch {}
             }}>Copy link</button>
