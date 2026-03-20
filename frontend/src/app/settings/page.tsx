@@ -1,42 +1,46 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { API_URL } from "@/lib/api";
 import { StateCard } from "@/components/state-card";
 
 type Rule = { id: number; name: string; enabled: boolean };
 type Watch = { id: number; listing: { title?: string; url: string; district?: string; deal_score?: number } };
+type UiSettings = { aiModifier?: boolean; brandNewHours?: number; justListedHours?: number; priceDrop?: number };
+
+const DEFAULT_UI_SETTINGS: Required<UiSettings> = {
+  aiModifier: true,
+  brandNewHours: 6,
+  justListedHours: 2,
+  priceDrop: 5,
+};
+
+function readUiSettings(): UiSettings {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem("deal-ui-settings");
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
 
 export default function SettingsPage() {
+  const initial = readUiSettings();
   const [rules, setRules] = useState<Rule[]>([]);
   const [watchlist, setWatchlist] = useState<Watch[]>([]);
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [aiModifier, setAiModifier] = useState<boolean>(() => {
-    if (typeof window === "undefined") return true;
-    const raw = localStorage.getItem("deal-ui-settings");
-    return raw ? (JSON.parse(raw).aiModifier ?? true) : true;
-  });
+  const [aiModifier, setAiModifier] = useState<boolean>(() => initial.aiModifier ?? DEFAULT_UI_SETTINGS.aiModifier);
+  const [brandNewHours, setBrandNewHours] = useState<number>(() => initial.brandNewHours ?? DEFAULT_UI_SETTINGS.brandNewHours);
+  const [justListedHours, setJustListedHours] = useState<number>(() => initial.justListedHours ?? DEFAULT_UI_SETTINGS.justListedHours);
+  const [priceDrop, setPriceDrop] = useState<number>(() => initial.priceDrop ?? DEFAULT_UI_SETTINGS.priceDrop);
 
-  const [brandNewHours, setBrandNewHours] = useState<number>(() => {
-    if (typeof window === "undefined") return 6;
-    const raw = localStorage.getItem("deal-ui-settings");
-    return raw ? JSON.parse(raw).brandNewHours ?? 6 : 6;
-  });
-  const [justListedHours, setJustListedHours] = useState<number>(() => {
-    if (typeof window === "undefined") return 2;
-    const raw = localStorage.getItem("deal-ui-settings");
-    return raw ? JSON.parse(raw).justListedHours ?? 2 : 2;
-  });
-  const [priceDrop, setPriceDrop] = useState<number>(() => {
-    if (typeof window === "undefined") return 5;
-    const raw = localStorage.getItem("deal-ui-settings");
-    return raw ? JSON.parse(raw).priceDrop ?? 5 : 5;
-  });
-
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -44,7 +48,7 @@ export default function SettingsPage() {
         fetch(`${API_URL}/api/alert-rules`, { cache: "no-store" }),
         fetch(`${API_URL}/api/watchlist`, { cache: "no-store" }),
       ]);
-      if (!rr.ok || !wr.ok) throw new Error('settings_load_failed');
+      if (!rr.ok || !wr.ok) throw new Error("settings_load_failed");
       setRules(await rr.json());
       setWatchlist(await wr.json());
     } catch {
@@ -54,65 +58,177 @@ export default function SettingsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const hasLocalChanges = useMemo(
+    () =>
+      aiModifier !== DEFAULT_UI_SETTINGS.aiModifier ||
+      brandNewHours !== DEFAULT_UI_SETTINGS.brandNewHours ||
+      justListedHours !== DEFAULT_UI_SETTINGS.justListedHours ||
+      priceDrop !== DEFAULT_UI_SETTINGS.priceDrop,
+    [aiModifier, brandNewHours, justListedHours, priceDrop]
+  );
 
   const savePrefs = () => {
     localStorage.setItem("deal-ui-settings", JSON.stringify({ brandNewHours, justListedHours, priceDrop, aiModifier }));
-    setNotice("UI preferences lokal gespeichert.");
+    setNotice("UI-Präferenzen lokal gespeichert.");
+  };
+
+  const resetPrefs = () => {
+    localStorage.setItem("deal-ui-settings", JSON.stringify(DEFAULT_UI_SETTINGS));
+    setAiModifier(DEFAULT_UI_SETTINGS.aiModifier);
+    setBrandNewHours(DEFAULT_UI_SETTINGS.brandNewHours);
+    setJustListedHours(DEFAULT_UI_SETTINGS.justListedHours);
+    setPriceDrop(DEFAULT_UI_SETTINGS.priceDrop);
+    setNotice("UI-Präferenzen auf Standardwerte zurückgesetzt.");
   };
 
   const createRule = async () => {
     if (!name.trim()) return;
-    await fetch(`${API_URL}/api/alert-rules`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, enabled: true }),
-    });
-    setName("");
-    setNotice("Alert-Regel erstellt.");
-    load();
+    setNotice(null);
+    setError(null);
+    try {
+      const res = await fetch(`${API_URL}/api/alert-rules`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name.trim(), enabled: true }),
+      });
+      if (!res.ok) throw new Error("create_rule_failed");
+      setName("");
+      setNotice("Alert-Regel erstellt.");
+      await load();
+    } catch {
+      setError("Alert-Regel konnte nicht erstellt werden.");
+    }
   };
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
-      {notice ? <p className="rounded border px-3 py-2 text-sm text-muted-foreground">{notice}</p> : null}
+      <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
+          <p className="text-sm text-muted-foreground">Lokale UI-Schwellenwerte, Alert-Regeln und Watchlist an einem Ort.</p>
+        </div>
+        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+          <span className="rounded-full border px-3 py-1">{rules.length} Regeln</span>
+          <span className="rounded-full border px-3 py-1">{watchlist.length} Watchlist</span>
+          <span className="rounded-full border px-3 py-1">{hasLocalChanges ? "angepasst" : "Standardwerte"}</span>
+        </div>
+      </div>
+
+      {notice ? <p className="rounded-2xl border px-3 py-2 text-sm text-muted-foreground dark:border-amber-400/16 dark:bg-amber-400/10 dark:text-amber-100">{notice}</p> : null}
       {error ? <StateCard title="Settings unvollständig geladen" body={error} tone="error" /> : null}
 
-      <div className="rounded-xl border p-4 text-sm space-y-3">
-        <p className="text-xs text-muted-foreground">Diese UI-Thresholds werden nur lokal im Browser gespeichert und ändern nicht die Backend-Logik.</p>
-        <p className="font-medium">Thresholds (UI)</p>
-        <label className="block">BRAND_NEW_HOURS: {brandNewHours}<input className="w-full" type="range" min={1} max={24} value={brandNewHours} onChange={(e) => setBrandNewHours(Number(e.target.value))} /></label>
-        <label className="block">JUST_LISTED_HOURS: {justListedHours}<input className="w-full" type="range" min={1} max={12} value={justListedHours} onChange={(e) => setJustListedHours(Number(e.target.value))} /></label>
-        <label className="block">PRICE_DROP_THRESHOLD: {priceDrop}%<input className="w-full" type="range" min={1} max={20} value={priceDrop} onChange={(e) => setPriceDrop(Number(e.target.value))} /></label>
-        <label className="flex items-center gap-2">
-          <input type="checkbox" checked={aiModifier} onChange={(e) => setAiModifier(e.target.checked)} />
-          AI Deal Analyzer modifier on/off
-        </label>
-        <button className="rounded border px-3 py-1" onClick={savePrefs}>Save UI preferences</button>
-      </div>
-
-      <div className="rounded-xl border p-4">
-        <p className="mb-2 text-sm font-medium">Alert Rule Builder (MVP)</p>
-        <div className="flex gap-2">
-          <input className="w-full rounded border px-3 py-2 text-sm" value={name} onChange={(e) => setName(e.target.value)} placeholder="Rule name" />
-          <button className="rounded border px-3 py-2 text-sm" onClick={createRule}>Create</button>
+      <div className="rounded-3xl border p-4 text-sm space-y-4 dark:border-amber-400/16 dark:bg-[linear-gradient(180deg,rgba(34,27,14,0.84),rgba(10,12,16,0.98))] dark:shadow-[0_18px_50px_rgba(0,0,0,0.24)]">
+        <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+          <div>
+            <p className="font-medium">Thresholds (nur UI)</p>
+            <p className="text-xs text-muted-foreground">Diese Werte werden nur lokal im Browser gespeichert und ändern keine Backend-Logik.</p>
+          </div>
+          <div className="flex gap-2">
+            <button className="rounded-xl border px-3 py-2 text-sm dark:border-amber-400/16 dark:bg-white/[0.04] dark:text-amber-50" onClick={resetPrefs}>Zurücksetzen</button>
+            <button className="rounded-xl border bg-primary px-3 py-2 text-sm text-primary-foreground dark:border-amber-300/30 dark:bg-amber-300 dark:text-[#1a1408]" onClick={savePrefs}>Speichern</button>
+          </div>
         </div>
-        <div className="mt-3 space-y-1 text-sm">{rules.map((r) => <div key={r.id}>{r.name} · enabled={String(r.enabled)}</div>)}</div>
+
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <label className="block rounded-2xl border p-3 dark:border-amber-400/16 dark:bg-white/[0.04]">
+            <span className="mb-1 block text-xs uppercase tracking-wide text-muted-foreground dark:text-amber-100/62">Brand new</span>
+            <div className="mb-2 flex items-center justify-between text-sm font-medium">
+              <span>Neue Listings</span>
+              <span>{brandNewHours}h</span>
+            </div>
+            <input className="w-full" type="range" min={1} max={24} value={brandNewHours} onChange={(e) => setBrandNewHours(Number(e.target.value))} />
+          </label>
+
+          <label className="block rounded-2xl border p-3 dark:border-amber-400/16 dark:bg-white/[0.04]">
+            <span className="mb-1 block text-xs uppercase tracking-wide text-muted-foreground dark:text-amber-100/62">Just listed</span>
+            <div className="mb-2 flex items-center justify-between text-sm font-medium">
+              <span>Frisch gelistet</span>
+              <span>{justListedHours}h</span>
+            </div>
+            <input className="w-full" type="range" min={1} max={12} value={justListedHours} onChange={(e) => setJustListedHours(Number(e.target.value))} />
+          </label>
+
+          <label className="block rounded-2xl border p-3 dark:border-amber-400/16 dark:bg-white/[0.04]">
+            <span className="mb-1 block text-xs uppercase tracking-wide text-muted-foreground dark:text-amber-100/62">Price drop</span>
+            <div className="mb-2 flex items-center justify-between text-sm font-medium">
+              <span>Preisnachlass</span>
+              <span>{priceDrop}%</span>
+            </div>
+            <input className="w-full" type="range" min={1} max={20} value={priceDrop} onChange={(e) => setPriceDrop(Number(e.target.value))} />
+          </label>
+
+          <label className="flex rounded-2xl border p-3 dark:border-amber-400/16 dark:bg-white/[0.04]">
+            <span className="flex flex-1 flex-col justify-between gap-3">
+              <span>
+                <span className="mb-1 block text-xs uppercase tracking-wide text-muted-foreground dark:text-amber-100/62">AI modifier</span>
+                <span className="block text-sm font-medium">AI Deal Analyzer berücksichtigen</span>
+              </span>
+              <span className="inline-flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={aiModifier} onChange={(e) => setAiModifier(e.target.checked)} />
+                {aiModifier ? "Aktiv" : "Deaktiviert"}
+              </span>
+            </span>
+          </label>
+        </div>
       </div>
 
-      <div className="rounded-xl border p-4">
-        <p className="mb-2 text-sm font-medium">Watchlist</p>
-        {loading ? <StateCard title="Watchlist wird geladen" body="Die gespeicherten Immobilien werden gerade vorbereitet." tone="muted" /> : watchlist.length === 0 ? <StateCard title="Keine Watchlist-Einträge" body="Sobald du Immobilien merkst, erscheinen sie auch hier in den Settings." tone="muted" /> : <div className="space-y-2 text-sm">
-          {watchlist.map((w) => (
-            <a key={w.id} href={w.listing.url} target="_blank" rel="noreferrer" className="block rounded border p-2 hover:bg-muted/40">
-              {w.listing.title || "Ohne Titel"} · {w.listing.district || "-"} · Score {Math.round(w.listing.deal_score || 0)}
-            </a>
-          ))}
-        </div>}
+      <div className="rounded-3xl border p-4 dark:border-amber-400/16 dark:bg-[linear-gradient(180deg,rgba(34,27,14,0.84),rgba(10,12,16,0.98))] dark:shadow-[0_18px_50px_rgba(0,0,0,0.24)]">
+        <div className="mb-3 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="text-sm font-medium">Alert Rule Builder</p>
+            <p className="text-xs text-muted-foreground">Schnell eine einfache Regel anlegen. Mehr Logik kann später folgen.</p>
+          </div>
+          <span className="text-xs text-muted-foreground">{rules.length} aktive/gespeicherte Regeln</span>
+        </div>
+        <div className="flex flex-col gap-2 md:flex-row">
+          <input className="w-full rounded-xl border px-3 py-2 text-sm dark:border-amber-400/16 dark:bg-white/[0.04] dark:text-amber-50" value={name} onChange={(e) => setName(e.target.value)} placeholder="z. B. Schwabing unter 11.000 €/m²" onKeyDown={(e) => { if (e.key === "Enter") void createRule(); }} />
+          <button className="rounded-xl border px-3 py-2 text-sm dark:border-amber-400/16 dark:bg-white/[0.04] dark:text-amber-50" onClick={createRule}>Create</button>
+        </div>
+        <div className="mt-3 space-y-2 text-sm">
+          {rules.length === 0 ? (
+            <StateCard title="Noch keine Regeln" body="Lege eine erste Alert-Regel an, damit interessante Konstellationen später schneller auffallen." tone="muted" />
+          ) : (
+            rules.map((r) => (
+              <div key={r.id} className="flex items-center justify-between rounded-2xl border px-3 py-2 dark:border-amber-400/16 dark:bg-white/[0.04]">
+                <span className="font-medium">{r.name}</span>
+                <span className="text-xs text-muted-foreground">{r.enabled ? "aktiv" : "inaktiv"}</span>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      <div className="rounded-3xl border p-4 dark:border-amber-400/16 dark:bg-[linear-gradient(180deg,rgba(34,27,14,0.84),rgba(10,12,16,0.98))] dark:shadow-[0_18px_50px_rgba(0,0,0,0.24)]">
+        <div className="mb-3 flex items-end justify-between gap-3">
+          <div>
+            <p className="text-sm font-medium">Watchlist</p>
+            <p className="text-xs text-muted-foreground">Gespeicherte Immobilien mit schnellem Absprung zur Quelle.</p>
+          </div>
+          <button className="rounded-xl border px-3 py-2 text-xs dark:border-amber-400/16 dark:bg-white/[0.04] dark:text-amber-50" onClick={() => void load()}>Neu laden</button>
+        </div>
+        {loading ? (
+          <StateCard title="Watchlist wird geladen" body="Die gespeicherten Immobilien werden gerade vorbereitet." tone="muted" />
+        ) : watchlist.length === 0 ? (
+          <StateCard title="Keine Watchlist-Einträge" body="Sobald du Immobilien merkst, erscheinen sie auch hier in den Settings." tone="muted" />
+        ) : (
+          <div className="space-y-2 text-sm">
+            {watchlist.map((w) => (
+              <a key={w.id} href={w.listing.url} target="_blank" rel="noreferrer" className="block rounded-2xl border p-3 hover:bg-muted/40 dark:border-amber-400/16 dark:bg-white/[0.04] dark:hover:bg-amber-300/10">
+                <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+                  <span className="font-medium">{w.listing.title || "Ohne Titel"}</span>
+                  <span className="text-xs text-muted-foreground">Score {Math.round(w.listing.deal_score || 0)}</span>
+                </div>
+                <p className="text-xs text-muted-foreground">{w.listing.district || "München"}</p>
+              </a>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
