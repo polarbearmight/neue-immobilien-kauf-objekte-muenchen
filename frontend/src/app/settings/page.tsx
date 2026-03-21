@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { API_URL } from "@/lib/api";
+import { API_URL, authHeaders } from "@/lib/api";
 import { StateCard } from "@/components/state-card";
 
 type Rule = { id: number; name: string; enabled: boolean };
@@ -45,8 +45,8 @@ export default function SettingsPage() {
     setError(null);
     try {
       const [rr, wr] = await Promise.all([
-        fetch(`${API_URL}/api/alert-rules`, { cache: "no-store" }),
-        fetch(`${API_URL}/api/watchlist`, { cache: "no-store" }),
+        fetch(`${API_URL}/api/alert-rules`, { cache: "no-store", headers: authHeaders() }),
+        fetch(`${API_URL}/api/watchlist`, { cache: "no-store", headers: authHeaders() }),
       ]);
       if (!rr.ok || !wr.ok) throw new Error("settings_load_failed");
       setRules(await rr.json());
@@ -94,7 +94,7 @@ export default function SettingsPage() {
     try {
       const res = await fetch(`${API_URL}/api/alert-rules`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { ...authHeaders(), "Content-Type": "application/json" },
         body: JSON.stringify({ name: name.trim(), enabled: true }),
       });
       if (!res.ok) throw new Error("create_rule_failed");

@@ -63,7 +63,7 @@ export default function DealsPage() {
         const params = new URLSearchParams({ min_score: String(debouncedMinScore), sort: sortBy, limit: "160" });
         if (debouncedPriceMin !== "") params.set("price_min", String(debouncedPriceMin));
         if (debouncedPriceMax !== "") params.set("price_max", String(debouncedPriceMax));
-        const res = await fetch(`${API_URL}/api/listings?${params.toString()}`, { cache: "no-store" });
+        const res = await fetch(`${API_URL}/api/listings?${params.toString()}`, { cache: "no-store", headers: authHeaders() });
         if (!res.ok) throw new Error(`deals_${res.status}`);
         setListings(await res.json());
       } catch {
@@ -101,7 +101,7 @@ export default function DealsPage() {
     if (!listingId) return false;
     setSavingIds((prev) => ({ ...prev, [listingId]: true }));
     try {
-      const res = await fetch(`${API_URL}/api/watchlist/${listingId}`, { method: "POST" });
+      const res = await fetch(`${API_URL}/api/watchlist/${listingId}`, { method: "POST", headers: authHeaders() });
       if (!res.ok) throw new Error("watchlist_save_failed");
       setSavedIds((prev) => ({ ...prev, [listingId]: true }));
       return true;

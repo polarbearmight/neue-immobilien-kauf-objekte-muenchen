@@ -47,7 +47,7 @@ export function ListingDrawer({ listing, onClose }: { listing: Listing | null; o
         return;
       }
       try {
-        const res = await fetch(`${API_URL}/api/listings/${listing.id}/detail`, { cache: "no-store", signal: controller.signal });
+        const res = await fetch(`${API_URL}/api/listings/${listing.id}/detail`, { cache: "no-store", signal: controller.signal, headers: authHeaders() });
         if (!res.ok) throw new Error(`detail_${res.status}`);
         const data = await res.json();
         setDetail(data || null);
@@ -197,7 +197,7 @@ export function ListingDrawer({ listing, onClose }: { listing: Listing | null; o
             }}>Copy link</button>
             <button className="inline-block rounded border px-3 py-2 text-sm hover:bg-muted" onClick={async () => {
               if (!l.id) return;
-              await fetch(`${API_URL}/api/watchlist/${l.id}`, { method: "POST" });
+              await fetch(`${API_URL}/api/watchlist/${l.id}`, { method: "POST", headers: authHeaders() });
             }}>Save to Watchlist</button>
           </div>
         </div>

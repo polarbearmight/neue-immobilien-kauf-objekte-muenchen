@@ -87,7 +87,7 @@ function MobileListingCardsInner({ rows, onDetails }: { rows: Listing[]; onDetai
                   if (!row.id) return;
                   setSavedIds((prev) => ({ ...prev, [row.id as number]: true }));
                   try {
-                    await fetch(`${API_URL}/api/watchlist/${row.id}`, { method: "POST" });
+                    await fetch(`${API_URL}/api/watchlist/${row.id}`, { method: "POST", headers: authHeaders() });
                   } catch {
                     setSavedIds((prev) => ({ ...prev, [row.id as number]: false }));
                   }

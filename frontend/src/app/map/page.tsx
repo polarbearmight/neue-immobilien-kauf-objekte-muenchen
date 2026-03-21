@@ -114,7 +114,7 @@ export default function MapPage() {
   const [mapError, setMapError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(`${API_URL}/api/sources`, { cache: "no-store" })
+    fetch(`${API_URL}/api/sources`, { cache: "no-store", headers: authHeaders() })
       .then((r) => r.json())
       .then((rows) => {
         const dynamicSources = Array.isArray(rows) ? rows.map((x: { name?: string }) => x.name).filter((v): v is string => Boolean(v)) : [];
@@ -141,7 +141,7 @@ export default function MapPage() {
       setLoadingMarkers(true);
     }, 0);
 
-    fetch(`${API_URL}/api/geo/districts?${q.toString()}`, { cache: "no-store" })
+    fetch(`${API_URL}/api/geo/districts?${q.toString()}`, { cache: "no-store", headers: authHeaders() })
       .then((r) => {
         if (!r.ok) throw new Error("districts_failed");
         return r.json();
@@ -153,7 +153,7 @@ export default function MapPage() {
       })
       .finally(() => setLoadingDistricts(false));
 
-    fetch(`${API_URL}/api/geo/listings?${q.toString()}`, { cache: "no-store" })
+    fetch(`${API_URL}/api/geo/listings?${q.toString()}`, { cache: "no-store", headers: authHeaders() })
       .then((r) => {
         if (!r.ok) throw new Error("markers_failed");
         return r.json();
@@ -173,7 +173,7 @@ export default function MapPage() {
     if (!activeDistrict) return;
     const q = new URLSearchParams({ window: windowRange, min_score: String(minScore), district: activeDistrict, limit: "200" });
     if (source !== "all") q.set("source", source);
-    fetch(`${API_URL}/api/geo/listings?${q.toString()}`, { cache: "no-store" })
+    fetch(`${API_URL}/api/geo/listings?${q.toString()}`, { cache: "no-store", headers: authHeaders() })
       .then((r) => r.json())
       .then((x) => setSelectedDistrictListings(x?.rows || []))
       .catch(() => setSelectedDistrictListings([]));
