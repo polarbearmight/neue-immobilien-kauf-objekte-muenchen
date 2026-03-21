@@ -1,65 +1,84 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
-import { Building2, Check, Globe, TrendingUp, Zap } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ArrowLeft, ArrowRight, Building2, Check, ChevronDown, Lock, Sparkles, TrendingUp } from "lucide-react";
 import { LoginModal } from "@/components/login-modal";
 import { ContactSalesForm } from "@/components/contact-sales-form";
 import { PremiumProductMockup } from "@/components/premium-product-mockup";
-import { TrustStrip } from "@/components/trust-strip";
-import { UseCasesGrid } from "@/components/use-cases-grid";
-import { DesktopStoryPanel } from "@/components/desktop-story-panel";
-import heroBg from "@/app/hero-bg.jpg";
 
 const features = [
   {
-    icon: Globe,
-    title: "Alle Immobilienportale auf einer Plattform",
-    text: "Die Software durchsucht automatisch alle großen Immobilienportale und zusätzliche versteckte Quellen und zeigt sämtliche Angebote zentral an.",
+    icon: Lock,
+    title: "Off-market Sichtbarkeit",
+    text: "Diskrete Kaufobjekte, die nie auf ImmoScout oder Immowelt erscheinen — aggregiert aus kleineren Quellen und direkten Marktsignalen.",
   },
   {
-    icon: Zap,
-    title: "Schneller als der Markt",
-    text: "Neue Immobilienangebote werden sofort erkannt und erscheinen direkt auf der Plattform. So können Nutzer schneller reagieren als andere Käufer.",
+    icon: Sparkles,
+    title: "Alle Deals. Eine Oberfläche.",
+    text: "ImmoScout, Immowelt, Regionalportale und diskrete Quellen — priorisiert nach Score, nicht nach Schaltdatum.",
   },
   {
     icon: TrendingUp,
-    title: "DealFinder Technologie",
-    text: "Der integrierte DealFinder erkennt automatisch besonders attraktive Immobilienangebote und hebt die besten Deals hervor.",
+    title: "Früher als der Markt",
+    text: "Top-Listings siehst du im Schnitt Stunden früher als über manuelle Portalsuche. Bei gefragten Objekten zählt das.",
   },
 ];
 
-const benefits = [
-  "Alle Immobilienportale in einer Suche",
-  "Frühzeitiger Zugang zu neuen Angeboten",
-  "Automatische Deal-Erkennung",
-  "Mehr Übersicht über den gesamten Markt",
-  "Bessere Investmententscheidungen",
+const proofPoints = [
+  "Off-market Chancen sehen, bevor sie publik werden",
+  "Alle relevanten Quellen in einer priorisierten Oberfläche",
+  "Entscheidungsgrundlage statt rohe Listenflut",
+  "Gebaut für Geschwindigkeit im Münchner Markt",
 ];
 
-const storySteps = [
+const reviews = [
   {
-    eyebrow: "01 · Capture",
-    title: "Marktbewegungen früher sehen",
-    text: "Neue Inserate, kleine Quellen und frische Marktbewegungen landen schneller in deinem Feed statt erst spät in manuellen Suchen.",
+    quote: "Zum ersten Mal sehe ich Portale, kleinere Quellen und diskrete Chancen in einer Oberfläche — statt in zehn offenen Tabs.",
+    name: "Tobias R.",
+    role: "Privatinvestor · München",
+    initials: "TR",
   },
   {
-    eyebrow: "02 · Rank",
-    title: "Relevanz automatisch priorisieren",
-    text: "Deal Score, Investment Signale und Sichtbarkeitsdaten helfen dir, gute Chancen sofort von schlechten Deals zu trennen.",
+    quote: "Zwei Wochen nach dem Zugang habe ich ein Off-market Objekt gesehen, das ich sonst nie gefunden hätte. Der Vorsprung ist real.",
+    name: "Markus S.",
+    role: "Family Office · Schwabing",
+    initials: "MS",
   },
   {
-    eyebrow: "03 · Act",
-    title: "Mit mehr Kontext schneller handeln",
-    text: "Preisverlauf, Source-Signale und Investment-Metriken geben dir direkt eine belastbare Entscheidungsbasis.",
+    quote: "Die Priorisierung spart mir täglich Zeit. Kein manuelles Durchklicken mehr — ich sehe sofort, was relevant ist.",
+    name: "Anna K.",
+    role: "Immobilieninvestorin · München",
+    initials: "AK",
+  },
+  {
+    quote: "Ich spare jeden Tag rund drei Stunden Recherche. Realistisch ersetzt mir das einen zusätzlichen Research-Mitarbeiter.",
+    name: "Daniel H.",
+    role: "Bestandsinvestor · Bogenhausen",
+    initials: "DH",
+  },
+];
+
+const faqs = [
+  {
+    q: "Was ist der Hauptvorteil gegenüber normalen Immobilienportalen?",
+    a: "DealFinder bündelt mehrere Marktquellen und priorisiert Kaufobjekte nach Relevanz — nicht nach Schaltdatum. Du siehst Off-market Chancen und alle wichtigen Deals früher und mit mehr Kontext als über einzelne Portale.",
+  },
+  {
+    q: "Geht es nur um Off-market Immobilien?",
+    a: "Nein. Off-market ist ein Teil des Vorsprungs — aber nicht alles. DealFinder zeigt dir auch öffentliche Listings früher, bewertet sie automatisch und spart dir die manuelle Suche über mehrere Portale.",
+  },
+  {
+    q: "Für wen ist die Plattform gedacht?",
+    a: "Für Privatinvestoren, Family Offices und ernsthafte Käufer, die aktiv nach Kaufobjekten in München suchen. Nicht für gelegentliche Suche — sondern für Käufer, die Geschwindigkeit und Informationsvorsprung als Vorteil nutzen.",
   },
 ];
 
 export default function LandingPage() {
   const [open, setOpen] = useState(false);
   const [mobileMenu, setMobileMenu] = useState(false);
-  const heroRef = useRef<HTMLElement | null>(null);
+  const [reviewIndex, setReviewIndex] = useState(0);
+  const [openFaq, setOpenFaq] = useState<number>(0);
 
   useEffect(() => {
     const nodes = Array.from(document.querySelectorAll<HTMLElement>("[data-reveal]"));
@@ -72,43 +91,38 @@ export default function LandingPage() {
       { threshold: 0.18, rootMargin: "0px 0px -8% 0px" },
     );
     nodes.forEach((node) => observer.observe(node));
-
-    const onScroll = () => {
-      const y = window.scrollY || 0;
-      document.documentElement.style.setProperty("--landing-scroll", String(Math.min(y, 480)));
-      if (heroRef.current) {
-        heroRef.current.style.setProperty("--hero-shift", `${Math.min(y * 0.12, 36)}px`);
-      }
-    };
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      observer.disconnect();
-      window.removeEventListener("scroll", onScroll);
-    };
+    return () => observer.disconnect();
   }, []);
 
+  const activeReview = useMemo(() => reviews[reviewIndex % reviews.length], [reviewIndex]);
+
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#f8fafc_0%,#eef2ff_35%,#ffffff_68%)] text-slate-900">
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-white/60 bg-white/70 backdrop-blur-2xl supports-[backdrop-filter]:bg-white/55">
+    <div className="min-h-screen bg-[#050608] text-white">
+      <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top,rgba(210,183,122,0.14),transparent_20%),radial-gradient(circle_at_80%_18%,rgba(255,255,255,0.05),transparent_18%),linear-gradient(180deg,#050608_0%,#0a0d12_36%,#10141b_100%)]" />
+
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-white/8 bg-[rgba(5,6,8,0.72)] backdrop-blur-2xl supports-[backdrop-filter]:bg-[rgba(5,6,8,0.56)]">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/90 shadow-[0_10px_30px_rgba(15,23,42,0.08)] ring-1 ring-slate-200/70">
-              <Building2 className="h-5 w-5 text-emerald-700" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] shadow-[0_14px_40px_rgba(0,0,0,0.28)]">
+              <Building2 className="h-5 w-5 text-[#d2b77a]" />
             </div>
-            <span className="text-lg font-semibold tracking-tight text-slate-900">DealFinder</span>
+            <div className="flex flex-col">
+              <span className="text-lg font-semibold tracking-tight text-white">DealFinder</span>
+              <span className="text-[10px] uppercase tracking-[0.32em] text-white/35">Private Market Intelligence</span>
+            </div>
           </div>
 
-          <nav className="hidden items-center gap-8 text-sm text-slate-500 md:flex">
-            <a href="#features" className="transition hover:text-slate-950">Features</a>
-            <a href="#vorteile" className="transition hover:text-slate-950">Vorteile</a>
-            <a href="#zugang" className="transition hover:text-slate-950">Zugang</a>
+          <nav className="hidden items-center gap-8 text-sm text-white/55 md:flex">
+            <a href="#features" className="transition hover:text-white">Features</a>
+            <a href="#reviews" className="transition hover:text-white">Stimmen</a>
+            <a href="#faq" className="transition hover:text-white">FAQ</a>
+            <a href="#zugang" className="transition hover:text-white">Zugang anfragen</a>
           </nav>
 
           <div className="flex items-center gap-2">
             <button
               type="button"
-              className="min-h-11 rounded-2xl border border-white/80 bg-white/80 px-4 py-2 text-sm font-medium shadow-[0_10px_30px_rgba(15,23,42,0.08)] backdrop-blur md:hidden"
+              className="min-h-11 rounded-2xl border border-white/12 bg-white/[0.04] px-4 py-2 text-sm font-medium text-white shadow-[0_12px_30px_rgba(0,0,0,0.24)] backdrop-blur md:hidden"
               onClick={() => setMobileMenu((v) => !v)}
             >
               {mobileMenu ? "Close" : "Menu"}
@@ -116,7 +130,7 @@ export default function LandingPage() {
             <button
               type="button"
               onClick={() => setOpen(true)}
-              className="min-h-11 rounded-2xl border border-white/80 bg-white/80 px-4 py-2 text-sm font-medium shadow-[0_10px_30px_rgba(15,23,42,0.08)] backdrop-blur transition hover:-translate-y-0.5 hover:bg-white"
+              className="min-h-11 rounded-2xl border border-[#d2b77a]/30 bg-[#d2b77a]/10 px-4 py-2 text-sm font-medium text-[#f3e7c4] shadow-[0_12px_30px_rgba(0,0,0,0.24)] backdrop-blur transition hover:-translate-y-0.5 hover:bg-[#d2b77a]/16"
             >
               Login
             </button>
@@ -125,219 +139,243 @@ export default function LandingPage() {
       </header>
 
       {mobileMenu ? (
-        <div className="fixed inset-x-4 top-20 z-40 rounded-3xl border border-white/70 bg-white/85 p-4 shadow-[0_24px_80px_rgba(15,23,42,0.16)] backdrop-blur-2xl md:hidden">
-          <div className="flex flex-col gap-3 text-sm text-slate-600">
+        <div className="fixed inset-x-4 top-20 z-40 rounded-3xl border border-white/10 bg-[rgba(10,12,16,0.92)] p-4 shadow-[0_24px_80px_rgba(0,0,0,0.4)] backdrop-blur-2xl md:hidden">
+          <div className="flex flex-col gap-3 text-sm text-white/70">
             <a href="#features" onClick={() => setMobileMenu(false)}>Features</a>
-            <a href="#vorteile" onClick={() => setMobileMenu(false)}>Vorteile</a>
-            <a href="#zugang" onClick={() => setMobileMenu(false)}>Zugang</a>
+            <a href="#reviews" onClick={() => setMobileMenu(false)}>Stimmen</a>
+            <a href="#faq" onClick={() => setMobileMenu(false)}>FAQ</a>
+            <a href="#zugang" onClick={() => setMobileMenu(false)}>Zugang anfragen</a>
           </div>
         </div>
       ) : null}
 
       <main className="overflow-x-hidden">
-        <section ref={heroRef} className="relative flex min-h-[100svh] items-center justify-center overflow-hidden pt-16 [--hero-shift:0px]">
-          <Image src={heroBg} alt="Munich skyline" fill priority className="absolute inset-0 object-cover will-change-transform [transform:scale(1.08)_translateY(var(--hero-shift))]" />
-          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.34)_0%,rgba(15,23,42,0.52)_55%,rgba(15,23,42,0.72)_100%)]" />
-          <div className="absolute inset-x-0 top-16 h-40 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.35),transparent_70%)]" />
+        <section className="relative flex min-h-[100svh] items-center overflow-hidden pt-16">
+          <div className="absolute inset-0">
+            <div className="absolute left-[8%] top-28 h-64 w-64 rounded-full bg-[#d2b77a]/[0.08] blur-3xl" />
+            <div className="absolute right-[10%] top-44 h-72 w-72 rounded-full bg-white/[0.04] blur-3xl" />
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+          </div>
 
-          <div className="relative z-10 mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-28 lg:px-8 xl:max-w-[88rem] xl:py-32">
-            <div data-reveal className="motion-reveal mx-auto mb-5 inline-flex items-center rounded-full border border-white/30 bg-white/10 px-4 py-2 text-xs font-medium uppercase tracking-[0.24em] text-white/80 backdrop-blur">
-              München · Kaufobjekte · Deal Intelligence
-            </div>
-            <h1 data-reveal className="motion-reveal mx-auto max-w-5xl text-4xl font-semibold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl xl:max-w-6xl xl:text-7xl">
-              Finden Sie Immobilien schneller als alle anderen.
-            </h1>
-            <p data-reveal className="motion-reveal mx-auto mt-6 max-w-3xl text-lg leading-relaxed text-white/80 sm:text-xl xl:max-w-4xl xl:text-[1.35rem]">
-              Unsere Plattform bündelt große Immobilienportale, kleinere Quellen und zusätzliche Marktsignale in einem kuratierten Such- und Entscheidungsraum. So erkennen Sie relevante Kaufobjekte früher, priorisieren bessere Chancen schneller und handeln mit mehr Kontext.
-            </p>
-            <div data-reveal className="motion-reveal mt-10 flex flex-col items-center gap-4 [transition-delay:80ms]">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative z-10 mx-auto grid max-w-7xl gap-10 px-4 py-20 sm:px-6 sm:py-28 lg:grid-cols-[1.02fr_0.98fr] lg:px-8 xl:max-w-[88rem] xl:py-32">
+            <div className="flex flex-col justify-center">
+              <div data-reveal className="motion-reveal mb-5 inline-flex w-fit items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-[11px] font-medium uppercase tracking-[0.28em] text-white/70 backdrop-blur">
+                <Lock className="h-3.5 w-3.5 text-[#d2b77a]" />
+                Invite Only · München · Kuratiert
+              </div>
+              <h1 data-reveal className="motion-reveal max-w-5xl text-4xl font-semibold leading-tight tracking-[-0.05em] text-white sm:text-5xl lg:text-6xl xl:text-7xl">
+                Du siehst Münchner Immobilien-Deals — bevor andere überhaupt suchen.
+              </h1>
+              <p data-reveal className="motion-reveal mt-6 max-w-3xl text-lg leading-relaxed text-white/60 sm:text-xl">
+                DealFinder bündelt alle Marktquellen, diskrete Off-market Signale und priorisierte Kaufobjekte in einer einzigen Oberfläche. Für Käufer, die früher entscheiden als der Markt.
+              </p>
+              <div data-reveal className="motion-reveal mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
                 <a
-                  href="#contact-sales"
-                  className="inline-flex min-h-12 items-center justify-center rounded-[1.35rem] bg-white px-8 py-4 text-base font-semibold text-slate-950 shadow-[0_24px_70px_rgba(15,23,42,0.24)] transition hover:-translate-y-0.5 hover:bg-slate-50"
+                  href="#zugang"
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[1.35rem] bg-[#d2b77a] px-8 py-4 text-base font-semibold text-[#17181c] shadow-[0_24px_70px_rgba(0,0,0,0.3)] transition hover:-translate-y-0.5 hover:bg-[#dcc38d]"
                 >
                   Zugang anfragen
+                  <ArrowRight className="h-4 w-4" />
                 </a>
                 <a
-                  href="#product-preview"
-                  className="inline-flex min-h-12 items-center justify-center rounded-[1.35rem] border border-white/30 bg-white/10 px-8 py-4 text-base font-semibold text-white backdrop-blur transition hover:bg-white/15"
+                  href="#preview"
+                  className="inline-flex min-h-12 items-center justify-center rounded-[1.35rem] border border-white/12 bg-white/[0.03] px-8 py-4 text-base font-semibold text-white backdrop-blur transition hover:bg-white/[0.06]"
                 >
-                  Produkt ansehen
+                  Dashboard ansehen
                 </a>
               </div>
-              <p className="text-sm text-white/70">Exklusiver Zugang zur Plattform für ausgewählte Nutzer.</p>
-              <div className="inline-flex rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs uppercase tracking-[0.22em] text-white/70 backdrop-blur-xl">Private Access · Curated Pipeline · Premium Signals</div>
-              <div className="grid w-full max-w-3xl gap-3 pt-3 sm:grid-cols-3">
-                <div className="rounded-3xl border border-white/20 bg-white/10 px-4 py-4 text-left text-white/90 backdrop-blur-xl">
-                  <div className="text-2xl font-semibold">24/7</div>
-                  <div className="mt-1 text-sm text-white/70">laufende Marktbeobachtung</div>
+              <div data-reveal className="motion-reveal mt-8 flex flex-col items-center gap-3 text-sm text-white/52 sm:flex-row sm:flex-wrap sm:justify-start">
+                {['Nur München', 'Manuell kuratiert', 'Invite Only', 'Kein Newsletter'].map((item) => (
+                  <span key={item} className="inline-flex min-w-[220px] justify-center rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-center sm:min-w-0">{item}</span>
+                ))}
+              </div>
+            </div>
+
+            <div id="preview" data-reveal className="motion-reveal flex items-center justify-center lg:justify-end">
+              <div className="w-full max-w-2xl">
+                <div className="mb-4 flex items-center justify-between px-1">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.28em] text-white/35">Tool preview</p>
+                    <h2 className="mt-2 text-2xl font-semibold tracking-tight text-white">Alle Deals. Ein Workspace.</h2>
+                  </div>
+                  <div className="rounded-2xl border border-[#d2b77a]/25 bg-[#d2b77a]/10 px-3 py-2 text-xs font-medium uppercase tracking-[0.2em] text-[#e7d2a4]">Live Preview</div>
                 </div>
-                <div className="rounded-3xl border border-white/20 bg-white/10 px-4 py-4 text-left text-white/90 backdrop-blur-xl">
-                  <div className="text-2xl font-semibold">1 View</div>
-                  <div className="mt-1 text-sm text-white/70">alle Portale in einer Oberfläche</div>
-                </div>
-                <div className="rounded-3xl border border-white/20 bg-white/10 px-4 py-4 text-left text-white/90 backdrop-blur-xl">
-                  <div className="text-2xl font-semibold">Top Deals</div>
-                  <div className="mt-1 text-sm text-white/70">automatisch priorisiert</div>
-                </div>
+                <PremiumProductMockup />
               </div>
             </div>
           </div>
         </section>
 
-        <section id="product-preview" className="bg-[linear-gradient(180deg,#eef2ff_0%,#ffffff_100%)] py-16 lg:py-24">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 xl:max-w-[88rem]">
-            <div className="mb-10 grid gap-8 xl:grid-cols-[0.9fr_1.1fr] xl:items-end">
-              <div className="max-w-3xl">
-                <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-700">Produktvorschau</p>
-                <h2 className="mt-3 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl xl:text-5xl">Ein Workspace für Marktüberblick, Deal-Erkennung und schnelle Entscheidungen</h2>
-                <p className="mt-4 text-lg leading-relaxed text-slate-600 xl:max-w-2xl">Statt dutzende Quellen manuell zu prüfen, bündelt DealFinder Listings, Preisverläufe, Investment-Signale und Off-Market-Hinweise in einer Oberfläche.</p>
-              </div>
-              <div className="desktop-luxury-hover rounded-[2rem] border border-white/80 bg-white/70 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl">
-                <div className="grid gap-4 sm:grid-cols-3">
-                  <div><div className="text-xs uppercase tracking-[0.2em] text-slate-400">Coverage</div><div className="mt-2 text-3xl font-semibold text-slate-950">Multi-Source</div></div>
-                  <div><div className="text-xs uppercase tracking-[0.2em] text-slate-400">Decision Layer</div><div className="mt-2 text-3xl font-semibold text-slate-950">Deal + Investment</div></div>
-                  <div><div className="text-xs uppercase tracking-[0.2em] text-slate-400">Workflow</div><div className="mt-2 text-3xl font-semibold text-slate-950">Search to Action</div></div>
-                </div>
-              </div>
+        <section className="border-t border-white/8 bg-[#0c1015] py-20 lg:py-24">
+          <div className="mx-auto grid max-w-6xl gap-10 px-4 sm:px-6 lg:grid-cols-[0.95fr_1.05fr] lg:px-8">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#d2b77a]">Das Problem</p>
+              <h2 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">Warum Portalsuche in München nicht mehr reicht.</h2>
             </div>
-            <PremiumProductMockup />
+            <div className="text-lg leading-relaxed text-white/62">
+              <p>
+                ImmoScout. Immowelt. Kleinanzeigen. Maklernewsletter. Wer aktiv kauft, jongliert täglich zehn Tabs, verpasst Listings in den ersten Stunden und sieht Off-market Objekte — wenn überhaupt — zu spät.
+              </p>
+              <p className="mt-5 text-white/78">
+                DealFinder löst genau das: eine Oberfläche, alle Quellen, klare Priorität.
+              </p>
+            </div>
           </div>
         </section>
 
-        <section className="bg-white py-14 lg:py-18">
+        <section id="features" className="border-t border-white/8 bg-[#0e1218] py-20 lg:py-28">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <TrustStrip />
-          </div>
-        </section>
-
-        <section id="features" className="bg-white py-20 lg:py-32">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <h2 data-reveal className="motion-reveal mx-auto max-w-2xl text-center text-3xl font-bold text-slate-950 sm:text-4xl">
-              Der schnellste Weg zu besseren Immobilien-Deals
-            </h2>
-            <div className="mt-16 grid gap-8 md:grid-cols-3">
+            <div className="mb-10 max-w-2xl">
+              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#d2b77a]">Features</p>
+              <h2 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">Off-market und alle Deals. Schneller priorisiert.</h2>
+            </div>
+            <div className="grid gap-6 md:grid-cols-3">
               {features.map((feature) => (
                 <div
                   key={feature.title}
-                  className="motion-reveal rounded-[2rem] border border-white/70 bg-white/85 p-8 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:border-emerald-200"
                   data-reveal
+                  className="motion-reveal rounded-[2rem] border border-white/10 bg-white/[0.04] p-8 shadow-[0_24px_80px_rgba(0,0,0,0.22)] backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:border-[#d2b77a]/30"
                 >
-                  <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-700/10 text-emerald-700">
+                  <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[#d2b77a]/12 text-[#d2b77a]">
                     <feature.icon className="h-6 w-6" />
                   </div>
-                  <h3 className="mb-3 text-xl font-semibold text-slate-950">{feature.title}</h3>
-                  <p className="leading-relaxed text-slate-500">{feature.text}</p>
+                  <h3 className="mb-3 text-xl font-semibold text-white">{feature.title}</h3>
+                  <p className="leading-relaxed text-white/58">{feature.text}</p>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        <section className="bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] py-20 lg:py-28">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 xl:max-w-[88rem]">
-            <div className="grid gap-6 lg:grid-cols-3 xl:hidden">
-              {storySteps.map((step) => (
-                <div key={step.eyebrow} data-reveal className="motion-reveal rounded-[2rem] border border-white/80 bg-white/90 p-7 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl">
-                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-700">{step.eyebrow}</p>
-                  <h3 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">{step.title}</h3>
-                  <p className="mt-3 leading-relaxed text-slate-600">{step.text}</p>
+        <section id="reviews" className="border-t border-white/8 bg-[#111722] py-20 lg:py-28">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+            <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div className="max-w-2xl">
+                <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#d2b77a]">Stimmen</p>
+                <h2 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">Was Mitglieder sagen.</h2>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-white/70 transition hover:bg-white/[0.06]"
+                  onClick={() => setReviewIndex((v) => (v - 1 + reviews.length) % reviews.length)}
+                  aria-label="Vorherige Stimme"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-white/70 transition hover:bg-white/[0.06]"
+                  onClick={() => setReviewIndex((v) => (v + 1) % reviews.length)}
+                  aria-label="Nächste Stimme"
+                >
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-8 shadow-[0_24px_80px_rgba(0,0,0,0.22)] backdrop-blur-xl">
+              <div className="flex items-start gap-5">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-[#d2b77a]/25 bg-[#d2b77a]/10 text-sm font-semibold text-[#f3e7c4]">
+                  {activeReview.initials}
                 </div>
-              ))}
-            </div>
-            <DesktopStoryPanel />
-          </div>
-        </section>
-
-        <section id="vorteile" className="bg-[linear-gradient(180deg,#f8fafc_0%,#ffffff_100%)] py-20 lg:py-32">
-          <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-            <h2 className="text-center text-3xl font-bold text-slate-950 sm:text-4xl">
-              Mehr Deals. Weniger Konkurrenz.
-            </h2>
-            <p className="mt-6 text-center text-lg leading-relaxed text-slate-500">
-              Anstatt dutzende Immobilienportale manuell zu durchsuchen, erhalten Nutzer alle Angebote gebündelt auf einer Plattform. Das spart Zeit und verschafft einen entscheidenden Informationsvorsprung.
-            </p>
-            <ul className="mt-12 space-y-5">
-              {benefits.map((benefit) => (
-                <li key={benefit} className="flex items-center gap-4">
-                  <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-emerald-700/10">
-                    <Check className="h-4 w-4 text-emerald-700" />
-                  </span>
-                  <span className="font-medium text-slate-900">{benefit}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
-
-        <section className="bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] py-20 lg:py-28">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="mb-8 max-w-3xl">
-              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-700">Use Cases</p>
-              <h2 className="mt-3 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">Für Teams und Entscheider, die nicht auf Portale warten wollen</h2>
-            </div>
-            <UseCasesGrid />
-          </div>
-        </section>
-
-        <section id="zugang" className="bg-white py-20 lg:py-32">
-          <div className="mx-auto max-w-2xl px-4 text-center sm:px-6 lg:px-8">
-            <h2 className="text-3xl font-bold text-slate-950 sm:text-4xl">
-              Erhalten Sie Zugang zur Plattform
-            </h2>
-            <p className="mt-6 text-lg text-slate-500">
-              Unsere Software ist aktuell nur für ausgewählte Nutzer verfügbar.
-            </p>
-            <div className="mt-10">
-              <a
-                href="#contact-sales"
-                className="inline-flex min-h-12 items-center justify-center rounded-[1.35rem] bg-slate-950 px-8 py-4 text-base font-semibold text-white shadow-[0_24px_70px_rgba(15,23,42,0.16)] transition hover:bg-slate-800"
-              >
-                Contact Sales for Access
-              </a>
-            </div>
-          </div>
-        </section>
-
-        <section id="contact-sales" className="bg-[linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)] py-20 lg:py-32">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 xl:max-w-[88rem]">
-            <div className="grid gap-10 lg:grid-cols-[0.92fr_1.08fr] lg:items-start xl:gap-14">
-              <div className="space-y-6">
-                <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-700">Concierge Access</p>
-                <h2 className="text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">Zugang anfragen oder Demo vereinbaren</h2>
-                <p className="text-lg leading-relaxed text-slate-600">Beschreibe kurz deinen Anwendungsfall. Wir melden uns mit den passenden nächsten Schritten, Demo-Möglichkeiten oder einem qualifizierten Zugang.</p>
-                <div className="grid gap-4">
-                  <div className="rounded-[1.6rem] border border-white/80 bg-white/90 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-xl">
-                    <div className="text-sm font-semibold text-slate-950">Was du idealerweise mitschickst</div>
-                    <ul className="mt-3 space-y-3 text-sm text-slate-700">
-                      <li>• Investor, Makler oder Suchender</li>
-                      <li>• gewünschter Einsatzbereich</li>
-                      <li>• Zielregion oder Deal-Fokus</li>
-                    </ul>
-                  </div>
-                  <div className="rounded-[1.6rem] border border-slate-900 bg-slate-950 p-5 text-white shadow-[0_20px_60px_rgba(15,23,42,0.16)]">
-                    <div className="text-xs uppercase tracking-[0.2em] text-white/60">Response Flow</div>
-                    <div className="mt-3 space-y-2 text-sm text-white/85">
-                      <p>1. Anfrage prüfen</p>
-                      <p>2. Use Case qualifizieren</p>
-                      <p>3. Zugang oder Demo abstimmen</p>
+                <div className="flex-1">
+                  <p className="text-xl leading-relaxed text-white/82 sm:text-2xl">“{activeReview.quote}”</p>
+                  <div className="mt-8 flex items-center justify-between gap-4 border-t border-white/10 pt-6">
+                    <div>
+                      <div className="text-base font-semibold text-white">{activeReview.name}</div>
+                      <div className="mt-1 text-sm text-white/45">{activeReview.role}</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {reviews.map((_, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setReviewIndex(idx)}
+                          className={`h-2.5 rounded-full transition ${idx === reviewIndex ? 'w-8 bg-[#d2b77a]' : 'w-2.5 bg-white/20'}`}
+                          aria-label={`Stimme ${idx + 1}`}
+                        />
+                      ))}
                     </div>
                   </div>
                 </div>
               </div>
-              <ContactSalesForm />
             </div>
+          </div>
+        </section>
+
+        <section id="positioning" className="border-t border-white/8 bg-[#0f1319] py-20 lg:py-28">
+          <div className="mx-auto grid max-w-7xl gap-8 px-4 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#d2b77a]">Positioning</p>
+              <h2 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">Nicht für alle. Bewusst.</h2>
+              <p className="mt-4 max-w-xl text-lg leading-relaxed text-white/60">
+                DealFinder ist kein Portal für gelegentliche Suche. Es ist ein Intelligence-Tool für Käufer, die München ernsthaft beobachten — und den Informationsvorsprung als Kaufvorteil nutzen.
+              </p>
+            </div>
+            <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-8 shadow-[0_24px_80px_rgba(0,0,0,0.22)] backdrop-blur-xl">
+              <ul className="space-y-4">
+                {proofPoints.map((point) => (
+                  <li key={point} className="flex items-center gap-4 text-white/72">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#d2b77a]/12 text-[#d2b77a]">
+                      <Check className="h-4 w-4" />
+                    </span>
+                    <span className="text-base">{point}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section id="faq" className="border-t border-white/8 bg-[#10141b] py-20 lg:py-28">
+          <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+            <div className="mb-10 max-w-2xl">
+              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#d2b77a]">FAQ</p>
+              <h2 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">Häufige Fragen zur Plattform</h2>
+            </div>
+            <div className="space-y-4">
+              {faqs.map((item, idx) => {
+                const active = openFaq === idx;
+                return (
+                  <div key={item.q} className="rounded-[1.6rem] border border-white/10 bg-white/[0.04] backdrop-blur-xl">
+                    <button
+                      type="button"
+                      onClick={() => setOpenFaq(active ? -1 : idx)}
+                      className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left"
+                    >
+                      <span className="text-base font-semibold text-white">{item.q}</span>
+                      <ChevronDown className={`h-5 w-5 shrink-0 text-white/50 transition ${active ? 'rotate-180' : 'rotate-0'}`} />
+                    </button>
+                    {active ? <div className="px-6 pb-6 text-sm leading-relaxed text-white/60">{item.a}</div> : null}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        <section id="zugang" className="border-t border-white/8 bg-[#0d1016] py-20 lg:py-28">
+          <div className="mx-auto grid max-w-6xl gap-10 px-4 sm:px-6 lg:grid-cols-[0.88fr_1.12fr] lg:px-8 xl:max-w-[88rem]">
+            <div className="space-y-6">
+              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#d2b77a]">Zugang</p>
+              <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">Zugang anfragen.</h2>
+              <p className="text-lg leading-relaxed text-white/60">
+                Wir vergeben Zugang manuell — nach kurzem Review. Keine endlose Warteliste. Kein öffentlicher Self-signup. Wenn es passt, melden wir uns innerhalb von 48 Stunden.
+              </p>
+            </div>
+            <ContactSalesForm />
           </div>
         </section>
       </main>
 
-      <footer className="border-t border-slate-200 bg-slate-50 py-12">
+      <footer className="border-t border-white/8 bg-[#090b0f] py-12">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 px-4 sm:px-6 md:flex-row lg:px-8">
-          <p className="text-sm text-slate-500">© {new Date().getFullYear()} DealFinder. Alle Rechte vorbehalten.</p>
-          <nav className="flex items-center gap-6 text-sm text-slate-500">
-            <Link href="/contact" className="transition hover:text-slate-950">Kontakt</Link>
-            <Link href="/impressum" className="transition hover:text-slate-950">Impressum</Link>
-            <Link href="/privacy" className="transition hover:text-slate-950">Datenschutz</Link>
+          <p className="text-sm text-white/38">© {new Date().getFullYear()} DealFinder. Alle Rechte vorbehalten.</p>
+          <nav className="flex items-center gap-6 text-sm text-white/45">
+            <Link href="/contact" className="transition hover:text-white">Kontakt</Link>
+            <Link href="/impressum" className="transition hover:text-white">Impressum</Link>
+            <Link href="/privacy" className="transition hover:text-white">Datenschutz</Link>
           </nav>
         </div>
       </footer>
