@@ -21,7 +21,7 @@ export default function PriceDropsPage() {
         listings.slice(0, 60).map(async (l) => {
           if (!l.id) return l as DropRow;
           try {
-            const sRes = await fetch(`${API_URL}/api/listings/${l.id}/snapshots?limit=5`, { cache: "no-store", headers: authHeaders() });
+            const sRes = await fetch(`${API_URL}/api/listings/${l.id}/snapshots?limit=5`, { cache: "no-store" });
             const snaps = await sRes.json();
             const prev = Array.isArray(snaps) && snaps.length > 1 ? snaps[1]?.price_eur : null;
             const now = l.price_eur ?? null;

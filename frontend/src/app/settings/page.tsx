@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { API_URL, authHeaders } from "@/lib/api";
+import { API_URL } from "@/lib/api";
 import { StateCard } from "@/components/state-card";
 
 type Rule = { id: number; name: string; enabled: boolean };
@@ -45,8 +45,8 @@ export default function SettingsPage() {
     setError(null);
     try {
       const [rr, wr] = await Promise.all([
-        fetch(`${API_URL}/api/alert-rules`, { cache: "no-store", headers: authHeaders() }),
-        fetch(`${API_URL}/api/watchlist`, { cache: "no-store", headers: authHeaders() }),
+        fetch(`${API_URL}/api/alert-rules`, { cache: "no-store" }),
+        fetch(`${API_URL}/api/watchlist`, { cache: "no-store" }),
       ]);
       if (!rr.ok || !wr.ok) throw new Error("settings_load_failed");
       setRules(await rr.json());
@@ -120,24 +120,24 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {notice ? <p className="rounded-2xl border px-3 py-2 text-sm text-muted-foreground dark:border-amber-400/16 dark:bg-amber-400/10 dark:text-amber-100">{notice}</p> : null}
+      {notice ? <p className="rounded-2xl border px-3 py-2 text-sm text-muted-foreground">{notice}</p> : null}
       {error ? <StateCard title="Settings unvollständig geladen" body={error} tone="error" /> : null}
 
-      <div className="rounded-3xl border p-4 text-sm space-y-4 dark:border-amber-400/16 dark:bg-[linear-gradient(180deg,rgba(34,27,14,0.84),rgba(10,12,16,0.98))] dark:shadow-[0_18px_50px_rgba(0,0,0,0.24)]">
+      <div className="rounded-3xl border p-4 text-sm space-y-4">
         <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
           <div>
             <p className="font-medium">Thresholds (nur UI)</p>
             <p className="text-xs text-muted-foreground">Diese Werte werden nur lokal im Browser gespeichert und ändern keine Backend-Logik.</p>
           </div>
           <div className="flex gap-2">
-            <button className="rounded-xl border px-3 py-2 text-sm dark:border-amber-400/16 dark:bg-white/[0.04] dark:text-amber-50" onClick={resetPrefs}>Zurücksetzen</button>
-            <button className="rounded-xl border bg-primary px-3 py-2 text-sm text-primary-foreground dark:border-amber-300/30 dark:bg-amber-300 dark:text-[#1a1408]" onClick={savePrefs}>Speichern</button>
+            <button className="rounded-xl border px-3 py-2 text-sm" onClick={resetPrefs}>Zurücksetzen</button>
+            <button className="rounded-xl border bg-primary px-3 py-2 text-sm text-primary-foreground" onClick={savePrefs}>Speichern</button>
           </div>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <label className="block rounded-2xl border p-3 dark:border-amber-400/16 dark:bg-white/[0.04]">
-            <span className="mb-1 block text-xs uppercase tracking-wide text-muted-foreground dark:text-amber-100/62">Brand new</span>
+          <label className="block rounded-2xl border p-3">
+            <span className="mb-1 block text-xs uppercase tracking-wide text-muted-foreground">Brand new</span>
             <div className="mb-2 flex items-center justify-between text-sm font-medium">
               <span>Neue Listings</span>
               <span>{brandNewHours}h</span>
@@ -145,8 +145,8 @@ export default function SettingsPage() {
             <input className="w-full" type="range" min={1} max={24} value={brandNewHours} onChange={(e) => setBrandNewHours(Number(e.target.value))} />
           </label>
 
-          <label className="block rounded-2xl border p-3 dark:border-amber-400/16 dark:bg-white/[0.04]">
-            <span className="mb-1 block text-xs uppercase tracking-wide text-muted-foreground dark:text-amber-100/62">Just listed</span>
+          <label className="block rounded-2xl border p-3">
+            <span className="mb-1 block text-xs uppercase tracking-wide text-muted-foreground">Just listed</span>
             <div className="mb-2 flex items-center justify-between text-sm font-medium">
               <span>Frisch gelistet</span>
               <span>{justListedHours}h</span>
@@ -154,8 +154,8 @@ export default function SettingsPage() {
             <input className="w-full" type="range" min={1} max={12} value={justListedHours} onChange={(e) => setJustListedHours(Number(e.target.value))} />
           </label>
 
-          <label className="block rounded-2xl border p-3 dark:border-amber-400/16 dark:bg-white/[0.04]">
-            <span className="mb-1 block text-xs uppercase tracking-wide text-muted-foreground dark:text-amber-100/62">Price drop</span>
+          <label className="block rounded-2xl border p-3">
+            <span className="mb-1 block text-xs uppercase tracking-wide text-muted-foreground">Price drop</span>
             <div className="mb-2 flex items-center justify-between text-sm font-medium">
               <span>Preisnachlass</span>
               <span>{priceDrop}%</span>
@@ -163,10 +163,10 @@ export default function SettingsPage() {
             <input className="w-full" type="range" min={1} max={20} value={priceDrop} onChange={(e) => setPriceDrop(Number(e.target.value))} />
           </label>
 
-          <label className="flex rounded-2xl border p-3 dark:border-amber-400/16 dark:bg-white/[0.04]">
+          <label className="flex rounded-2xl border p-3">
             <span className="flex flex-1 flex-col justify-between gap-3">
               <span>
-                <span className="mb-1 block text-xs uppercase tracking-wide text-muted-foreground dark:text-amber-100/62">AI modifier</span>
+                <span className="mb-1 block text-xs uppercase tracking-wide text-muted-foreground">AI modifier</span>
                 <span className="block text-sm font-medium">AI Deal Analyzer berücksichtigen</span>
               </span>
               <span className="inline-flex items-center gap-2 text-sm">
@@ -178,7 +178,7 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <div className="rounded-3xl border p-4 dark:border-amber-400/16 dark:bg-[linear-gradient(180deg,rgba(34,27,14,0.84),rgba(10,12,16,0.98))] dark:shadow-[0_18px_50px_rgba(0,0,0,0.24)]">
+      <div className="rounded-3xl border p-4">
         <div className="mb-3 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
           <div>
             <p className="text-sm font-medium">Alert Rule Builder</p>
@@ -187,15 +187,15 @@ export default function SettingsPage() {
           <span className="text-xs text-muted-foreground">{rules.length} aktive/gespeicherte Regeln</span>
         </div>
         <div className="flex flex-col gap-2 md:flex-row">
-          <input className="w-full rounded-xl border px-3 py-2 text-sm dark:border-amber-400/16 dark:bg-white/[0.04] dark:text-amber-50" value={name} onChange={(e) => setName(e.target.value)} placeholder="z. B. Schwabing unter 11.000 €/m²" onKeyDown={(e) => { if (e.key === "Enter") void createRule(); }} />
-          <button className="rounded-xl border px-3 py-2 text-sm dark:border-amber-400/16 dark:bg-white/[0.04] dark:text-amber-50" onClick={createRule}>Create</button>
+          <input className="w-full rounded-xl border px-3 py-2 text-sm" value={name} onChange={(e) => setName(e.target.value)} placeholder="z. B. Schwabing unter 11.000 €/m²" onKeyDown={(e) => { if (e.key === "Enter") void createRule(); }} />
+          <button className="rounded-xl border px-3 py-2 text-sm" onClick={createRule}>Create</button>
         </div>
         <div className="mt-3 space-y-2 text-sm">
           {rules.length === 0 ? (
             <StateCard title="Noch keine Regeln" body="Lege eine erste Alert-Regel an, damit interessante Konstellationen später schneller auffallen." tone="muted" />
           ) : (
             rules.map((r) => (
-              <div key={r.id} className="flex items-center justify-between rounded-2xl border px-3 py-2 dark:border-amber-400/16 dark:bg-white/[0.04]">
+              <div key={r.id} className="flex items-center justify-between rounded-2xl border px-3 py-2">
                 <span className="font-medium">{r.name}</span>
                 <span className="text-xs text-muted-foreground">{r.enabled ? "aktiv" : "inaktiv"}</span>
               </div>
@@ -204,13 +204,13 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <div className="rounded-3xl border p-4 dark:border-amber-400/16 dark:bg-[linear-gradient(180deg,rgba(34,27,14,0.84),rgba(10,12,16,0.98))] dark:shadow-[0_18px_50px_rgba(0,0,0,0.24)]">
+      <div className="rounded-3xl border p-4">
         <div className="mb-3 flex items-end justify-between gap-3">
           <div>
             <p className="text-sm font-medium">Watchlist</p>
             <p className="text-xs text-muted-foreground">Gespeicherte Immobilien mit schnellem Absprung zur Quelle.</p>
           </div>
-          <button className="rounded-xl border px-3 py-2 text-xs dark:border-amber-400/16 dark:bg-white/[0.04] dark:text-amber-50" onClick={() => void load()}>Neu laden</button>
+          <button className="rounded-xl border px-3 py-2 text-xs" onClick={() => void load()}>Neu laden</button>
         </div>
         {loading ? (
           <StateCard title="Watchlist wird geladen" body="Die gespeicherten Immobilien werden gerade vorbereitet." tone="muted" />
@@ -219,7 +219,7 @@ export default function SettingsPage() {
         ) : (
           <div className="space-y-2 text-sm">
             {watchlist.map((w) => (
-              <a key={w.id} href={w.listing.url} target="_blank" rel="noreferrer" className="block rounded-2xl border p-3 hover:bg-muted/40 dark:border-amber-400/16 dark:bg-white/[0.04] dark:hover:bg-amber-300/10">
+              <a key={w.id} href={w.listing.url} target="_blank" rel="noreferrer" className="block rounded-2xl border p-3 hover:bg-muted/40">
                 <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
                   <span className="font-medium">{w.listing.title || "Ohne Titel"}</span>
                   <span className="text-xs text-muted-foreground">Score {Math.round(w.listing.deal_score || 0)}</span>
