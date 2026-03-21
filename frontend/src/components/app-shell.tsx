@@ -68,18 +68,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const applyTheme = () => {
-      const forced = window.localStorage.getItem(THEME_KEY);
-      const nextDark = forced ? forced === "dark" : window.innerWidth < 768;
-      setDark(nextDark);
-      document.documentElement.classList.toggle("dark", nextDark);
-    };
-
-    applyTheme();
-    window.addEventListener("resize", applyTheme);
-    return () => window.removeEventListener("resize", applyTheme);
+    const stored = typeof window !== "undefined" ? window.localStorage.getItem(THEME_KEY) : null;
+    const nextDark = stored === "dark";
+    setDark(nextDark);
+    document.documentElement.classList.toggle("dark", nextDark);
   }, []);
 
   const toggleTheme = () => {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ArrowRight, Lock } from "lucide-react";
 
 export function ContactSalesForm({ compact = false }: { compact?: boolean }) {
   const [name, setName] = useState("");
@@ -40,26 +41,69 @@ export function ContactSalesForm({ compact = false }: { compact?: boolean }) {
   };
 
   return (
-    <form onSubmit={submit} className={`space-y-4 ${compact ? "" : "rounded-[2rem] border border-white/80 bg-white/92 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:p-8"}`}>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <label className="block text-sm font-medium text-slate-700">Name
-          <input required className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10" value={name} onChange={(e) => setName(e.target.value)} />
-        </label>
-        <label className="block text-sm font-medium text-slate-700">E-Mail
-          <input required type="email" className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10" value={email} onChange={(e) => setEmail(e.target.value)} />
-        </label>
+    <form
+      onSubmit={submit}
+      className={`space-y-5 ${compact ? "" : "rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.03)_100%)] p-6 shadow-[0_28px_90px_rgba(0,0,0,0.28)] backdrop-blur-xl sm:p-8"}`}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-white/55">
+            <Lock className="h-3.5 w-3.5 text-[#d2b77a]" />
+            Concierge Review
+          </div>
+          <h3 className="mt-4 text-2xl font-semibold tracking-tight text-white">Zugang anfragen</h3>
+          <p className="mt-2 text-sm leading-relaxed text-white/50">Private Onboarding für Käufer, Investoren und Teams mit Fokus auf München.</p>
+        </div>
       </div>
-      <label className="block text-sm font-medium text-slate-700">Firma / Kontext
-        <input className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10" value={company} onChange={(e) => setCompany(e.target.value)} />
+
+      <label className="block text-sm font-medium text-white/70">Name
+        <input
+          required
+          className="mt-2 w-full rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-white outline-none transition placeholder:text-white/20 focus:border-[#d2b77a]/45 focus:ring-4 focus:ring-[#d2b77a]/10"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Name"
+        />
       </label>
-      <label className="block text-sm font-medium text-slate-700">Nachricht
-        <textarea required rows={5} className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10" value={message} onChange={(e) => setMessage(e.target.value)} />
+      <label className="block text-sm font-medium text-white/70">E-Mail
+        <input
+          required
+          type="email"
+          className="mt-2 w-full rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-white outline-none transition placeholder:text-white/20 focus:border-[#d2b77a]/45 focus:ring-4 focus:ring-[#d2b77a]/10"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="E-Mail"
+        />
       </label>
-      {notice ? <p className="text-sm text-emerald-700">{notice}</p> : null}
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      <label className="block text-sm font-medium text-white/70">Kontext
+        <input
+          className="mt-2 w-full rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-white outline-none transition placeholder:text-white/20 focus:border-[#d2b77a]/45 focus:ring-4 focus:ring-[#d2b77a]/10"
+          value={company}
+          onChange={(e) => setCompany(e.target.value)}
+          placeholder="Privatinvestor, Family Office, Makler …"
+        />
+      </label>
+      <label className="block text-sm font-medium text-white/70">Kurze Nachricht (optional)
+        <textarea
+          rows={4}
+          className="mt-2 w-full rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-white outline-none transition placeholder:text-white/20 focus:border-[#d2b77a]/45 focus:ring-4 focus:ring-[#d2b77a]/10"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          placeholder="Optional: Suchprofil, Markt oder Zielobjekte kurz beschreiben."
+        />
+      </label>
+      {notice ? <p className="text-sm text-[#e7d2a4]">{notice}</p> : null}
+      {error ? <p className="text-sm text-red-400">{error}</p> : null}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <button type="submit" disabled={loading} className="rounded-2xl bg-slate-950 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60">{loading ? "Wird gesendet…" : "Anfrage senden"}</button>
-        <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Concierge review · qualifizierter Zugang</p>
+        <button
+          type="submit"
+          disabled={loading}
+          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#d2b77a] px-6 py-3 text-sm font-semibold text-[#17181c] transition hover:bg-[#dcc38d] disabled:opacity-60"
+        >
+          {loading ? "Wird gesendet…" : "Zugang anfragen →"}
+          {!loading ? <ArrowRight className="h-4 w-4" /> : null}
+        </button>
+        <p className="text-xs uppercase tracking-[0.18em] text-white/32">Concierge Review · Private Onboarding · Kein Spam</p>
       </div>
     </form>
   );

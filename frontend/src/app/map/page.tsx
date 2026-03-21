@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import type { ComponentType } from "react";
 import { API_URL, parseBadges } from "@/lib/api";
+import { StateCard } from "@/components/state-card";
 
 type DistrictMetric = {
   district: string;
@@ -35,24 +36,35 @@ type MarkerRow = {
   longitude?: number;
 };
 
-const munichCenter: [number, number] = [48.137154, 11.576124];
-
-type MapComponentProps = Record<string, unknown>;
-type GeoJsonFeatureLike = { properties?: { name?: string } };
-type GeoJsonLike = { type: string; features?: GeoJsonFeatureLike[] };
-type InteractiveLayer = {
-  bindTooltip: (content: string) => void;
-  bindPopup: (content: string) => void;
-  on: (event: string, handler: () => void) => void;
+type GeoJsonFeature = {
+  properties?: { name?: string };
 };
 
-const LMapContainer = dynamic(() => import("react-leaflet").then((m) => m.MapContainer), { ssr: false }) as unknown as ComponentType<MapComponentProps>;
-const LTileLayer = dynamic(() => import("react-leaflet").then((m) => m.TileLayer), { ssr: false }) as unknown as ComponentType<MapComponentProps>;
-const LGeoJSON = dynamic(() => import("react-leaflet").then((m) => m.GeoJSON), { ssr: false }) as unknown as ComponentType<MapComponentProps>;
-const LCircleMarker = dynamic(() => import("react-leaflet").then((m) => m.CircleMarker), { ssr: false }) as unknown as ComponentType<MapComponentProps>;
-const LPopup = dynamic(() => import("react-leaflet").then((m) => m.Popup), { ssr: false }) as unknown as ComponentType<MapComponentProps>;
+type GeoJsonLike = {
+  type: string;
+  features?: GeoJsonFeature[];
+};
 
-function colorForMode(mode: string, m?: DistrictMetric) {
+type LeafletLayer = {
+  bindTooltip: (text: string) => void;
+  bindPopup: (html: string) => void;
+  on: (eventName: string, handler: () => void) => void;
+};
+
+const munichCenter: [number, number] = [48.137154, 11.576124];
+
+type LeafletComponentProps = Record<string, unknown>;
+
+type ViewMode = "district" | "markers";
+type MetricMode = "deal_density" | "median_price" | "new_density" | "off_market" | "price_drop" | "yield";
+
+const LMapContainer = dynamic(() => import("react-leaflet").then((m) => m.MapContainer), { ssr: false }) as unknown as ComponentType<LeafletComponentProps>;
+const LTileLayer = dynamic(() => import("react-leaflet").then((m) => m.TileLayer), { ssr: false }) as unknown as ComponentType<LeafletComponentProps>;
+const LGeoJSON = dynamic(() => import("react-leaflet").then((m) => m.GeoJSON), { ssr: false }) as unknown as ComponentType<LeafletComponentProps>;
+const LCircleMarker = dynamic(() => import("react-leaflet").then((m) => m.CircleMarker), { ssr: false }) as unknown as ComponentType<LeafletComponentProps>;
+const LPopup = dynamic(() => import("react-leaflet").then((m) => m.Popup), { ssr: false }) as unknown as ComponentType<LeafletComponentProps>;
+
+function colorForMode(mode: MetricMode, m?: DistrictMetric) {
   if (!m) return "#9ca3af";
   if (mode === "median_price") {
     const v = m.median_price_per_sqm || 0;
@@ -84,12 +96,12 @@ function markerColor(r: MarkerRow) {
 }
 
 export default function MapPage() {
-  const [mode, setMode] = useState("deal_density");
-  const [window, setWindow] = useState("30d");
+  const [metricMode, setMetricMode] = useState<MetricMode>("deal_density");
+  const [windowRange, setWindowRange] = useState("30d");
   const [minScore, setMinScore] = useState(0);
   const [source, setSource] = useState("all");
   const [district, setDistrict] = useState("all");
-  const [view, setView] = useState<"district" | "markers">("district");
+  const [view, setView] = useState<ViewMode>("district");
   const [geojson, setGeojson] = useState<GeoJsonLike | null>(null);
   const [districtRows, setDistrictRows] = useState<DistrictMetric[]>([]);
   const [markerRows, setMarkerRows] = useState<MarkerRow[]>([]);
@@ -97,6 +109,9 @@ export default function MapPage() {
   const [selectedMarker, setSelectedMarker] = useState<MarkerRow | null>(null);
   const [selectedDistrictListings, setSelectedDistrictListings] = useState<MarkerRow[]>([]);
   const [sources, setSources] = useState<string[]>(["all"]);
+  const [loadingDistricts, setLoadingDistricts] = useState(true);
+  const [loadingMarkers, setLoadingMarkers] = useState(true);
+  const [mapError, setMapError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch(`${API_URL}/api/sources`, { cache: "no-store" })
@@ -111,49 +126,69 @@ export default function MapPage() {
   useEffect(() => {
     fetch("/data/munich_districts.geojson", { cache: "no-store" })
       .then((r) => r.json())
-      .then(setGeojson)
+      .then((data: GeoJsonLike) => setGeojson(data))
       .catch(() => setGeojson(null));
   }, []);
 
   useEffect(() => {
-    const q = new URLSearchParams({ window, min_score: String(minScore) });
+    const q = new URLSearchParams({ window: windowRange, min_score: String(minScore) });
     if (source !== "all") q.set("source", source);
     if (district !== "all") q.set("district", district);
 
+    const loadingTimer = window.setTimeout(() => {
+      setMapError(null);
+      setLoadingDistricts(true);
+      setLoadingMarkers(true);
+    }, 0);
+
     fetch(`${API_URL}/api/geo/districts?${q.toString()}`, { cache: "no-store" })
-      .then((r) => r.json())
-      .then((x) => setDistrictRows(x?.rows || []));
+      .then((r) => {
+        if (!r.ok) throw new Error("districts_failed");
+        return r.json();
+      })
+      .then((x) => setDistrictRows(x?.rows || []))
+      .catch(() => {
+        setDistrictRows([]);
+        setMapError("Kartendaten konnten nicht vollständig geladen werden.");
+      })
+      .finally(() => setLoadingDistricts(false));
 
     fetch(`${API_URL}/api/geo/listings?${q.toString()}`, { cache: "no-store" })
-      .then((r) => r.json())
-      .then((x) => setMarkerRows((x?.rows || []).filter((p: MarkerRow) => p.latitude != null && p.longitude != null)));
-  }, [window, minScore, source, district]);
+      .then((r) => {
+        if (!r.ok) throw new Error("markers_failed");
+        return r.json();
+      })
+      .then((x) => setMarkerRows((x?.rows || []).filter((p: MarkerRow) => p.latitude != null && p.longitude != null)))
+      .catch(() => {
+        setMarkerRows([]);
+        setMapError("Kartendaten konnten nicht vollständig geladen werden.");
+      })
+      .finally(() => setLoadingMarkers(false));
+
+    return () => window.clearTimeout(loadingTimer);
+  }, [windowRange, minScore, source, district]);
 
   useEffect(() => {
-    const d = selectedDistrict || (district !== "all" ? district : null);
+    const activeDistrict = selectedDistrict || (district !== "all" ? district : null);
+    if (!activeDistrict) return;
+    const q = new URLSearchParams({ window: windowRange, min_score: String(minScore), district: activeDistrict, limit: "200" });
+    if (source !== "all") q.set("source", source);
+    fetch(`${API_URL}/api/geo/listings?${q.toString()}`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((x) => setSelectedDistrictListings(x?.rows || []))
+      .catch(() => setSelectedDistrictListings([]));
+  }, [selectedDistrict, district, windowRange, minScore, source]);
 
-    const loadSelectedDistrictListings = async () => {
-      if (!d) {
-        setSelectedDistrictListings([]);
-        return;
-      }
+  useEffect(() => {
+    if (selectedDistrict || district !== "all") return;
+    const resetTimer = window.setTimeout(() => setSelectedDistrictListings([]), 0);
+    return () => window.clearTimeout(resetTimer);
+  }, [selectedDistrict, district]);
 
-      const q = new URLSearchParams({ window, min_score: String(minScore), district: d, limit: "200" });
-      if (source !== "all") q.set("source", source);
-
-      try {
-        const response = await fetch(`${API_URL}/api/geo/listings?${q.toString()}`, { cache: "no-store" });
-        const data = await response.json();
-        setSelectedDistrictListings(data?.rows || []);
-      } catch {
-        setSelectedDistrictListings([]);
-      }
-    };
-
-    void loadSelectedDistrictListings();
-  }, [selectedDistrict, district, window, minScore, source]);
-
-  const districts = useMemo(() => ["all", ...Array.from(new Set(districtRows.map((x) => x.district))).sort((a, b) => a.localeCompare(b))], [districtRows]);
+  const districts = useMemo(
+    () => ["all", ...Array.from(new Set(districtRows.map((x) => x.district))).sort((a, b) => a.localeCompare(b))],
+    [districtRows]
+  );
 
   const metricByDistrict = useMemo(() => {
     const m = new Map<string, DistrictMetric>();
@@ -169,46 +204,79 @@ export default function MapPage() {
   }, [districtRows]);
 
   const selectedDistrictMetric = selectedDistrict ? metricByDistrict.get(selectedDistrict) : null;
+  const topHotspots = useMemo(() => [...districtRows].sort((a, b) => b.hotspot_score - a.hotspot_score).slice(0, 5), [districtRows]);
+  const activeMapHeight = view === "markers" ? "clamp(420px, 68vh, 760px)" : "clamp(420px, 64vh, 720px)";
+  const showingMarkers = view === "markers";
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold tracking-tight">Kartenansicht München</h1>
+      <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Kartenansicht München</h1>
+          <p className="text-sm text-muted-foreground">Zwischen Stadtteil-Layer und konkreten Listings wechseln, ohne die Filter zu verlieren.</p>
+        </div>
+        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+          <span className="rounded-full border px-3 py-1">{districtRows.length} Stadtteile</span>
+          <span className="rounded-full border px-3 py-1">{markerRows.length} Marker</span>
+          <span className="rounded-full border px-3 py-1">{loadingDistricts || loadingMarkers ? "aktualisiert…" : windowRange}</span>
+        </div>
+      </div>
 
-      <div className="grid gap-3 rounded-xl border p-3 md:grid-cols-6 text-sm">
-        <div><label className="mb-1 block text-muted-foreground">Ansicht</label><select className="w-full rounded border bg-background px-2 py-1" value={mode} onChange={(e) => setMode(e.target.value)}><option value="median_price">Medianpreis €/m²</option><option value="deal_density">Deal-Dichte</option><option value="new_density">Neue Listings</option><option value="off_market">Off-Market-Dichte</option><option value="price_drop">Preisnachlässe</option><option value="yield">Investment-Potenzial</option><option value="markers">Marker</option></select></div>
-        <div><label className="mb-1 block text-muted-foreground">Zeitraum</label><select className="w-full rounded border bg-background px-2 py-1" value={window} onChange={(e) => setWindow(e.target.value)}><option value="24h">24h</option><option value="7d">7d</option><option value="30d">30d</option><option value="all">Gesamt</option></select></div>
-        <div><label className="mb-1 block text-muted-foreground">Mindest-Score</label><input type="number" min={0} max={100} className="w-full rounded border bg-background px-2 py-1" value={minScore} onChange={(e) => setMinScore(Number(e.target.value || 0))} /></div>
-        <div><label className="mb-1 block text-muted-foreground">Stadtteil</label><select className="w-full rounded border bg-background px-2 py-1" value={district} onChange={(e) => setDistrict(e.target.value)}>{districts.map((d) => <option key={d} value={d}>{d}</option>)}</select></div>
-        <div><label className="mb-1 block text-muted-foreground">Quelle</label><select className="w-full rounded border bg-background px-2 py-1" value={source} onChange={(e) => setSource(e.target.value)}>{sources.map((s) => <option key={s} value={s}>{s}</option>)}</select></div>
-        <div><label className="mb-1 block text-muted-foreground">Ebene</label><div className="flex gap-2"><button className={`rounded border px-2 py-1 ${view==="district"?"bg-muted":""}`} onClick={() => setView("district")}>Stadtteile</button><button className={`rounded border px-2 py-1 ${view==="markers"?"bg-muted":""}`} onClick={() => setView("markers")}>Marker</button></div></div>
-        <div className="md:col-span-6 flex justify-end"><button className="rounded border px-2 py-1 text-xs" onClick={() => { setMode("deal_density"); setWindow("30d"); setMinScore(0); setSource("all"); setDistrict("all"); setSelectedDistrict(null); setSelectedMarker(null); }}>Ansicht zurücksetzen</button></div>
+      {mapError ? <StateCard title="Karte teilweise unvollständig" body={mapError} tone="error" /> : null}
+
+      <div className="grid gap-3 rounded-3xl border p-3 text-sm md:grid-cols-6">
+        <div>
+          <label className="mb-1 block text-muted-foreground">Ebene</label>
+          <div className="flex gap-2">
+            <button className={`rounded-xl border px-3 py-2 ${view === "district" ? "bg-muted" : ""}`} onClick={() => setView("district")}>Stadtteile</button>
+            <button className={`rounded-xl border px-3 py-2 ${view === "markers" ? "bg-muted" : ""}`} onClick={() => setView("markers")}>Marker</button>
+          </div>
+        </div>
+        <div>
+          <label className="mb-1 block text-muted-foreground">Stadtteil-Metrik</label>
+          <select className="w-full rounded-xl border bg-background px-3 py-2" value={metricMode} onChange={(e) => setMetricMode(e.target.value as MetricMode)} disabled={showingMarkers}>
+            <option value="median_price">Medianpreis €/m²</option>
+            <option value="deal_density">Deal-Dichte</option>
+            <option value="new_density">Neue Listings</option>
+            <option value="off_market">Off-Market-Dichte</option>
+            <option value="price_drop">Preisnachlässe</option>
+            <option value="yield">Investment-Potenzial</option>
+          </select>
+        </div>
+        <div><label className="mb-1 block text-muted-foreground">Zeitraum</label><select className="w-full rounded-xl border bg-background px-3 py-2" value={windowRange} onChange={(e) => setWindowRange(e.target.value)}><option value="24h">24h</option><option value="7d">7d</option><option value="30d">30d</option><option value="all">Gesamt</option></select></div>
+        <div><label className="mb-1 block text-muted-foreground">Mindest-Score</label><input type="number" min={0} max={100} className="w-full rounded-xl border bg-background px-3 py-2" value={minScore} onChange={(e) => setMinScore(Number(e.target.value || 0))} /></div>
+        <div><label className="mb-1 block text-muted-foreground">Stadtteil</label><select className="w-full rounded-xl border bg-background px-3 py-2" value={district} onChange={(e) => setDistrict(e.target.value)}>{districts.map((d) => <option key={d} value={d}>{d}</option>)}</select></div>
+        <div><label className="mb-1 block text-muted-foreground">Quelle</label><select className="w-full rounded-xl border bg-background px-3 py-2" value={source} onChange={(e) => setSource(e.target.value)}>{sources.map((s) => <option key={s} value={s}>{s}</option>)}</select></div>
+        <div className="md:col-span-6 flex flex-col gap-2 md:flex-row md:items-center md:justify-between text-xs text-muted-foreground">
+          <span>{loadingDistricts || loadingMarkers ? "Daten werden aktualisiert…" : showingMarkers ? "Markeransicht aktiv" : `Stadtteil-Layer · ${metricMode.replace("_", " ")}`}</span>
+          <button className="rounded-xl border px-3 py-2 text-xs" onClick={() => { setMetricMode("deal_density"); setWindowRange("30d"); setMinScore(0); setSource("all"); setDistrict("all"); setView("district"); setSelectedDistrict(null); setSelectedMarker(null); }}>Ansicht zurücksetzen</button>
+        </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
-        <div className="rounded-xl border p-2">
-          <LMapContainer center={munichCenter} zoom={11} style={{ height: 560, width: "100%" }}>
+        <div className="rounded-3xl border p-2">
+          <LMapContainer center={munichCenter} zoom={11} style={{ height: activeMapHeight, width: "100%" }}>
             <LTileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap contributors" />
             {view === "district" && geojson ? (
               <LGeoJSON
                 data={geojson}
-                style={(feature: GeoJsonFeatureLike | undefined) => {
+                style={(feature: GeoJsonFeature) => {
                   const name = String(feature?.properties?.name || "");
                   return {
                     color: "#374151",
                     weight: 1,
                     fillOpacity: 0.45,
-                    fillColor: colorForMode(mode, metricByDistrict.get(name)),
+                    fillColor: colorForMode(metricMode, metricByDistrict.get(name)),
                   };
                 }}
-                onEachFeature={(feature: GeoJsonFeatureLike | undefined, layer: unknown) => {
+                onEachFeature={(feature: GeoJsonFeature, layer: LeafletLayer) => {
                   const name = String(feature?.properties?.name || "");
-                  const interactiveLayer = layer as InteractiveLayer;
                   const m = metricByDistrict.get(name);
-                  interactiveLayer.bindTooltip(name);
-                  interactiveLayer.bindPopup(
+                  layer.bindTooltip(name);
+                  layer.bindPopup(
                     `<strong>${name}</strong><br/>Listings: ${m?.listing_count ?? 0}<br/>Median €/m²: ${m?.median_price_per_sqm ?? "-"}<br/>Ø Score: ${Math.round(m?.average_deal_score ?? 0)}<br/>Top-Deals: ${m?.top_deal_count ?? 0}<br/>Off-Market: ${Math.round(m?.average_off_market_score ?? 0)}<br/>Hotspot: ${Math.round(m?.hotspot_score ?? 0)}`
                   );
-                  interactiveLayer.on("click", () => {
+                  layer.on("click", () => {
                     setSelectedDistrict(name);
                     setDistrict(name);
                     setSelectedMarker(null);
@@ -217,7 +285,7 @@ export default function MapPage() {
               />
             ) : null}
 
-            {view === "markers" || mode === "markers"
+            {showingMarkers
               ? markerRows.slice(0, 1500).map((m) => (
                   <LCircleMarker key={m.id} center={[m.latitude!, m.longitude!]} radius={5} pathOptions={{ color: markerColor(m), fillOpacity: 0.8 }} eventHandlers={{ click: () => { setSelectedMarker(m); setSelectedDistrict(m.district || null); } }}>
                     <LPopup>
@@ -234,7 +302,7 @@ export default function MapPage() {
           </LMapContainer>
         </div>
 
-        <div className="rounded-xl border p-3 text-sm">
+        <div className="rounded-3xl border p-3 text-sm">
           <h2 className="mb-2 font-medium">Geo Intelligence</h2>
           {selectedMarker ? (
             <div className="space-y-1 text-xs">
@@ -245,7 +313,7 @@ export default function MapPage() {
               <p>Größe: {selectedMarker.area_sqm || "-"} m² · Zimmer: {selectedMarker.rooms || "-"}</p>
               <p>€/m²: {selectedMarker.price_per_sqm ? Math.round(selectedMarker.price_per_sqm) : "-"}</p>
               <p>Deal {Math.round(selectedMarker.deal_score || 0)} · Off-market {Math.round(selectedMarker.off_market_score || 0)}</p>
-              <a className="inline-block rounded border px-2 py-1" href={selectedMarker.url} target="_blank" rel="noreferrer">Listing öffnen</a>
+              <a className="inline-block rounded-xl border px-2 py-1" href={selectedMarker.url} target="_blank" rel="noreferrer">Listing öffnen</a>
             </div>
           ) : selectedDistrict && selectedDistrictMetric ? (
             <div className="space-y-1 text-xs">
@@ -267,9 +335,9 @@ export default function MapPage() {
             </div>
           )}
 
-          <h3 className="mt-4 mb-1 text-xs font-medium">Top-Hotspots</h3>
+          <h3 className="mb-1 mt-4 text-xs font-medium">Top-Hotspots</h3>
           <ol className="space-y-1 text-xs">
-            {[...districtRows].sort((a, b) => b.hotspot_score - a.hotspot_score).slice(0, 5).map((h, idx) => (
+            {topHotspots.map((h, idx) => (
               <li key={h.district}>{idx + 1}. {h.district} ({Math.round(h.hotspot_score)})</li>
             ))}
           </ol>
@@ -277,22 +345,28 @@ export default function MapPage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-xl border p-3">
+        <div className="rounded-3xl border p-3">
           <h3 className="mb-2 text-sm font-medium">Stadtteil-Ranking</h3>
-          <div className="space-y-1 text-xs max-h-[280px] overflow-auto">
-            {[...districtRows].sort((a, b) => b.hotspot_score - a.hotspot_score).map((r) => (
-              <button key={r.district} className="block w-full rounded border px-2 py-1 text-left" onClick={() => { setSelectedDistrict(r.district); setDistrict(r.district); setSelectedMarker(null); }}>
-                {r.district}: {r.listing_count} · hotspot {Math.round(r.hotspot_score)}
-              </button>
-            ))}
-          </div>
+          {loadingDistricts ? (
+            <StateCard title="Ranking wird geladen" body="Die Stadtteilmetriken werden aktualisiert." tone="muted" />
+          ) : districtRows.length === 0 ? (
+            <StateCard title="Keine Stadtteildaten" body="Mit den aktuellen Filtern wurden keine Stadtteilmetriken gefunden." tone="muted" />
+          ) : (
+            <div className="space-y-1 text-xs max-h-[280px] overflow-auto">
+              {[...districtRows].sort((a, b) => b.hotspot_score - a.hotspot_score).map((r) => (
+                <button key={r.district} className="block w-full rounded-xl border px-2 py-2 text-left hover:bg-muted/40" onClick={() => { setSelectedDistrict(r.district); setDistrict(r.district); setSelectedMarker(null); }}>
+                  {r.district}: {r.listing_count} · hotspot {Math.round(r.hotspot_score)}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
-        <div className="rounded-xl border p-3">
+        <div className="rounded-3xl border p-3">
           <h3 className="mb-2 text-sm font-medium">Listings im gewählten Bereich</h3>
           <div className="space-y-1 text-xs max-h-[280px] overflow-auto">
             {selectedDistrictListings.slice(0, 10).map((l) => (
-              <a key={l.id} href={l.url} target="_blank" rel="noreferrer" className="block rounded border px-2 py-1">
+              <a key={l.id} href={l.url} target="_blank" rel="noreferrer" className="block rounded-xl border px-2 py-2 hover:bg-muted/40">
                 <p className="font-medium">{l.display_title || l.title || "Listing"}</p>
                 <p>{l.district || "München"} · {l.source}</p>
                 <p>€/m² {l.price_per_sqm ? Math.round(l.price_per_sqm) : "-"} · Score {Math.round(l.deal_score || 0)}</p>
