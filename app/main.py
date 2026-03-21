@@ -1659,6 +1659,7 @@ def api_geo_hotspots(
     min_score: float = Query(0, ge=0, le=100),
     source: str | None = None,
     district: str | None = None,
+    user: User = Depends(require_role("admin", "pro")),
     db: Session = Depends(get_db),
 ):
     return {"ok": True, "window": window, "rows": geo_hotspots(db, window=window, min_score=min_score, source=source, district=district)}
