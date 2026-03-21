@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { API_URL } from "@/lib/api";
+import { API_URL, authHeaders } from "@/lib/api";
 
 type Row = {
   id: number;
@@ -33,7 +33,7 @@ export default function SourceDebugPage() {
   const refresh = async () => {
     const q = new URLSearchParams({ limit: "500" });
     if (source !== "all") q.set("source", source);
-    const r = await fetch(`${API_URL}/api/source-debug?${q.toString()}`, { cache: "no-store" });
+    const r = await fetch(`${API_URL}/api/source-debug?${q.toString()}`, { cache: "no-store", headers: authHeaders() });
     setRows((await r.json()) || []);
   };
 
@@ -43,7 +43,7 @@ export default function SourceDebugPage() {
     const fetchRows = async () => {
       const q = new URLSearchParams({ limit: "500" });
       if (source !== "all") q.set("source", source);
-      const r = await fetch(`${API_URL}/api/source-debug?${q.toString()}`, { cache: "no-store" });
+      const r = await fetch(`${API_URL}/api/source-debug?${q.toString()}`, { cache: "no-store", headers: authHeaders() });
       const data = (await r.json()) || [];
       if (!cancelled) setRows(data);
     };

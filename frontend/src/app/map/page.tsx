@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import type { ComponentType } from "react";
-import { API_URL, parseBadges } from "@/lib/api";
+import { API_URL, authHeaders, parseBadges } from "@/lib/api";
 
 type DistrictMetric = {
   district: string;
@@ -99,7 +99,7 @@ export default function MapPage() {
   const [sources, setSources] = useState<string[]>(["all"]);
 
   useEffect(() => {
-    fetch(`${API_URL}/api/sources`, { cache: "no-store" })
+    fetch(`${API_URL}/api/sources`, { cache: "no-store", headers: authHeaders() })
       .then((r) => r.json())
       .then((rows) => {
         const dynamicSources = Array.isArray(rows) ? rows.map((x: { name?: string }) => x.name).filter((v): v is string => Boolean(v)) : [];
@@ -109,7 +109,7 @@ export default function MapPage() {
   }, []);
 
   useEffect(() => {
-    fetch("/data/munich_districts.geojson", { cache: "no-store" })
+    fetch("/data/munich_districts.geojson", { cache: "no-store", headers: authHeaders() })
       .then((r) => r.json())
       .then(setGeojson)
       .catch(() => setGeojson(null));
@@ -120,11 +120,11 @@ export default function MapPage() {
     if (source !== "all") q.set("source", source);
     if (district !== "all") q.set("district", district);
 
-    fetch(`${API_URL}/api/geo/districts?${q.toString()}`, { cache: "no-store" })
+    fetch(`${API_URL}/api/geo/districts?${q.toString()}`, { cache: "no-store", headers: authHeaders() })
       .then((r) => r.json())
       .then((x) => setDistrictRows(x?.rows || []));
 
-    fetch(`${API_URL}/api/geo/listings?${q.toString()}`, { cache: "no-store" })
+    fetch(`${API_URL}/api/geo/listings?${q.toString()}`, { cache: "no-store", headers: authHeaders() })
       .then((r) => r.json())
       .then((x) => setMarkerRows((x?.rows || []).filter((p: MarkerRow) => p.latitude != null && p.longitude != null)));
   }, [window, minScore, source, district]);
@@ -142,7 +142,7 @@ export default function MapPage() {
       if (source !== "all") q.set("source", source);
 
       try {
-        const response = await fetch(`${API_URL}/api/geo/listings?${q.toString()}`, { cache: "no-store" });
+        const response = await fetch(`${API_URL}/api/geo/listings?${q.toString()}`, { cache: "no-store", headers: authHeaders() });
         const data = await response.json();
         setSelectedDistrictListings(data?.rows || []);
       } catch {

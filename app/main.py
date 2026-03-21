@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.db import Base, SessionLocal, engine, ensure_schema
 from app.models import AlertRule, ContactLead, Listing, ListingSnapshot, PasswordResetToken, Source, SourceRun, User, Watchlist
-from app.schemas import AlertRuleIn, ChangePasswordIn, ContactSalesIn, ForgotPasswordIn, ImmoScoutHtmlImportIn, ListingOut, LoginIn, ProfileUpdateIn, ResetPasswordIn, SourceOut
+from app.schemas import AdminUserCreateIn, AdminUserUpdateIn, AlertRuleIn, ChangePasswordIn, ContactSalesIn, ForgotPasswordIn, ImmoScoutHtmlImportIn, ListingOut, LoginIn, ProfileUpdateIn, ResetPasswordIn, SourceOut
 from app.source_reliability import attach_reliability, compute_reliability
 from app.time_utils import utc_now
 from app.investment import recompute_investments
@@ -31,7 +31,7 @@ from app.ai_deal_analyzer import analyze_listing, serialize_flags
 from app.dedup import assign_clusters
 from collectors.source_discovery import SEED_SOURCES, discover_source_card, write_source_report
 from collectors.source_validator import validate_source
-from app.auth import hash_password, hash_reset_token, issue_reset_token, legal_contact_payload, read_frontend_env_password, reset_token_expiry, verify_password
+from app.auth import get_current_user, hash_password, hash_reset_token, issue_reset_token, legal_contact_payload, read_frontend_env_password, require_role, reset_token_expiry, verify_password
 
 app = FastAPI(title="Neue Kauf Objekte München API")
 app.add_middleware(
@@ -81,6 +81,7 @@ def _seed_default_user():
             company=os.getenv("MDF_USER_COMPANY", "ImmoDealFinder"),
             password_hash=hash_password(seed_password),
             is_active=True,
+            role="admin",
         )
         db.add(user)
         db.commit()
@@ -368,6 +369,7 @@ def listings(
     rooms_min: float | None = Query(None, ge=0),
     rooms_max: float | None = Query(None, ge=0),
     include_inactive: bool = False,
+    user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     q = select(Listing)
@@ -426,7 +428,8 @@ def listings(
     elif sort == "price":
         order = (Listing.price_eur.asc().nulls_last(), desc(Listing.first_seen_at))
 
-    return db.execute(q.order_by(*order).offset(offset).limit(limit)).scalars().all()
+    effective_limit = min(limit, 20) if user.effective_role == "free" else limit
+    return db.execute(q.order_by(*order).offset(offset).limit(effective_limit)).scalars().all()
 
 
 @app.get("/api/listings/{listing_id}", response_model=ListingOut)
@@ -575,14 +578,11 @@ def api_auth_user(username: str, db: Session = Depends(get_db)):
     user = db.execute(select(User).where(User.username == username, User.is_active == True)).scalar_one_or_none()
     if not user:
         return JSONResponse(status_code=404, content={"ok": False, "error": "user_not_found"})
-    return {"ok": True, "user": {"username": user.username, "email": user.email, "display_name": user.display_name, "company": user.company}}
+    return {"ok": True, "user": {"username": user.username, "email": user.email, "display_name": user.display_name, "company": user.company, "role": user.role, "effective_role": user.effective_role, "license_until": user.license_until}}
 
 
 @app.post("/api/auth/change-password")
-def api_auth_change_password(username: str, payload: ChangePasswordIn, db: Session = Depends(get_db)):
-    user = db.execute(select(User).where(User.username == username, User.is_active == True)).scalar_one_or_none()
-    if not user:
-        return JSONResponse(status_code=404, content={"ok": False, "error": "user_not_found"})
+def api_auth_change_password(payload: ChangePasswordIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     if not verify_password(payload.current_password, user.password_hash):
         return JSONResponse(status_code=401, content={"ok": False, "error": "invalid_current_password"})
     if len(payload.new_password) < 8:
@@ -604,6 +604,63 @@ def api_auth_profile(username: str, payload: ProfileUpdateIn, db: Session = Depe
     user.updated_at = utc_now()
     db.commit()
     return {"ok": True, "user": {"username": user.username, "email": user.email, "display_name": user.display_name, "company": user.company}}
+
+
+@app.get("/api/admin/users")
+def api_admin_users(user: User = Depends(require_role("admin")), db: Session = Depends(get_db)):
+    rows = db.execute(select(User).order_by(User.id.asc())).scalars().all()
+    return {"ok": True, "items": [{"id": row.id, "username": row.username, "email": row.email, "display_name": row.display_name, "company": row.company, "is_active": row.is_active, "role": row.role, "effective_role": row.effective_role, "license_until": row.license_until} for row in rows]}
+
+
+@app.post("/api/admin/users")
+def api_admin_users_create(payload: AdminUserCreateIn, user: User = Depends(require_role("admin")), db: Session = Depends(get_db)):
+    username = payload.username.strip().lower()
+    email = payload.email.strip().lower()
+    if len(payload.password) < 8:
+        return JSONResponse(status_code=400, content={"ok": False, "error": "password_too_short"})
+    existing = db.execute(select(User).where((User.username == username) | (User.email == email))).scalar_one_or_none()
+    if existing:
+        return JSONResponse(status_code=409, content={"ok": False, "error": "user_exists"})
+    row = User(
+        username=username,
+        email=email,
+        display_name=payload.display_name,
+        company=payload.company,
+        password_hash=hash_password(payload.password),
+        is_active=True,
+        role=payload.role if payload.role in {"free", "pro", "admin"} else "free",
+        license_until=payload.license_until,
+    )
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return {"ok": True, "user": {"id": row.id, "username": row.username, "email": row.email, "display_name": row.display_name, "company": row.company, "is_active": row.is_active, "role": row.role, "effective_role": row.effective_role, "license_until": row.license_until}}
+
+
+@app.put("/api/admin/users/{user_id}")
+def api_admin_users_update(user_id: int, payload: AdminUserUpdateIn, user: User = Depends(require_role("admin")), db: Session = Depends(get_db)):
+    row = db.execute(select(User).where(User.id == user_id)).scalar_one_or_none()
+    if not row:
+        return JSONResponse(status_code=404, content={"ok": False, "error": "user_not_found"})
+    if payload.email is not None:
+        row.email = payload.email.strip().lower()
+    if payload.display_name is not None:
+        row.display_name = payload.display_name
+    if payload.company is not None:
+        row.company = payload.company
+    if payload.role in {"free", "pro", "admin"}:
+        row.role = payload.role
+    if payload.license_until is not None or payload.role == "free":
+        row.license_until = payload.license_until
+    if payload.is_active is not None:
+        row.is_active = payload.is_active
+    if payload.password:
+        if len(payload.password) < 8:
+            return JSONResponse(status_code=400, content={"ok": False, "error": "password_too_short"})
+        row.password_hash = hash_password(payload.password)
+    row.updated_at = utc_now()
+    db.commit()
+    return {"ok": True, "user": {"id": row.id, "username": row.username, "email": row.email, "display_name": row.display_name, "company": row.company, "is_active": row.is_active, "role": row.role, "effective_role": row.effective_role, "license_until": row.license_until}}
 
 
 @app.post("/api/auth/forgot-password")
@@ -675,7 +732,7 @@ def api_contact_sales(payload: ContactSalesIn, request: Request, db: Session = D
 
 
 @app.get("/api/admin/contact-leads")
-def api_admin_contact_leads(limit: int = Query(50, ge=1, le=200), db: Session = Depends(get_db)):
+def api_admin_contact_leads(limit: int = Query(50, ge=1, le=200), user: User = Depends(require_role("admin")), db: Session = Depends(get_db)):
     rows = db.execute(select(ContactLead).order_by(desc(ContactLead.created_at)).limit(limit)).scalars().all()
     return {"ok": True, "items": [{"id": x.id, "name": x.name, "email": x.email, "company": x.company, "message": x.message, "status": x.status, "created_at": x.created_at.isoformat()} for x in rows]}
 
@@ -1103,7 +1160,7 @@ def api_watchlist_add(listing_id: int, notes: str | None = None, db: Session = D
     db.add(row)
     db.commit()
     db.refresh(row)
-    return {"ok": True, "id": row.id, "listing_id": listing_id, "updated": False}
+    return {"ok": True, "id": row.id, "listing_id": listing_id, "user_id": user.id, "updated": False}
 
 
 @app.get("/api/watchlist")
@@ -1111,6 +1168,7 @@ def api_watchlist(db: Session = Depends(get_db)):
     rows = db.execute(
         select(Watchlist, Listing)
         .join(Listing, Listing.id == Watchlist.listing_id)
+        .where(Watchlist.user_id == user.id)
         .order_by(Watchlist.created_at.desc())
     ).all()
     return [
@@ -1157,6 +1215,7 @@ def api_off_market(
     price_max: float | None = Query(None, ge=0),
     sqm_min: float | None = Query(None, ge=0),
     sqm_max: float | None = Query(None, ge=0),
+    user: User = Depends(require_role("admin", "pro")),
     db: Session = Depends(get_db),
 ):
     q = select(Listing).where(Listing.off_market_score.is_not(None))
@@ -1606,7 +1665,7 @@ def api_geo_hotspots(
 
 
 @app.get("/api/geo/cells")
-def api_geo_cells(window: str = Query("30d"), db: Session = Depends(get_db)):
+def api_geo_cells(window: str = Query("30d"), user: User = Depends(require_role("admin", "pro")), db: Session = Depends(get_db)):
     return {"ok": True, "window": window, "rows": geo_cells(db, window=window)}
 
 

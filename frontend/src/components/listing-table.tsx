@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useReactTable, getCoreRowModel, flexRender, createColumnHelper } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { API_URL, Listing } from "@/lib/api";
+import { API_URL, Listing, authHeaders } from "@/lib/api";
 import { badgeToneClass, listingHighlightBadges, listingHighlightRowClass } from "@/lib/deal-highlights";
 
 const eur = (v?: number | null) => (v == null ? "-" : new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(v));
@@ -50,7 +50,7 @@ export function ListingTable({ rows, onDetails }: { rows: Listing[]; onDetails: 
     if (!listingId) return;
     setSavingIds((prev) => ({ ...prev, [listingId]: true }));
     try {
-      const res = await fetch(`${API_URL}/api/watchlist/${listingId}`, { method: "POST" });
+      const res = await fetch(`${API_URL}/api/watchlist/${listingId}`, { method: "POST", headers: authHeaders() });
       if (!res.ok) throw new Error("watchlist_save_failed");
       setSavedIds((prev) => ({ ...prev, [listingId]: true }));
     } catch {

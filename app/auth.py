@@ -5,6 +5,11 @@ import secrets
 from datetime import timedelta
 from pathlib import Path
 
+from fastapi import Depends, HTTPException, Request
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from app.db import SessionLocal
 from app.time_utils import utc_now
 
 PBKDF2_ROUNDS = 120_000
@@ -61,3 +66,36 @@ def legal_contact_payload() -> dict:
         "country": os.getenv("MDF_LEGAL_COUNTRY", "Deutschland"),
         "phone": os.getenv("MDF_LEGAL_PHONE", "Bitte Telefonnummer ergänzen"),
     }
+
+
+def get_db_session():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+def _extract_username(request: Request) -> str | None:
+    return request.headers.get("x-auth-user") or request.headers.get("X-Auth-User")
+
+
+def get_current_user(request: Request, db: Session = Depends(get_db_session)):
+    from app.models import User
+
+    username = _extract_username(request)
+    if not username:
+        raise HTTPException(status_code=401, detail="Nicht eingeloggt")
+    user = db.execute(select(User).where(User.username == username)).scalar_one_or_none()
+    if not user or not user.is_active:
+        raise HTTPException(status_code=401, detail="User nicht gefunden")
+    return user
+
+
+def require_role(*roles: str):
+    def check(user=Depends(get_current_user)):
+        if user.effective_role not in roles:
+            raise HTTPException(status_code=403, detail="Keine Berechtigung für diese Funktion")
+        return user
+
+    return check

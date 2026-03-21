@@ -45,9 +45,27 @@ export type Listing = {
   first_seen_at: string;
 };
 
+function getAuthUsername(): string {
+  if (typeof document === "undefined") return "";
+  const cookie = document.cookie.split(";").find((c) => c.trim().startsWith("mdf_auth_client="));
+  if (!cookie) return "";
+  const token = decodeURIComponent(cookie.split("=")[1] ?? "");
+  const idx = token.lastIndexOf(".");
+  if (idx === -1) return "";
+  const payload = token.slice(0, idx);
+  return payload.split(":")[0] ?? "";
+}
+
+export function authHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {};
+  const username = getAuthUsername();
+  if (username) headers["X-Auth-User"] = username;
+  return headers;
+}
+
 async function apiFetch<T>(path: string, signal?: AbortSignal): Promise<T> {
   const baseUrl = typeof window === "undefined" ? SERVER_API_URL : API_URL;
-  const res = await fetch(`${baseUrl}${path}`, { cache: "no-store", signal });
+  const res = await fetch(`${baseUrl}${path}`, { cache: "no-store", signal, headers: authHeaders() });
   if (!res.ok) throw new Error(`API ${res.status}`);
   return res.json();
 }

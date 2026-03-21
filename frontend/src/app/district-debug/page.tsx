@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { API_URL } from "@/lib/api";
+import { API_URL, authHeaders } from "@/lib/api";
 
 type DistrictDebugRow = {
   id: number;
@@ -37,8 +37,8 @@ export default function DistrictDebugPage() {
     if (source !== "all") q.set("source", source);
 
     const [dr, qr] = await Promise.all([
-      fetch(`${API_URL}/api/district-debug?${q.toString()}`, { cache: "no-store" }),
-      fetch(`${API_URL}/api/district-quality`, { cache: "no-store" }),
+      fetch(`${API_URL}/api/district-debug?${q.toString()}`, { cache: "no-store", headers: authHeaders() }),
+      fetch(`${API_URL}/api/district-quality`, { cache: "no-store", headers: authHeaders() }),
     ]);
 
     setRows((await dr.json()) || []);
@@ -53,8 +53,8 @@ export default function DistrictDebugPage() {
       if (source !== "all") q.set("source", source);
 
       const [dr, qr] = await Promise.all([
-        fetch(`${API_URL}/api/district-debug?${q.toString()}`, { cache: "no-store" }),
-        fetch(`${API_URL}/api/district-quality`, { cache: "no-store" }),
+        fetch(`${API_URL}/api/district-debug?${q.toString()}`, { cache: "no-store", headers: authHeaders() }),
+        fetch(`${API_URL}/api/district-quality`, { cache: "no-store", headers: authHeaders() }),
       ]);
 
       const nextRows = (await dr.json()) || [];
