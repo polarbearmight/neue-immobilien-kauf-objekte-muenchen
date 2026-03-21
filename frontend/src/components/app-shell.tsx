@@ -166,7 +166,14 @@ export function AppShell({ children }: { children: ReactNode }) {
                   <p className="mt-1 hidden text-xs text-muted-foreground md:block">{activeItem ? `Aktiv: ${activeItem.label}` : "Alle Marktansichten bleiben direkt erreichbar."}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="inline-flex min-h-11 items-center rounded-2xl border border-border bg-background/80 px-3 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground dark:border-amber-400/15 dark:bg-amber-300/10 dark:text-amber-100">{effectiveRole}</span>
+                  <span className={cn(
+                    "inline-flex min-h-11 items-center rounded-2xl border px-3 py-2 text-xs font-semibold uppercase tracking-[0.22em]",
+                    effectiveRole === "ADMIN"
+                      ? "border-rose-300/60 bg-rose-500/10 text-rose-700 dark:border-amber-300/40 dark:bg-amber-300/16 dark:text-amber-100"
+                      : effectiveRole === "PRO"
+                        ? "border-amber-300/60 bg-amber-500/10 text-amber-700 dark:border-amber-300/40 dark:bg-amber-300/16 dark:text-amber-100"
+                        : "border-border bg-background/80 text-muted-foreground dark:border-amber-400/15 dark:bg-amber-300/10 dark:text-amber-100"
+                  )}>{effectiveRole}</span>
                   <button className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-background/80 dark:border-amber-400/15 dark:bg-amber-300/10 dark:text-amber-50" onClick={toggleTheme} aria-label="Theme wechseln">{dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}</button>
                   <Link href="/account" className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-background/80 dark:border-amber-400/15 dark:bg-amber-300/10 dark:text-amber-50" aria-label="Account öffnen"><UserCircle2 className="h-4 w-4" /></Link>
                   <button className="hidden min-h-11 rounded-2xl border border-border bg-background px-4 py-2 text-sm dark:border-amber-400/15 dark:bg-amber-300/10 dark:text-amber-50 md:inline-flex" onClick={() => location.reload()}>Refresh</button>
