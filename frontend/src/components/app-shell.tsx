@@ -115,7 +115,17 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <div>
                   <div className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground dark:text-amber-100/70">Munich Deal Engine</div>
                   <div className="mt-2 text-xl font-semibold">Workspace</div>
-                  <p className="mt-2 text-sm text-muted-foreground">Mehr Orientierung im Sidebar-Flow, Light als Standard und Dark weiter mit Goldakzenten.</p>
+                  <div className="mt-3">
+                    <span className={cn(
+                      "inline-flex min-h-10 items-center rounded-2xl border px-3 py-2 text-xs font-semibold uppercase tracking-[0.22em]",
+                      effectiveRole === "ADMIN"
+                        ? "border-rose-300/60 bg-rose-500/10 text-rose-700 dark:border-amber-300/40 dark:bg-amber-300/16 dark:text-amber-100"
+                        : effectiveRole === "PRO"
+                          ? "border-amber-300/60 bg-amber-500/10 text-amber-700 dark:border-amber-300/40 dark:bg-amber-300/16 dark:text-amber-100"
+                          : "border-border bg-background/80 text-muted-foreground dark:border-amber-400/15 dark:bg-amber-300/10 dark:text-amber-100"
+                    )}>{effectiveRole}</span>
+                  </div>
+                  <p className="mt-3 text-sm text-muted-foreground">Mehr Orientierung im Sidebar-Flow, Light als Standard und Dark weiter mit Goldakzenten.</p>
                 </div>
                 <button className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-background/80 dark:border-amber-400/15 dark:bg-amber-300/10 dark:text-amber-50" onClick={toggleTheme} aria-label="Theme wechseln">
                   {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
