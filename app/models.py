@@ -97,8 +97,12 @@ class User(Base):
         if self.role == "admin":
             return "admin"
         if self.role == "pro":
-            if self.license_until and self.license_until >= utc_now():
-                return "pro"
+            if self.license_until:
+                license_until = self.license_until
+                if license_until.tzinfo is None:
+                    license_until = license_until.replace(tzinfo=utc_now().tzinfo)
+                if license_until >= utc_now():
+                    return "pro"
             return "free"
         return "free"
 
