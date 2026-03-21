@@ -1164,7 +1164,7 @@ def api_watchlist_add(listing_id: int, notes: str | None = None, db: Session = D
 
 
 @app.get("/api/watchlist")
-def api_watchlist(db: Session = Depends(get_db)):
+def api_watchlist(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     rows = db.execute(
         select(Watchlist, Listing)
         .join(Listing, Listing.id == Watchlist.listing_id)
