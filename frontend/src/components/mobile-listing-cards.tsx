@@ -25,7 +25,7 @@ export function MobileListingCards({ rows, onDetails }: { rows: Listing[]; onDet
           <div className="mt-4 grid grid-cols-2 gap-2">
             <a className="inline-flex min-h-11 items-center justify-center rounded-2xl border px-4 py-2 text-sm font-medium" href={row.url} target="_blank" rel="noreferrer">Öffnen</a>
             <button className="min-h-11 rounded-2xl bg-slate-950 px-4 py-2 text-sm font-medium text-white" onClick={() => onDetails(row)}>Details</button>
-            <button className="col-span-2 min-h-11 rounded-2xl border px-4 py-2 text-sm font-medium" onClick={async () => { if (!row.id) return; await fetch(`${API_URL}/api/watchlist/${row.id}`, { method: "POST" }); }}>Merken</button>
+            <button className="col-span-2 min-h-11 rounded-2xl border px-4 py-2 text-sm font-medium" onClick={async () => { if (!row.id) return; await fetch(`/api/watchlist/${row.id}`, { method: "POST" }); }}>Merken</button>
           </div>
         </div>
       ))}

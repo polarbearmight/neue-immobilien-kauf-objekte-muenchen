@@ -4,7 +4,7 @@ import re
 import threading
 import time
 
-from fastapi import Depends, FastAPI, Query, Request
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import desc, func, select, case
@@ -88,9 +88,38 @@ def _seed_default_user():
         db.close()
 
 
+def _seed_demo_user():
+    db = SessionLocal()
+    try:
+        existing = db.execute(select(User).where(User.username == "demo")).scalar_one_or_none()
+        if existing:
+            return
+        db.add(User(
+            username="demo",
+            email="demo@immodealfinder.de",
+            display_name="Demo User",
+            company="ImmoDealFinder Demo",
+            password_hash=hash_password(os.getenv("MDF_DEMO_PASSWORD", "demo1234")),
+            is_active=True,
+            is_demo=True,
+            role="demo",
+        ))
+        db.commit()
+    finally:
+        db.close()
+
+
+def _get_request_user(request: Request, db: Session) -> User | None:
+    username = request.headers.get("X-MDF-Username")
+    if not username:
+        return None
+    return db.execute(select(User).where(User.username == username, User.is_active == True)).scalar_one_or_none()
+
+
 @app.on_event("startup")
 def _startup_scheduler():
     _seed_default_user()
+    _seed_demo_user()
     if scheduler_state.get("enabled", True):
         t = threading.Thread(target=_auto_scan_loop, daemon=True)
         t.start()
@@ -290,6 +319,13 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+def _require_non_demo(request: Request, db: Session = Depends(get_db)):
+    user = _get_request_user(request, db)
+    if user and user.is_demo:
+        raise HTTPException(status_code=403, detail="demo_account_restricted")
+    return user
 
 
 @app.get("/")
@@ -567,7 +603,7 @@ def api_auth_login(payload: LoginIn, request: Request, db: Session = Depends(get
     user = db.execute(select(User).where(User.username == payload.username, User.is_active == True)).scalar_one_or_none()
     if not user or not verify_password(payload.password, user.password_hash):
         return JSONResponse(status_code=401, content={"ok": False, "error": "invalid_credentials"})
-    return {"ok": True, "user": {"username": user.username, "email": user.email, "display_name": user.display_name, "company": user.company}}
+    return {"ok": True, "user": {"username": user.username, "email": user.email, "display_name": user.display_name, "company": user.company, "is_demo": user.is_demo, "role": user.role}}
 
 
 @app.get("/api/auth/users/{username}")
@@ -575,11 +611,11 @@ def api_auth_user(username: str, db: Session = Depends(get_db)):
     user = db.execute(select(User).where(User.username == username, User.is_active == True)).scalar_one_or_none()
     if not user:
         return JSONResponse(status_code=404, content={"ok": False, "error": "user_not_found"})
-    return {"ok": True, "user": {"username": user.username, "email": user.email, "display_name": user.display_name, "company": user.company}}
+    return {"ok": True, "user": {"username": user.username, "email": user.email, "display_name": user.display_name, "company": user.company, "is_demo": user.is_demo, "role": user.role}}
 
 
 @app.post("/api/auth/change-password")
-def api_auth_change_password(username: str, payload: ChangePasswordIn, db: Session = Depends(get_db)):
+def api_auth_change_password(username: str, payload: ChangePasswordIn, request: Request, db: Session = Depends(get_db), _: User | None = Depends(_require_non_demo)):
     user = db.execute(select(User).where(User.username == username, User.is_active == True)).scalar_one_or_none()
     if not user:
         return JSONResponse(status_code=404, content={"ok": False, "error": "user_not_found"})
@@ -594,7 +630,7 @@ def api_auth_change_password(username: str, payload: ChangePasswordIn, db: Sessi
 
 
 @app.put("/api/auth/profile")
-def api_auth_profile(username: str, payload: ProfileUpdateIn, db: Session = Depends(get_db)):
+def api_auth_profile(username: str, payload: ProfileUpdateIn, request: Request, db: Session = Depends(get_db), _: User | None = Depends(_require_non_demo)):
     user = db.execute(select(User).where(User.username == username, User.is_active == True)).scalar_one_or_none()
     if not user:
         return JSONResponse(status_code=404, content={"ok": False, "error": "user_not_found"})
@@ -603,7 +639,7 @@ def api_auth_profile(username: str, payload: ProfileUpdateIn, db: Session = Depe
     user.company = payload.company
     user.updated_at = utc_now()
     db.commit()
-    return {"ok": True, "user": {"username": user.username, "email": user.email, "display_name": user.display_name, "company": user.company}}
+    return {"ok": True, "user": {"username": user.username, "email": user.email, "display_name": user.display_name, "company": user.company, "is_demo": user.is_demo, "role": user.role}}
 
 
 @app.post("/api/auth/forgot-password")
@@ -718,7 +754,7 @@ def api_immoscout_import_html(payload: ImmoScoutHtmlImportIn):
 
 
 @app.post("/api/scan/run")
-def api_scan_run(db: Session = Depends(get_db)):
+def api_scan_run(request: Request, db: Session = Depends(get_db), _: User | None = Depends(_require_non_demo)):
     """Default scan: major sources only (fast primary sweep)."""
     with scan_lock:
         if scan_state["running"]:
@@ -901,7 +937,7 @@ def api_source_approve(source_id: int, approved: bool = True, db: Session = Depe
 
 
 @app.post("/api/sources/{source_id}/enable")
-def api_source_enable(source_id: int, enabled: bool = True, db: Session = Depends(get_db)):
+def api_source_enable(source_id: int, enabled: bool = True, request: Request = None, db: Session = Depends(get_db), _: User | None = Depends(_require_non_demo)):
     row = db.execute(select(Source).where(Source.id == source_id)).scalar_one_or_none()
     if not row:
         return JSONResponse(status_code=404, content={"ok": False, "error": "source_not_found"})
@@ -1087,19 +1123,23 @@ def api_sources_prune_zero_coverage(
 
 
 @app.post("/api/watchlist/{listing_id}")
-def api_watchlist_add(listing_id: int, notes: str | None = None, db: Session = Depends(get_db)):
+def api_watchlist_add(listing_id: int, request: Request, notes: str | None = None, db: Session = Depends(get_db)):
     listing = db.execute(select(Listing).where(Listing.id == listing_id)).scalar_one_or_none()
     if not listing:
         return JSONResponse(status_code=404, content={"ok": False, "error": "listing_not_found"})
 
-    row = db.execute(select(Watchlist).where(Watchlist.listing_id == listing_id)).scalar_one_or_none()
+    user = _get_request_user(request, db)
+    if not user:
+        return JSONResponse(status_code=401, content={"ok": False, "error": "unauthorized"})
+
+    row = db.execute(select(Watchlist).where(Watchlist.listing_id == listing_id, Watchlist.user_id == user.id)).scalar_one_or_none()
     if row:
         if notes is not None:
             row.notes = notes
             db.commit()
-        return {"ok": True, "id": row.id, "listing_id": listing_id, "updated": True}
+        return {"ok": True, "id": row.id, "listing_id": listing_id, "user_id": user.id, "updated": True}
 
-    row = Watchlist(listing_id=listing_id, notes=notes)
+    row = Watchlist(listing_id=listing_id, user_id=user.id, notes=notes)
     db.add(row)
     db.commit()
     db.refresh(row)
@@ -1107,10 +1147,15 @@ def api_watchlist_add(listing_id: int, notes: str | None = None, db: Session = D
 
 
 @app.get("/api/watchlist")
-def api_watchlist(db: Session = Depends(get_db)):
+def api_watchlist(request: Request, db: Session = Depends(get_db)):
+    user = _get_request_user(request, db)
+    if not user:
+        return []
+
     rows = db.execute(
         select(Watchlist, Listing)
         .join(Listing, Listing.id == Watchlist.listing_id)
+        .where(Watchlist.user_id == user.id)
         .order_by(Watchlist.created_at.desc())
     ).all()
     return [
@@ -1134,7 +1179,7 @@ def api_watchlist(db: Session = Depends(get_db)):
 
 
 @app.post("/api/alert-rules")
-def api_alert_rule_create(payload: AlertRuleIn, db: Session = Depends(get_db)):
+def api_alert_rule_create(payload: AlertRuleIn, request: Request, db: Session = Depends(get_db), _: User | None = Depends(_require_non_demo)):
     row = AlertRule(**payload.model_dump())
     db.add(row)
     db.commit()

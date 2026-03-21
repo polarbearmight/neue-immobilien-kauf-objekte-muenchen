@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { API_URL } from "@/lib/api";
 
 type DistrictDebugRow = {
@@ -25,6 +26,7 @@ type DistrictQuality = {
 };
 
 export default function DistrictDebugPage() {
+  const router = useRouter();
   const [rows, setRows] = useState<DistrictDebugRow[]>([]);
   const [quality, setQuality] = useState<DistrictQuality | null>(null);
   const [source, setSource] = useState<string>("all");
@@ -44,6 +46,15 @@ export default function DistrictDebugPage() {
     setRows((await dr.json()) || []);
     setQuality((await qr.json()) || null);
   };
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.user?.is_demo) router.replace("/dashboard");
+      })
+      .catch(() => {});
+  }, [router]);
 
   useEffect(() => {
     let cancelled = false;

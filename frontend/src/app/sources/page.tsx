@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { API_URL } from "@/lib/api";
 
 type Source = { id: number; name: string; health_status: string; reliability_score?: number; approved: boolean; enabled: boolean; last_error?: string };
@@ -10,6 +11,7 @@ type SourceQualityRow = { count: number; missing_title: number; missing_district
 type ImmoScoutExportStatus = { ok: boolean; path: string; exists: boolean; size_bytes: number; updated_at?: number | null };
 
 export default function SourcesPage() {
+  const router = useRouter();
   const [sources, setSources] = useState<Source[]>([]);
   const [runsBySource, setRunsBySource] = useState<Record<number, SourceRun[]>>({});
   const [quality, setQuality] = useState<DistrictQuality | null>(null);
@@ -52,6 +54,15 @@ export default function SourcesPage() {
       setImmoscoutExport(null);
     }
   };
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.user?.is_demo) router.replace("/dashboard");
+      })
+      .catch(() => {});
+  }, [router]);
 
   useEffect(() => { load(); }, []);
 

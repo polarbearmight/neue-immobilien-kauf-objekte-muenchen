@@ -24,7 +24,7 @@
 ### Core Features
 - [~] Build or improve property listing page
 - [ ] Build or improve property detail page
-- [ ] 
+- [~] Implement multi-user system with demo-account restrictions
 
 ### Bug Fixes
 - [ ] Identify and fix UI bugs

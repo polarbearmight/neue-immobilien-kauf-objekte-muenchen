@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { API_URL } from "@/lib/api";
 import { StateCard } from "@/components/state-card";
 
@@ -28,6 +29,7 @@ function readUiSettings(): UiSettings {
 }
 
 export default function SettingsPage() {
+  const router = useRouter();
   const initial = readUiSettings();
   const [rules, setRules] = useState<Rule[]>([]);
   const [watchlist, setWatchlist] = useState<Watch[]>([]);
@@ -45,8 +47,8 @@ export default function SettingsPage() {
     setError(null);
     try {
       const [rr, wr] = await Promise.all([
-        fetch(`${API_URL}/api/alert-rules`, { cache: "no-store" }),
-        fetch(`${API_URL}/api/watchlist`, { cache: "no-store" }),
+        fetch(`/api/alert-rules`, { cache: "no-store" }),
+        fetch(`/api/watchlist`, { cache: "no-store" }),
       ]);
       if (!rr.ok || !wr.ok) throw new Error("settings_load_failed");
       setRules(await rr.json());
@@ -59,6 +61,15 @@ export default function SettingsPage() {
       setLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.user?.is_demo) router.replace("/dashboard");
+      })
+      .catch(() => {});
+  }, [router]);
 
   useEffect(() => {
     void load();
@@ -92,7 +103,7 @@ export default function SettingsPage() {
     setNotice(null);
     setError(null);
     try {
-      const res = await fetch(`${API_URL}/api/alert-rules`, {
+      const res = await fetch(`/api/alert-rules`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: name.trim(), enabled: true }),

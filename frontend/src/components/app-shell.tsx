@@ -12,6 +12,7 @@ import {
   Flame,
   Heart,
   Home,
+  Lock,
   LogOut,
   Map,
   MapPinned,
@@ -44,6 +45,10 @@ const nav: NavItem[] = [
   { label: "Districts", href: "/districts", icon: Map, section: "market" },
   { label: "Geo Heatmap", href: "/geo", icon: BarChart3, section: "market" },
   { label: "Sources", href: "/sources", icon: BarChart3, section: "market" },
+  { label: "Source Debug", href: "/source-debug", icon: BarChart3, section: "market" },
+  { label: "District Debug", href: "/district-debug", icon: Map, section: "market" },
+  { label: "Geo Debug", href: "/geo-debug", icon: MapPinned, section: "market" },
+  { label: "Duplicate Debug", href: "/duplicate-debug", icon: Building2, section: "market" },
   { label: "Settings", href: "/settings", icon: Settings, section: "account" },
   { label: "Account", href: "/account", icon: UserCircle2, section: "account" },
 ];
@@ -57,6 +62,7 @@ const navSections: Array<{ key: NavItem["section"]; label: string }> = [
 
 const mobileQuickLinks = nav.filter((item) => item.mobileQuick);
 const publicPaths = new Set(["/", "/contact", "/impressum", "/privacy", "/forgot-password", "/reset-password"]);
+const demoRestrictedNav = new Set(["/settings", "/sources", "/source-debug", "/district-debug", "/geo-debug", "/duplicate-debug"]);
 const THEME_KEY = "munich-dealfinder-theme";
 
 const isActivePath = (pathname: string, href: string) => pathname === href || pathname.startsWith(`${href}/`);
@@ -66,6 +72,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [dark, setDark] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [isDemo, setIsDemo] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -80,6 +87,13 @@ export function AppShell({ children }: { children: ReactNode }) {
     applyTheme();
     window.addEventListener("resize", applyTheme);
     return () => window.removeEventListener("resize", applyTheme);
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/auth/me", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data) => setIsDemo(!!data?.user?.is_demo))
+      .catch(() => setIsDemo(false));
   }, []);
 
   const toggleTheme = () => {
@@ -112,7 +126,14 @@ export function AppShell({ children }: { children: ReactNode }) {
             <div className="flex h-full flex-col gap-5 rounded-[2rem] border border-border/80 bg-sidebar/92 p-5 shadow-[0_24px_70px_rgba(15,23,42,0.08)] backdrop-blur dark:border-amber-400/14 dark:bg-[linear-gradient(180deg,rgba(29,24,15,0.96),rgba(12,14,19,0.94))] dark:shadow-[0_28px_90px_rgba(0,0,0,0.36)]">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <div className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground dark:text-amber-100/70">Munich Deal Engine</div>
+                  <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.24em] text-muted-foreground dark:text-amber-100/70">
+                    <span>Munich Deal Engine</span>
+                    {isDemo && (
+                      <span className="rounded-full bg-amber-400/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-amber-600 dark:text-amber-300">
+                        Demo
+                      </span>
+                    )}
+                  </div>
                   <div className="mt-2 text-xl font-semibold">Workspace</div>
                   <p className="mt-2 text-sm text-muted-foreground">Mehr Orientierung im Sidebar-Flow, Light als Standard und Dark weiter mit Goldakzenten.</p>
                 </div>
@@ -129,6 +150,15 @@ export function AppShell({ children }: { children: ReactNode }) {
                       <div className="px-2 text-[11px] uppercase tracking-[0.22em] text-muted-foreground/80 dark:text-amber-100/55">{section.label}</div>
                       {items.map(({ label, href, icon: Icon }) => {
                         const active = isActivePath(pathname, href);
+                        const demoLocked = isDemo && demoRestrictedNav.has(href);
+                        if (demoLocked) {
+                          return (
+                            <span key={href} className="flex cursor-not-allowed items-center gap-2 rounded-2xl px-3 py-2 text-sm opacity-35">
+                              <Lock className="h-4 w-4" />
+                              {label}
+                            </span>
+                          );
+                        }
                         return (
                           <Link
                             key={href}

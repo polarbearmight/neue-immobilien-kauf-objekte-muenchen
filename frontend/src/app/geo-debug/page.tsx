@@ -1,10 +1,12 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { API_URL } from "@/lib/api";
 
 type Row = { id: number; source: string; display_title?: string; district?: string; postal_code?: string; latitude?: number; longitude?: number; geo_status?: string; map_mode_assignment?: string; location_confidence?: number; district_source?: string };
 
 export default function GeoDebugPage() {
+  const router = useRouter();
   const [rows, setRows] = useState<Row[]>([]);
   const [query, setQuery] = useState("");
   const [onlyMissingCoords, setOnlyMissingCoords] = useState(false);
@@ -12,6 +14,15 @@ export default function GeoDebugPage() {
     const r = await fetch(`${API_URL}/api/geo-debug?limit=500`, { cache: "no-store" });
     setRows((await r.json()) || []);
   };
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.user?.is_demo) router.replace("/dashboard");
+      })
+      .catch(() => {});
+  }, [router]);
 
   useEffect(() => {
     let cancelled = false;

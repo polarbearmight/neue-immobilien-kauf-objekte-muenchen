@@ -38,7 +38,7 @@ export default function WatchlistPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_URL}/api/watchlist`, { cache: "no-store" });
+      const res = await fetch(`/api/watchlist`, { cache: "no-store" });
       if (!res.ok) throw new Error(`watchlist_${res.status}`);
       const data = await res.json();
       setItems(Array.isArray(data) ? data : []);

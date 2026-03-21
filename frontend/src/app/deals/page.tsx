@@ -48,7 +48,7 @@ export default function DealsPage() {
     if (!listingId) return;
     setSavingIds((prev) => ({ ...prev, [listingId]: true }));
     try {
-      const res = await fetch(`${API_URL}/api/watchlist/${listingId}`, { method: "POST" });
+      const res = await fetch(`/api/watchlist/${listingId}`, { method: "POST" });
       if (!res.ok) throw new Error("watchlist_save_failed");
       setSavedIds((prev) => ({ ...prev, [listingId]: true }));
     } catch {

@@ -15,9 +15,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: data?.error || "Ungültige Zugangsdaten" }, { status: resBackend.status || 401 });
   }
 
+  const token = authToken(data.user.username, !!data.user.is_demo);
   const res = NextResponse.json({ ok: true, user: data.user });
-  res.cookies.set("mdf_auth", authToken(data.user.username), {
+  res.cookies.set("mdf_auth", token, {
     httpOnly: true,
+    sameSite: "lax",
+    secure: true,
+    path: "/",
+    maxAge: 60 * 60 * 24 * 7,
+  });
+  res.cookies.set("mdf_auth_client", token, {
+    httpOnly: false,
     sameSite: "lax",
     secure: true,
     path: "/",

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { API_URL } from "@/lib/api";
 
 type Row = {
@@ -25,6 +26,7 @@ type Row = {
 };
 
 export default function SourceDebugPage() {
+  const router = useRouter();
   const [rows, setRows] = useState<Row[]>([]);
   const [source, setSource] = useState("all");
   const [query, setQuery] = useState("");
@@ -36,6 +38,15 @@ export default function SourceDebugPage() {
     const r = await fetch(`${API_URL}/api/source-debug?${q.toString()}`, { cache: "no-store" });
     setRows((await r.json()) || []);
   };
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.user?.is_demo) router.replace("/dashboard");
+      })
+      .catch(() => {});
+  }, [router]);
 
   useEffect(() => {
     let cancelled = false;

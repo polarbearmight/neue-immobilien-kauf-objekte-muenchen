@@ -197,7 +197,7 @@ export function ListingDrawer({ listing, onClose }: { listing: Listing | null; o
             }}>Copy link</button>
             <button className="inline-block rounded border px-3 py-2 text-sm hover:bg-muted" onClick={async () => {
               if (!l.id) return;
-              await fetch(`${API_URL}/api/watchlist/${l.id}`, { method: "POST" });
+              await fetch(`/api/watchlist/${l.id}`, { method: "POST" });
             }}>Save to Watchlist</button>
           </div>
         </div>
