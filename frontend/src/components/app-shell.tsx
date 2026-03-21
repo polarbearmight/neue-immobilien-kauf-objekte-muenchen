@@ -24,28 +24,31 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+type RoleKey = "free" | "pro" | "admin";
+
 type NavItem = {
   label: string;
   href: string;
   icon: LucideIcon;
   section: "core" | "signals" | "market" | "account";
   mobileQuick?: boolean;
+  minRole?: RoleKey;
 };
 
 const nav: NavItem[] = [
-  { label: "Dashboard", href: "/dashboard", icon: Home, section: "core", mobileQuick: true },
-  { label: "Deal Radar", href: "/deals", icon: Sparkles, section: "core", mobileQuick: true },
-  { label: "Map", href: "/map", icon: MapPinned, section: "core", mobileQuick: true },
-  { label: "Watchlist", href: "/watchlist", icon: Heart, section: "core", mobileQuick: true },
-  { label: "Brand New", href: "/brand-new", icon: Flame, section: "signals", mobileQuick: true },
-  { label: "Price Drops", href: "/price-drops", icon: Bookmark, section: "signals", mobileQuick: true },
-  { label: "Off Market", href: "/off-market", icon: Radar, section: "signals", mobileQuick: true },
-  { label: "Clusters", href: "/clusters", icon: Building2, section: "market", mobileQuick: true },
-  { label: "Districts", href: "/districts", icon: Map, section: "market" },
-  { label: "Geo Heatmap", href: "/geo", icon: BarChart3, section: "market" },
-  { label: "Sources", href: "/sources", icon: BarChart3, section: "market" },
-  { label: "Settings", href: "/settings", icon: Settings, section: "account" },
-  { label: "Account", href: "/account", icon: UserCircle2, section: "account" },
+  { label: "Dashboard", href: "/dashboard", icon: Home, section: "core", mobileQuick: true, minRole: "free" },
+  { label: "Deal Radar", href: "/deals", icon: Sparkles, section: "core", mobileQuick: true, minRole: "free" },
+  { label: "Map", href: "/map", icon: MapPinned, section: "core", mobileQuick: true, minRole: "free" },
+  { label: "Watchlist", href: "/watchlist", icon: Heart, section: "core", mobileQuick: true, minRole: "free" },
+  { label: "Brand New", href: "/brand-new", icon: Flame, section: "signals", mobileQuick: true, minRole: "free" },
+  { label: "Price Drops", href: "/price-drops", icon: Bookmark, section: "signals", mobileQuick: true, minRole: "free" },
+  { label: "Off Market", href: "/off-market", icon: Radar, section: "signals", mobileQuick: true, minRole: "pro" },
+  { label: "Clusters", href: "/clusters", icon: Building2, section: "market", mobileQuick: true, minRole: "free" },
+  { label: "Districts", href: "/districts", icon: Map, section: "market", minRole: "free" },
+  { label: "Geo Heatmap", href: "/geo", icon: BarChart3, section: "market", minRole: "pro" },
+  { label: "Sources", href: "/sources", icon: BarChart3, section: "market", minRole: "admin" },
+  { label: "Settings", href: "/settings", icon: Settings, section: "account", minRole: "free" },
+  { label: "Account", href: "/account", icon: UserCircle2, section: "account", minRole: "free" },
 ];
 
 const navSections: Array<{ key: NavItem["section"]; label: string }> = [
@@ -56,6 +59,7 @@ const navSections: Array<{ key: NavItem["section"]; label: string }> = [
 ];
 
 const mobileQuickLinks = nav.filter((item) => item.mobileQuick);
+const roleRank: Record<RoleKey, number> = { free: 0, pro: 1, admin: 2 };
 const publicPaths = new Set(["/", "/contact", "/impressum", "/privacy", "/forgot-password", "/reset-password"]);
 const THEME_KEY = "munich-dealfinder-theme";
 
@@ -89,8 +93,11 @@ export function AppShell({ children }: { children: ReactNode }) {
     window.localStorage.setItem(THEME_KEY, next ? "dark" : "light");
   };
 
-  const activeItem = useMemo(() => nav.find((item) => isActivePath(pathname, item.href)), [pathname]);
-  const effectiveRole = (roleInfo?.effective_role || roleInfo?.role || "free").toUpperCase();
+  const effectiveRoleKey = ((roleInfo?.effective_role || roleInfo?.role || "free").toLowerCase() as RoleKey);
+  const effectiveRole = effectiveRoleKey.toUpperCase();
+  const visibleNav = useMemo(() => nav.filter((item) => roleRank[effectiveRoleKey] >= roleRank[item.minRole || "free"]), [effectiveRoleKey]);
+  const mobileQuickLinks = useMemo(() => visibleNav.filter((item) => item.mobileQuick), [visibleNav]);
+  const activeItem = useMemo(() => visibleNav.find((item) => isActivePath(pathname, item.href)) || nav.find((item) => isActivePath(pathname, item.href)), [pathname, visibleNav]);
 
   if (publicPaths.has(pathname)) return <>{children}</>;
 
@@ -134,7 +141,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
               <nav className="mt-1 space-y-4 overflow-y-auto pr-1">
                 {navSections.map((section) => {
-                  const items = nav.filter((item) => item.section === section.key);
+                  const items = visibleNav.filter((item) => item.section === section.key);
                   return (
                     <div key={section.key} className="space-y-1.5">
                       <div className="px-2 text-[11px] uppercase tracking-[0.22em] text-muted-foreground/80 dark:text-amber-100/55">{section.label}</div>
