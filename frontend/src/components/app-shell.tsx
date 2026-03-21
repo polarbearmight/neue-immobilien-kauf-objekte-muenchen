@@ -75,6 +75,13 @@ export function AppShell({ children }: { children: ReactNode }) {
     document.documentElement.classList.toggle("dark", nextDark);
   }, []);
 
+  useEffect(() => {
+    fetch("/api/auth/me", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((json) => setRoleInfo(json?.user || null))
+      .catch(() => setRoleInfo(null));
+  }, []);
+
   const toggleTheme = () => {
     const next = !dark;
     setDark(next);
