@@ -66,6 +66,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [dark, setDark] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [roleInfo, setRoleInfo] = useState<{ role?: string; effective_role?: string; license_until?: string | null } | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -82,6 +83,13 @@ export function AppShell({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("resize", applyTheme);
   }, []);
 
+  useEffect(() => {
+    fetch("/api/auth/me", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((json) => setRoleInfo(json?.user || null))
+      .catch(() => setRoleInfo(null));
+  }, []);
+
   const toggleTheme = () => {
     const next = !dark;
     setDark(next);
@@ -90,6 +98,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   };
 
   const activeItem = useMemo(() => nav.find((item) => isActivePath(pathname, item.href)), [pathname]);
+  const effectiveRole = (roleInfo?.effective_role || roleInfo?.role || "free").toUpperCase();
 
   if (publicPaths.has(pathname)) return <>{children}</>;
 
@@ -172,6 +181,9 @@ export function AppShell({ children }: { children: ReactNode }) {
                   <p className="mt-1 hidden text-xs text-muted-foreground md:block">{activeItem ? `Aktiv: ${activeItem.label}` : "Alle Marktansichten bleiben direkt erreichbar."}</p>
                 </div>
                 <div className="flex items-center gap-2">
+                  <span className="inline-flex min-h-11 items-center rounded-2xl border border-border bg-background/80 px-3 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground dark:border-amber-400/15 dark:bg-amber-300/10 dark:text-amber-100">
+                    {effectiveRole}
+                  </span>
                   <button className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-background/80 dark:border-amber-400/15 dark:bg-amber-300/10 dark:text-amber-50" onClick={toggleTheme} aria-label="Theme wechseln">{dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}</button>
                   <Link href="/account" className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-background/80 dark:border-amber-400/15 dark:bg-amber-300/10 dark:text-amber-50" aria-label="Account öffnen"><UserCircle2 className="h-4 w-4" /></Link>
                   <button className="hidden min-h-11 rounded-2xl border border-border bg-background px-4 py-2 text-sm dark:border-amber-400/15 dark:bg-amber-300/10 dark:text-amber-50 md:inline-flex" onClick={() => location.reload()}>Refresh</button>
