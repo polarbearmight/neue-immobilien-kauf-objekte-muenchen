@@ -93,10 +93,11 @@ export default function DashboardPage() {
         if (selectedDistricts.length) params.set("districts", selectedDistricts.join(","));
         if (priceMin !== "") params.set("price_min", String(priceMin));
         if (priceMax !== "") params.set("price_max", String(priceMax));
+        const headers = authHeaders();
         const [lRes, sRes, aRes] = await Promise.all([
-          fetch(`${API_URL}/api/listings?${params.toString()}`, { cache: "no-store", signal: controller.signal }),
-          fetch(`${API_URL}/api/stats?days=7`, { cache: "no-store", signal: controller.signal }),
-          fetch(`${API_URL}/api/analytics?days=30`, { cache: "no-store", signal: controller.signal }),
+          fetch(`${API_URL}/api/listings?${params.toString()}`, { cache: "no-store", signal: controller.signal, headers }),
+          fetch(`${API_URL}/api/stats?days=7`, { cache: "no-store", signal: controller.signal, headers }),
+          fetch(`${API_URL}/api/analytics?days=30`, { cache: "no-store", signal: controller.signal, headers }),
         ]);
         if (!lRes.ok || !sRes.ok || !aRes.ok) throw new Error(`api_error_${lRes.status}_${sRes.status}_${aRes.status}`);
 
