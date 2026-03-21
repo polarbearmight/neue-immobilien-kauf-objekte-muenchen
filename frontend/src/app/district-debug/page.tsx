@@ -32,7 +32,7 @@ export default function DistrictDebugPage() {
   const [onlyProblems, setOnlyProblems] = useState<boolean>(false);
   const [query, setQuery] = useState("");
 
-  const load = async () => {
+  const refresh = async () => {
     const q = new URLSearchParams({ limit: "500" });
     if (source !== "all") q.set("source", source);
 
@@ -45,9 +45,30 @@ export default function DistrictDebugPage() {
     setQuality((await qr.json()) || null);
   };
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
-    load();
+    let cancelled = false;
+
+    const fetchRows = async () => {
+      const q = new URLSearchParams({ limit: "500" });
+      if (source !== "all") q.set("source", source);
+
+      const [dr, qr] = await Promise.all([
+        fetch(`${API_URL}/api/district-debug?${q.toString()}`, { cache: "no-store" }),
+        fetch(`${API_URL}/api/district-quality`, { cache: "no-store" }),
+      ]);
+
+      const nextRows = (await dr.json()) || [];
+      const nextQuality = (await qr.json()) || null;
+      if (!cancelled) {
+        setRows(nextRows);
+        setQuality(nextQuality);
+      }
+    };
+
+    void fetchRows();
+    return () => {
+      cancelled = true;
+    };
   }, [source]);
 
   const sources = useMemo(
@@ -108,7 +129,7 @@ export default function DistrictDebugPage() {
         </label>
 
         <div className="flex items-end gap-3">
-          <button className="rounded border px-3 py-1" onClick={load}>Refresh</button>
+          <button className="rounded border px-3 py-1" onClick={refresh}>Refresh</button>
           <span className="text-xs text-muted-foreground">{filtered.length} Treffer</span>
         </div>
       </div>

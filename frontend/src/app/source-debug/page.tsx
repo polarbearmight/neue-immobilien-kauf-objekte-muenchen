@@ -30,7 +30,7 @@ export default function SourceDebugPage() {
   const [query, setQuery] = useState("");
   const [onlyProblems, setOnlyProblems] = useState(false);
 
-  const load = async () => {
+  const refresh = async () => {
     const q = new URLSearchParams({ limit: "500" });
     if (source !== "all") q.set("source", source);
     const r = await fetch(`${API_URL}/api/source-debug?${q.toString()}`, { cache: "no-store" });
@@ -38,7 +38,20 @@ export default function SourceDebugPage() {
   };
 
   useEffect(() => {
-    load();
+    let cancelled = false;
+
+    const fetchRows = async () => {
+      const q = new URLSearchParams({ limit: "500" });
+      if (source !== "all") q.set("source", source);
+      const r = await fetch(`${API_URL}/api/source-debug?${q.toString()}`, { cache: "no-store" });
+      const data = (await r.json()) || [];
+      if (!cancelled) setRows(data);
+    };
+
+    void fetchRows();
+    return () => {
+      cancelled = true;
+    };
   }, [source]);
 
   const sources = useMemo(() => ["all", ...Array.from(new Set(rows.map((x) => x.source))).sort()], [rows]);
@@ -69,7 +82,7 @@ export default function SourceDebugPage() {
           <input type="checkbox" checked={onlyProblems} onChange={(e) => setOnlyProblems(e.target.checked)} />
           <span>Only problem cases</span>
         </label>
-        <button className="rounded border px-2 py-1" onClick={load}>Refresh</button>
+        <button className="rounded border px-2 py-1" onClick={refresh}>Refresh</button>
         <span className="text-xs text-muted-foreground">{filtered.length} Treffer</span>
       </div>
       <div className="overflow-x-auto rounded border">

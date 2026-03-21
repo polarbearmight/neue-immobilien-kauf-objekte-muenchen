@@ -5,10 +5,14 @@ Lokales System für neue Kaufwohnungen in München.
 ## Repository Root (wichtig)
 **Dieses Verzeichnis ist das einzige Projekt-Root des GitHub-Repos.**
 
-Wenn es in deinem OpenClaw-Workspace so aussieht, als gäbe es `app/`, `collectors/`, `frontend/`, `ui/` noch einmal darüber, dann sind das **Workspace-Dateien außerhalb dieses Repos** – nicht eine doppelte Verschachtelung innerhalb des GitHub-Projekts.
+Die commit-relevante Projektstruktur liegt direkt hier im Root:
+- `app/`
+- `collectors/`
+- `frontend/`
+- `ui/`
+- `tests/`
 
-Das eigentliche Repo ist:
-- `neue-immobilien-kauf-objekte-muenchen/`
+Eine früher versehentlich verschachtelte Kopie unter `neue-immobilien-kauf-objekte-muenchen/` wurde aus der aktiven Git-Struktur entfernt und nur noch als Workspace-Archiv unter `tmp/archived-nested-project-copy-2026-03-20/` abgelegt.
 
 Innerhalb dieses Repos gilt:
 - **eine** Python-Umgebung: `.venv/`
