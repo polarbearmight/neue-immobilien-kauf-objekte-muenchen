@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { API_URL } from "@/lib/api";
+import { API_URL, authHeaders } from "@/lib/api";
 import { StateCard } from "@/components/state-card";
 
 type WatchItem = {
@@ -38,7 +38,7 @@ export default function WatchlistPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_URL}/api/watchlist`, { cache: "no-store" });
+      const res = await fetch(`${API_URL}/api/watchlist`, { cache: "no-store", headers: authHeaders() });
       if (!res.ok) throw new Error(`watchlist_${res.status}`);
       const data = await res.json();
       setItems(Array.isArray(data) ? data : []);

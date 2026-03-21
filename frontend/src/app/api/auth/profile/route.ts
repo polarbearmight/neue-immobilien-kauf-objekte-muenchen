@@ -7,9 +7,9 @@ export async function PUT(req: NextRequest) {
   const auth = parseAuthToken(req.cookies.get("mdf_auth")?.value);
   if (!auth) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const body = await req.json().catch(() => ({}));
-  const res = await fetch(`${API_BASE}/api/auth/profile?username=${encodeURIComponent(auth.username)}`, {
+  const res = await fetch(`${API_BASE}/api/auth/profile`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "X-Auth-User": auth.username },
     body: JSON.stringify(body),
   });
   const data = await res.json().catch(() => ({}));

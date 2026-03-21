@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
   const auth = parseAuthToken(req.cookies.get("mdf_auth")?.value);
   if (!auth) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  const res = await fetch(`${API_BASE}/api/auth/users/${encodeURIComponent(auth.username)}`, { cache: "no-store" });
+  const res = await fetch(`${API_BASE}/api/auth/users/${encodeURIComponent(auth.username)}`, { cache: "no-store", headers: { "X-Auth-User": auth.username } });
   const data = await res.json().catch(() => ({}));
   return NextResponse.json(data, { status: res.status });
 }

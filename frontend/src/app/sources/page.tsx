@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { API_URL } from "@/lib/api";
+import { API_URL, authHeaders } from "@/lib/api";
 
 type Source = { id: number; name: string; health_status: string; reliability_score?: number; approved: boolean; enabled: boolean; last_error?: string };
 type SourceRun = { id: number; started_at: string; status: string; new_count: number; updated_count: number; notes?: string };
@@ -19,14 +19,14 @@ export default function SourcesPage() {
   const [immoscoutExport, setImmoscoutExport] = useState<ImmoScoutExportStatus | null>(null);
 
   const load = async () => {
-    const r = await fetch(`${API_URL}/api/sources`, { cache: "no-store" });
+    const r = await fetch(`${API_URL}/api/sources`, { cache: "no-store", headers: authHeaders() });
     const srcRows: Source[] = await r.json();
     setSources(srcRows);
 
     const entries = await Promise.all(
       srcRows.map(async (s) => {
         try {
-          const rr = await fetch(`${API_URL}/api/sources/${s.id}/runs?limit=3`, { cache: "no-store" });
+          const rr = await fetch(`${API_URL}/api/sources/${s.id}/runs?limit=3`, { cache: "no-store", headers: authHeaders() });
           const rows = await rr.json();
           return [s.id, Array.isArray(rows) ? rows : []] as const;
         } catch {
@@ -38,9 +38,9 @@ export default function SourcesPage() {
 
     try {
       const [qr, sqr, is24r] = await Promise.all([
-        fetch(`${API_URL}/api/district-quality`, { cache: "no-store" }),
-        fetch(`${API_URL}/api/source-quality`, { cache: "no-store" }),
-        fetch(`${API_URL}/api/sources/immoscout/export-status`, { cache: "no-store" }),
+        fetch(`${API_URL}/api/district-quality`, { cache: "no-store", headers: authHeaders() }),
+        fetch(`${API_URL}/api/source-quality`, { cache: "no-store", headers: authHeaders() }),
+        fetch(`${API_URL}/api/sources/immoscout/export-status`, { cache: "no-store", headers: authHeaders() }),
       ]);
       setQuality(await qr.json());
       const sq = await sqr.json();
@@ -56,12 +56,12 @@ export default function SourcesPage() {
   useEffect(() => { load(); }, []);
 
   const selfTest = async (id: number) => {
-    await fetch(`${API_URL}/api/sources/${id}/self-test`, { method: "POST" });
+    await fetch(`${API_URL}/api/sources/${id}/self-test`, { method: "POST", headers: authHeaders() });
     load();
   };
 
   const toggle = async (id: number, enabled: boolean) => {
-    await fetch(`${API_URL}/api/sources/${id}/enable?enabled=${String(enabled)}`, { method: "POST" });
+    await fetch(`${API_URL}/api/sources/${id}/enable?enabled=${String(enabled)}`, { method: "POST", headers: authHeaders() });
     load();
   };
 
@@ -69,7 +69,7 @@ export default function SourcesPage() {
     setRunningSourceName(sourceName);
     setRunNotice(null);
     try {
-      const res = await fetch(`${API_URL}/api/collect/run?source=${encodeURIComponent(sourceName)}`, { method: "POST" });
+      const res = await fetch(`${API_URL}/api/collect/run?source=${encodeURIComponent(sourceName)}`, { method: "POST", headers: authHeaders() });
       const data = await res.json();
       if (!res.ok || data?.ok === false) {
         setRunNotice(`Run failed for ${sourceName}`);
@@ -188,7 +188,7 @@ export default function SourcesPage() {
                     {runningSourceName === s.name ? "Running…" : "Run source now"}
                   </button>
                 ) : null}
-                <button className="rounded border px-2 py-1" onClick={async () => { await fetch(`${API_URL}/api/sources/${s.id}/approve?approved=${String(!s.approved)}`, { method: "POST" }); load(); }}>{s.approved ? "Unapprove" : "Approve"}</button>
+                <button className="rounded border px-2 py-1" onClick={async () => { await fetch(`${API_URL}/api/sources/${s.id}/approve?approved=${String(!s.approved)}`, { method: "POST", headers: authHeaders() }); load(); }}>{s.approved ? "Unapprove" : "Approve"}</button>
                 <button className="rounded border px-2 py-1" onClick={() => toggle(s.id, !s.enabled)}>{s.enabled ? "Disable" : "Enable"}</button>
               </div>
             </div>

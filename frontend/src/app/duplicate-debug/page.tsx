@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { API_URL } from "@/lib/api";
+import { API_URL, authHeaders } from "@/lib/api";
 
 type Cluster = { cluster_id: string; members_count: number; members: Array<{ id: number; source: string; display_title?: string; price_eur?: number; area_sqm?: number; district?: string; url: string }> };
 
@@ -9,7 +9,7 @@ export default function DuplicateDebugPage() {
   const [query, setQuery] = useState("");
 
   const refresh = async () => {
-    const r = await fetch(`${API_URL}/api/duplicate-debug?limit=500`, { cache: "no-store" });
+    const r = await fetch(`${API_URL}/api/duplicate-debug?limit=500`, { cache: "no-store", headers: authHeaders() });
     setRows((await r.json()) || []);
   };
 
@@ -17,7 +17,7 @@ export default function DuplicateDebugPage() {
     let cancelled = false;
 
     const fetchRows = async () => {
-      const r = await fetch(`${API_URL}/api/duplicate-debug?limit=500`, { cache: "no-store" });
+      const r = await fetch(`${API_URL}/api/duplicate-debug?limit=500`, { cache: "no-store", headers: authHeaders() });
       const data = (await r.json()) || [];
       if (!cancelled) setRows(data);
     };

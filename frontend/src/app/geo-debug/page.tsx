@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { API_URL } from "@/lib/api";
+import { API_URL, authHeaders } from "@/lib/api";
 
 type Row = { id: number; source: string; display_title?: string; district?: string; postal_code?: string; latitude?: number; longitude?: number; geo_status?: string; map_mode_assignment?: string; location_confidence?: number; district_source?: string };
 
@@ -9,7 +9,7 @@ export default function GeoDebugPage() {
   const [query, setQuery] = useState("");
   const [onlyMissingCoords, setOnlyMissingCoords] = useState(false);
   const refresh = async () => {
-    const r = await fetch(`${API_URL}/api/geo-debug?limit=500`, { cache: "no-store" });
+    const r = await fetch(`${API_URL}/api/geo-debug?limit=500`, { cache: "no-store", headers: authHeaders() });
     setRows((await r.json()) || []);
   };
 
@@ -17,7 +17,7 @@ export default function GeoDebugPage() {
     let cancelled = false;
 
     const fetchRows = async () => {
-      const r = await fetch(`${API_URL}/api/geo-debug?limit=500`, { cache: "no-store" });
+      const r = await fetch(`${API_URL}/api/geo-debug?limit=500`, { cache: "no-store", headers: authHeaders() });
       const data = (await r.json()) || [];
       if (!cancelled) setRows(data);
     };

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { API_URL, Listing } from "@/lib/api";
+import { API_URL, Listing, authHeaders } from "@/lib/api";
 import { badgeToneClass, listingHighlightBadges, listingHighlightRowClass } from "@/lib/deal-highlights";
 import { StateCard } from "@/components/state-card";
 
@@ -21,7 +21,7 @@ export default function DealsPage() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`${API_URL}/api/listings?min_score=${minScore}&sort=score&limit=160`, { cache: "no-store" });
+        const res = await fetch(`${API_URL}/api/listings?min_score=${minScore}&sort=score&limit=160`, { cache: "no-store", headers: authHeaders() });
         if (!res.ok) throw new Error(`deals_${res.status}`);
         setListings(await res.json());
       } catch {
@@ -48,7 +48,7 @@ export default function DealsPage() {
     if (!listingId) return;
     setSavingIds((prev) => ({ ...prev, [listingId]: true }));
     try {
-      const res = await fetch(`${API_URL}/api/watchlist/${listingId}`, { method: "POST" });
+      const res = await fetch(`${API_URL}/api/watchlist/${listingId}`, { method: "POST", headers: authHeaders() });
       if (!res.ok) throw new Error("watchlist_save_failed");
       setSavedIds((prev) => ({ ...prev, [listingId]: true }));
     } catch {

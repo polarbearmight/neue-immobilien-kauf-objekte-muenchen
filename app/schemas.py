@@ -52,6 +52,26 @@ class ChangePasswordIn(BaseModel):
     new_password: str
 
 
+class AdminUserCreateIn(BaseModel):
+    username: str
+    password: str
+    email: str
+    display_name: str | None = None
+    company: str | None = None
+    role: str = "free"
+    license_until: datetime | None = None
+
+
+class AdminUserUpdateIn(BaseModel):
+    email: str | None = None
+    display_name: str | None = None
+    company: str | None = None
+    role: str | None = None
+    license_until: datetime | None = None
+    is_active: bool | None = None
+    password: str | None = None
+
+
 class ForgotPasswordIn(BaseModel):
     email: str
 

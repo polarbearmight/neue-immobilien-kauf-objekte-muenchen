@@ -21,6 +21,97 @@
 
 ## Current Priority Tasks
 
+### Task: Add role and license fields to User model
+Status: [x]
+Priority: High
+Type: Feature
+Description:
+- Add `role` (`VARCHAR(16)`, default `"free"`) and `license_until` (`DATETIME`, nullable) to the `users` table.
+- Add `effective_role` property to the `User` model that auto-downgrades expired PRO licenses to `free`.
+- Run a lightweight startup migration for existing SQLite/Postgres DBs via `ensure_schema()`.
+
+Acceptance Criteria:
+- `users` table has `role` and `license_until` columns after startup
+- `effective_role` returns `admin`, `pro`, or `free` correctly
+- Existing admin user gets `role = "admin"` automatically
+- No existing functionality broken
+
+### Task: Add require_role() FastAPI dependency
+Status: [x]
+Priority: High
+Type: Feature
+Description:
+- Add reusable `get_current_user()` and `require_role(*roles)` helpers to `app/auth.py`.
+- Read authenticated user from `X-Auth-User` header forwarded by Next.js.
+
+Acceptance Criteria:
+- `require_role("admin")` blocks non-admins with 403
+- `require_role("admin", "pro")` allows both roles
+- Unauthenticated requests return 401
+- `get_current_user()` is reusable across protected endpoints
+
+### Task: Protect existing API endpoints with role checks
+Status: [ ]
+Priority: High
+Type: Feature
+Description:
+- Apply role checks to scan/source-management/admin endpoints.
+- Limit free users on listings and block premium-only routes.
+
+Acceptance Criteria:
+- Free users see max 20 listings
+- Free users get 403 on premium/protected endpoints like `/api/off-market` and geo premium routes
+- Admin-only routes reject non-admin users
+
+### Task: Add per-user watchlist for multi-user accounts
+Status: [ ]
+Priority: High
+Type: Feature
+Description:
+- Extend watchlist entries with `user_id` so each authenticated user has an isolated watchlist.
+- Remove global uniqueness on `listing_id`.
+
+Acceptance Criteria:
+- Different users can save the same listing independently
+- Each user sees only their own watchlist
+- Existing rows remain compatible during migration
+
+### Task: Forward authenticated username through Next.js proxy routes
+Status: [x]
+Priority: High
+Type: Feature
+Description:
+- Forward the authenticated username to backend routes using `X-Auth-User` after cookie validation.
+- Update `/api/auth/me` and relevant Next.js API proxy routes.
+
+Acceptance Criteria:
+- Backend can resolve current user from proxied requests
+- No username spoofing via raw browser calls to protected frontend routes
+
+### Task: Add admin UI for managing users and roles
+Status: [ ]
+Priority: High
+Type: Feature
+Description:
+- Build an admin-facing UI to create users, view users, and manage `free` / `pro` / `admin` roles and license expiry.
+
+Acceptance Criteria:
+- Admin can create new users with username/password
+- Admin can change user role and `license_until`
+- Non-admin users cannot access the admin UI
+
+### Task: Verify multi-user role system end-to-end
+Status: [ ]
+Priority: High
+Type: Feature
+Description:
+- Validate login, role gating, watchlist isolation, and license expiration behavior end-to-end.
+
+Acceptance Criteria:
+- Admin/pro/free behavior matches requirements
+- Expired pro licenses downgrade to free behavior automatically
+- No obvious regressions in auth or existing UI flows
+
 ### Core Features
 - [~] Build or improve property listing page
 - [ ] Build or improve property detail page

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { API_URL, Listing } from "@/lib/api";
+import { API_URL, Listing, authHeaders } from "@/lib/api";
 
 const eur = (v?: number | null) => (v == null ? "-" : new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(v));
 
@@ -14,14 +14,14 @@ export default function PriceDropsPage() {
   useEffect(() => {
     const load = async () => {
       setLoading(true);
-      const res = await fetch(`${API_URL}/api/price-drops`, { cache: "no-store" });
+      const res = await fetch(`${API_URL}/api/price-drops`, { cache: "no-store", headers: authHeaders() });
       const listings: Listing[] = await res.json();
 
       const enriched = await Promise.all(
         listings.slice(0, 60).map(async (l) => {
           if (!l.id) return l as DropRow;
           try {
-            const sRes = await fetch(`${API_URL}/api/listings/${l.id}/snapshots?limit=5`, { cache: "no-store" });
+            const sRes = await fetch(`${API_URL}/api/listings/${l.id}/snapshots?limit=5`, { cache: "no-store", headers: authHeaders() });
             const snaps = await sRes.json();
             const prev = Array.isArray(snaps) && snaps.length > 1 ? snaps[1]?.price_eur : null;
             const now = l.price_eur ?? null;

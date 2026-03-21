@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { API_URL } from "@/lib/api";
+import { API_URL, authHeaders } from "@/lib/api";
 
 type DistrictRow = {
   district: string;
@@ -33,7 +33,7 @@ export default function GeoPage() {
   const [sources, setSources] = useState<string[]>(["all"]);
 
   useEffect(() => {
-    fetch(`${API_URL}/api/sources`, { cache: "no-store" })
+    fetch(`${API_URL}/api/sources`, { cache: "no-store", headers: authHeaders() })
       .then((r) => r.json())
       .then((rows) => {
         const dynamicSources = Array.isArray(rows) ? rows.map((x: { name?: string }) => x.name).filter((v): v is string => Boolean(v)) : [];
@@ -48,10 +48,10 @@ export default function GeoPage() {
     if (district !== "all") q.set("district", district);
 
     Promise.all([
-      fetch(`${API_URL}/api/geo/districts?${q.toString()}`, { cache: "no-store" }).then((r) => r.json()),
-      fetch(`${API_URL}/api/geo/hotspots?${q.toString()}`, { cache: "no-store" }).then((r) => r.json()),
-      fetch(`${API_URL}/api/geo/summary?${q.toString()}`, { cache: "no-store" }).then((r) => r.json()),
-      fetch(`${API_URL}/api/geo/cells?window=${window}`, { cache: "no-store" }).then((r) => r.json()),
+      fetch(`${API_URL}/api/geo/districts?${q.toString()}`, { cache: "no-store", headers: authHeaders() }).then((r) => r.json()),
+      fetch(`${API_URL}/api/geo/hotspots?${q.toString()}`, { cache: "no-store", headers: authHeaders() }).then((r) => r.json()),
+      fetch(`${API_URL}/api/geo/summary?${q.toString()}`, { cache: "no-store", headers: authHeaders() }).then((r) => r.json()),
+      fetch(`${API_URL}/api/geo/cells?window=${window}`, { cache: "no-store", headers: authHeaders() }).then((r) => r.json()),
     ]).then(([d, h, s, c]) => {
       setRows(d?.rows || []);
       setHotspots(h?.rows || []);

@@ -104,10 +104,50 @@ def ensure_schema():
         conn.execute(text("CREATE INDEX IF NOT EXISTS ix_listings_is_active ON listings(is_active)"))
         conn.execute(text("CREATE INDEX IF NOT EXISTS ix_listings_raw_hash ON listings(raw_hash)"))
 
+        if "users" in table_names:
+            user_cols = {c["name"] for c in insp.get_columns("users")}
+            if "role" not in user_cols:
+                try:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN role VARCHAR(16) DEFAULT 'free'"))
+                except Exception:
+                    pass
+            if "license_until" not in user_cols:
+                try:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN license_until DATETIME"))
+                except Exception:
+                    pass
+            try:
+                conn.execute(text("UPDATE users SET role = 'admin' WHERE username = (SELECT username FROM users ORDER BY id LIMIT 1)"))
+                conn.execute(text("UPDATE users SET role = 'free' WHERE role IS NULL OR role = ''"))
+            except Exception:
+                pass
+
         if "listing_snapshots" in table_names:
             conn.execute(text("CREATE INDEX IF NOT EXISTS ix_snapshots_listing_captured ON listing_snapshots(listing_id, captured_at)"))
         if "watchlist" in table_names:
+            watch_cols = {c["name"] for c in insp.get_columns("watchlist")}
+            if "user_id" not in watch_cols:
+                try:
+                    conn.execute(text("ALTER TABLE watchlist ADD COLUMN user_id INTEGER"))
+                except Exception:
+                    pass
             conn.execute(text("CREATE INDEX IF NOT EXISTS ix_watchlist_created_at ON watchlist(created_at)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_watchlist_user_id ON watchlist(user_id)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_watchlist_listing_id ON watchlist(listing_id)"))
+
+            try:
+                watch_sql = conn.execute(text("SELECT sql FROM sqlite_master WHERE type='table' AND name='watchlist'"))
+                watch_schema = watch_sql.scalar_one_or_none() or ""
+            except Exception:
+                watch_schema = ""
+            if "listing_id INTEGER NOT NULL UNIQUE" in watch_schema or "UNIQUE (listing_id)" in watch_schema:
+                conn.execute(text("ALTER TABLE watchlist RENAME TO watchlist_legacy"))
+                conn.execute(text("CREATE TABLE watchlist (id INTEGER NOT NULL PRIMARY KEY, listing_id INTEGER NOT NULL, user_id INTEGER, created_at DATETIME NOT NULL, notes VARCHAR(512), FOREIGN KEY(listing_id) REFERENCES listings (id), FOREIGN KEY(user_id) REFERENCES users (id))"))
+                conn.execute(text("INSERT INTO watchlist (id, listing_id, user_id, created_at, notes) SELECT id, listing_id, user_id, created_at, notes FROM watchlist_legacy"))
+                conn.execute(text("DROP TABLE watchlist_legacy"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_watchlist_created_at ON watchlist(created_at)"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_watchlist_user_id ON watchlist(user_id)"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_watchlist_listing_id ON watchlist(listing_id)"))
         if "source_runs" in table_names:
             source_run_cols = {c["name"] for c in insp.get_columns("source_runs")}
             if "skipped_known_count" not in source_run_cols:

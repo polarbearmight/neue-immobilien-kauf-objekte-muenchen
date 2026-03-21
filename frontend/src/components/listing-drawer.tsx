@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Listing, API_URL, parseBadges } from "@/lib/api";
+import { Listing, API_URL, authHeaders, parseBadges } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { MiniBarChart } from "@/components/mini-bar-chart";
 import { MetricTile, prettyJson, SectionCard } from "@/components/listing-detail-sections";
@@ -197,7 +197,7 @@ export function ListingDrawer({ listing, onClose }: { listing: Listing | null; o
             }}>Copy link</button>
             <button className="inline-block rounded border px-3 py-2 text-sm hover:bg-muted" onClick={async () => {
               if (!l.id) return;
-              await fetch(`${API_URL}/api/watchlist/${l.id}`, { method: "POST" });
+              await fetch(`${API_URL}/api/watchlist/${l.id}`, { method: "POST", headers: authHeaders() });
             }}>Save to Watchlist</button>
           </div>
         </div>

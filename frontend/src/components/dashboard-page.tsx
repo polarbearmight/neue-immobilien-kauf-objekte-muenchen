@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { API_URL, Listing } from "@/lib/api";
+import { API_URL, Listing, authHeaders } from "@/lib/api";
 import { ListingDrawer } from "@/components/listing-drawer";
 import { MiniBarChart } from "@/components/mini-bar-chart";
 import { ListingTable } from "@/components/listing-table";
@@ -154,7 +154,7 @@ export default function DashboardPage() {
     setScanNotice(null);
     const endpoint = kind === "secondary" ? "/api/scan/run-secondary" : kind === "all" ? "/api/scan/run-all" : "/api/scan/run";
     try {
-      const res = await fetch(`${API_URL}${endpoint}`, { method: "POST" });
+      const res = await fetch(`${API_URL}${endpoint}`, { method: "POST", headers: authHeaders() });
       const data = await res.json();
       if (!res.ok) {
         setScanNotice("Scan fehlgeschlagen");
