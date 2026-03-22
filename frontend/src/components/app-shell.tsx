@@ -69,7 +69,15 @@ export function AppShell({ children, initialRoleInfo }: { children: ReactNode; i
   const router = useRouter();
   const [dark, setDark] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
-  const [roleInfo, setRoleInfo] = useState<RoleInfo | null>(initialRoleInfo ?? null);
+  const [roleInfo, setRoleInfo] = useState<RoleInfo | null>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const cached = window.localStorage.getItem(ROLE_CACHE_KEY);
+        if (cached) return JSON.parse(cached) as RoleInfo;
+      } catch {}
+    }
+    return initialRoleInfo ?? null;
+  });
 
   useEffect(() => {
     const stored = typeof window !== "undefined" ? window.localStorage.getItem(THEME_KEY) : null;
@@ -82,8 +90,19 @@ export function AppShell({ children, initialRoleInfo }: { children: ReactNode; i
     const onRoleUpdated = (event: Event) => {
       const detail = (event as CustomEvent).detail;
       setRoleInfo(detail || null);
+      if (typeof window !== "undefined") {
+        if (detail) window.localStorage.setItem(ROLE_CACHE_KEY, JSON.stringify(detail));
+        else window.localStorage.removeItem(ROLE_CACHE_KEY);
+      }
     };
     window.addEventListener(ROLE_UPDATED_EVENT, onRoleUpdated as EventListener);
+
+    if (typeof window !== "undefined") {
+      try {
+        const cached = window.localStorage.getItem(ROLE_CACHE_KEY);
+        if (cached) setRoleInfo(JSON.parse(cached) as RoleInfo);
+      } catch {}
+    }
 
     fetch("/api/auth/me", { cache: "no-store" })
       .then((r) => r.json())
@@ -95,7 +114,16 @@ export function AppShell({ children, initialRoleInfo }: { children: ReactNode; i
           else window.localStorage.removeItem(ROLE_CACHE_KEY);
         }
       })
-      .catch(() => setRoleInfo(initialRoleInfo ?? null));
+      .catch(() => {
+        if (typeof window !== "undefined") {
+          try {
+            const cached = window.localStorage.getItem(ROLE_CACHE_KEY);
+            setRoleInfo(cached ? (JSON.parse(cached) as RoleInfo) : (initialRoleInfo ?? null));
+            return;
+          } catch {}
+        }
+        setRoleInfo(initialRoleInfo ?? null);
+      });
 
     return () => window.removeEventListener(ROLE_UPDATED_EVENT, onRoleUpdated as EventListener);
   }, [initialRoleInfo]);
