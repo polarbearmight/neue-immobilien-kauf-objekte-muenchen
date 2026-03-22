@@ -22,9 +22,8 @@ import {
   Sun,
   UserCircle2,
 } from "lucide-react";
+import { getEffectiveRole, getRolePermissions, hasMinRole, type RoleKey, type RoleInfo } from "@/lib/roles";
 import { cn } from "@/lib/utils";
-
-type RoleKey = "free" | "pro" | "admin";
 
 type NavItem = {
   label: string;
@@ -58,8 +57,6 @@ const navSections: Array<{ key: NavItem["section"]; label: string }> = [
   { key: "account", label: "Workspace" },
 ];
 
-const mobileQuickLinks = nav.filter((item) => item.mobileQuick);
-const roleRank: Record<RoleKey, number> = { free: 0, pro: 1, admin: 2 };
 const publicPaths = new Set(["/", "/contact", "/impressum", "/privacy", "/forgot-password", "/reset-password"]);
 const THEME_KEY = "munich-dealfinder-theme";
 const ROLE_CACHE_KEY = "munich-dealfinder-role-cache";
@@ -67,12 +64,12 @@ const ROLE_UPDATED_EVENT = "mdf-role-updated";
 
 const isActivePath = (pathname: string, href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
-export function AppShell({ children, initialRoleInfo }: { children: ReactNode; initialRoleInfo?: { role?: string; effective_role?: string; license_until?: string | null } | null }) {
+export function AppShell({ children, initialRoleInfo }: { children: ReactNode; initialRoleInfo?: RoleInfo | null }) {
   const pathname = usePathname();
   const router = useRouter();
   const [dark, setDark] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
-  const [roleInfo, setRoleInfo] = useState<{ role?: string; effective_role?: string; license_until?: string | null } | null>(initialRoleInfo ?? null);
+  const [roleInfo, setRoleInfo] = useState<RoleInfo | null>(initialRoleInfo ?? null);
 
   useEffect(() => {
     const stored = typeof window !== "undefined" ? window.localStorage.getItem(THEME_KEY) : null;
@@ -110,9 +107,10 @@ export function AppShell({ children, initialRoleInfo }: { children: ReactNode; i
     window.localStorage.setItem(THEME_KEY, next ? "dark" : "light");
   };
 
-  const effectiveRoleKey = ((roleInfo?.effective_role || roleInfo?.role || "free").toLowerCase() as RoleKey);
+  const permissions = useMemo(() => getRolePermissions(roleInfo), [roleInfo]);
+  const effectiveRoleKey = getEffectiveRole(roleInfo);
   const effectiveRole = effectiveRoleKey.toUpperCase();
-  const visibleNav = useMemo(() => nav.filter((item) => roleRank[effectiveRoleKey] >= roleRank[item.minRole || "free"]), [effectiveRoleKey]);
+  const visibleNav = useMemo(() => nav.filter((item) => hasMinRole(permissions.role, item.minRole || "free")), [permissions.role]);
   const mobileQuickLinks = useMemo(() => visibleNav.filter((item) => item.mobileQuick), [visibleNav]);
   const activeItem = useMemo(() => visibleNav.find((item) => isActivePath(pathname, item.href)) || nav.find((item) => isActivePath(pathname, item.href)), [pathname, visibleNav]);
 
@@ -194,7 +192,7 @@ export function AppShell({ children, initialRoleInfo }: { children: ReactNode; i
                 <div className="mt-4 grid gap-3 text-sm text-muted-foreground">
                   <Link href="/watchlist" className="rounded-2xl border border-border/80 bg-background/70 px-3 py-3 hover:bg-accent dark:border-amber-400/12 dark:bg-white/[0.03] dark:hover:bg-amber-300/10">★ Watchlist direkt öffnen</Link>
                   <Link href="/dashboard" className="rounded-2xl border border-border/80 bg-background/70 px-3 py-3 hover:bg-accent dark:border-amber-400/12 dark:bg-white/[0.03] dark:hover:bg-amber-300/10">Gespeicherte Filter im Dashboard</Link>
-                  <Link href="/sources" className="rounded-2xl border border-border/80 bg-background/70 px-3 py-3 hover:bg-accent dark:border-amber-400/12 dark:bg-white/[0.03] dark:hover:bg-amber-300/10">Quellenlage & Health prüfen</Link>
+                  {permissions.canAccessSources ? <Link href="/sources" className="rounded-2xl border border-border/80 bg-background/70 px-3 py-3 hover:bg-accent dark:border-amber-400/12 dark:bg-white/[0.03] dark:hover:bg-amber-300/10">Quellenlage & Health prüfen</Link> : null}
                 </div>
               </div>
             </div>

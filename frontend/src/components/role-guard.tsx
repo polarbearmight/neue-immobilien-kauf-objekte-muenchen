@@ -3,9 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { StateCard } from "@/components/state-card";
-
-type RoleKey = "free" | "pro" | "admin";
-const roleRank: Record<RoleKey, number> = { free: 0, pro: 1, admin: 2 };
+import { hasMinRole, type RoleKey } from "@/lib/roles";
 
 export function RoleGuard({ minRole, children }: { minRole: RoleKey; children: React.ReactNode }) {
   const router = useRouter();
@@ -15,8 +13,7 @@ export function RoleGuard({ minRole, children }: { minRole: RoleKey; children: R
     fetch("/api/auth/me", { cache: "no-store" })
       .then((r) => r.json())
       .then((json) => {
-        const role = ((json?.user?.effective_role || json?.user?.role || "free") as RoleKey);
-        const ok = roleRank[role] >= roleRank[minRole];
+        const ok = hasMinRole(json?.user || null, minRole);
         setAllowed(ok);
         if (!ok) router.replace("/dashboard");
       })
