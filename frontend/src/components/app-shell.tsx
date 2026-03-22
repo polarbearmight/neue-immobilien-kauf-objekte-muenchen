@@ -70,7 +70,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [dark, setDark] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
-  const [roleInfo, setRoleInfo] = useState<{ role?: string; effective_role?: string; license_until?: string | null } | null>(null);
+  const [roleInfo, setRoleInfo] = useState<{ role?: string; effective_role?: string; license_until?: string | null } | null | undefined>(undefined);
 
   useEffect(() => {
     const stored = typeof window !== "undefined" ? window.localStorage.getItem(THEME_KEY) : null;
