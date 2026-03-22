@@ -62,6 +62,8 @@ const mobileQuickLinks = nav.filter((item) => item.mobileQuick);
 const roleRank: Record<RoleKey, number> = { free: 0, pro: 1, admin: 2 };
 const publicPaths = new Set(["/", "/contact", "/impressum", "/privacy", "/forgot-password", "/reset-password"]);
 const THEME_KEY = "munich-dealfinder-theme";
+const ROLE_CACHE_KEY = "munich-dealfinder-role-cache";
+const ROLE_UPDATED_EVENT = "mdf-role-updated";
 
 const isActivePath = (pathname: string, href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
@@ -70,7 +72,7 @@ export function AppShell({ children, initialRoleInfo }: { children: ReactNode; i
   const router = useRouter();
   const [dark, setDark] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
-  const [roleInfo, setRoleInfo] = useState<{ role?: string; effective_role?: string; license_until?: string | null } | null | undefined>(undefined);
+  const [roleInfo, setRoleInfo] = useState<{ role?: string; effective_role?: string; license_until?: string | null } | null>(initialRoleInfo ?? null);
 
   useEffect(() => {
     const stored = typeof window !== "undefined" ? window.localStorage.getItem(THEME_KEY) : null;
@@ -80,11 +82,33 @@ export function AppShell({ children, initialRoleInfo }: { children: ReactNode; i
   }, []);
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const cached = window.localStorage.getItem(ROLE_CACHE_KEY);
+        if (cached) setRoleInfo(JSON.parse(cached));
+      } catch {}
+    }
+
+    const onRoleUpdated = (event: Event) => {
+      const detail = (event as CustomEvent).detail;
+      setRoleInfo(detail || null);
+    };
+    window.addEventListener(ROLE_UPDATED_EVENT, onRoleUpdated as EventListener);
+
     fetch("/api/auth/me", { cache: "no-store" })
       .then((r) => r.json())
-      .then((json) => setRoleInfo(json?.user || null))
-      .catch(() => setRoleInfo(null));
-  }, []);
+      .then((json) => {
+        const nextUser = json?.user || null;
+        setRoleInfo(nextUser);
+        if (typeof window !== "undefined") {
+          if (nextUser) window.localStorage.setItem(ROLE_CACHE_KEY, JSON.stringify(nextUser));
+          else window.localStorage.removeItem(ROLE_CACHE_KEY);
+        }
+      })
+      .catch(() => setRoleInfo(initialRoleInfo ?? null));
+
+    return () => window.removeEventListener(ROLE_UPDATED_EVENT, onRoleUpdated as EventListener);
+  }, [initialRoleInfo]);
 
   const toggleTheme = () => {
     const next = !dark;
@@ -105,6 +129,10 @@ export function AppShell({ children, initialRoleInfo }: { children: ReactNode; i
     setLoggingOut(true);
     try {
       await fetch("/api/auth/logout", { method: "POST" });
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem(ROLE_CACHE_KEY);
+        window.dispatchEvent(new CustomEvent(ROLE_UPDATED_EVENT, { detail: null }));
+      }
     } finally {
       router.push("/");
       router.refresh();

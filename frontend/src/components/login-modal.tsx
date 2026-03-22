@@ -33,11 +33,18 @@ export function LoginModal({ open, onClose }: { open: boolean; onClose: () => vo
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
       });
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
         setError(data?.error === "too_many_login_attempts" ? "Zu viele Login-Versuche. Bitte kurz warten." : data?.error || "Login fehlgeschlagen");
         setLoading(false);
         return;
+      }
+      if (typeof window !== "undefined") {
+        const user = data?.user || null;
+        if (user) {
+          window.localStorage.setItem("munich-dealfinder-role-cache", JSON.stringify(user));
+          window.dispatchEvent(new CustomEvent("mdf-role-updated", { detail: user }));
+        }
       }
       setSuccess(true);
       const redirect = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("redirect") : null;
