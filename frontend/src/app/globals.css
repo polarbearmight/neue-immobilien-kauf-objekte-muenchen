@@ -145,6 +145,33 @@
     transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 300ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 
+  .sidebar-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklab, var(--border) 72%, transparent) transparent;
+  }
+
+  .sidebar-scroll::-webkit-scrollbar,
+  .mobile-chip-row::-webkit-scrollbar {
+    height: 8px;
+    width: 8px;
+  }
+
+  .sidebar-scroll::-webkit-scrollbar-thumb,
+  .mobile-chip-row::-webkit-scrollbar-thumb {
+    background: color-mix(in oklab, var(--border) 78%, transparent);
+    border-radius: 999px;
+  }
+
+  .mobile-chip-row {
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    mask-image: linear-gradient(to right, transparent, black 10px, black calc(100% - 10px), transparent);
+  }
+
+  .mobile-chip-row::-webkit-scrollbar {
+    display: none;
+  }
+
   @media (min-width: 1280px) {
     .desktop-luxury-hover:hover {
       transform: translateY(-6px);
