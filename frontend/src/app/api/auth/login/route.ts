@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: data?.error || "Ungültige Zugangsdaten" }, { status: resBackend.status || 401 });
   }
 
-  const token = authToken(data.user.username);
+  const token = authToken(data.user.username, data.user.effective_role);
   const res = NextResponse.json({ ok: true, user: data.user });
   res.cookies.set("mdf_auth", token, {
     httpOnly: true,

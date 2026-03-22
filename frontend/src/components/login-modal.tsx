@@ -50,7 +50,7 @@ export function LoginModal({ open, onClose }: { open: boolean; onClose: () => vo
       const redirect = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("redirect") : null;
       setTimeout(() => {
         onClose();
-        router.push(redirect || "/dashboard");
+        router.replace(redirect || "/dashboard");
         router.refresh();
       }, 220);
     } catch {
