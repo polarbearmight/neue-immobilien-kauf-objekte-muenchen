@@ -1,4 +1,8 @@
-import { getDistricts } from "@/lib/api";
+"use client";
+
+import { useEffect, useState } from "react";
+import { API_URL, authHeaders } from "@/lib/api";
+import { StateCard } from "@/components/state-card";
 
 type DistrictRow = {
   district: string;
@@ -10,8 +14,31 @@ type DistrictRow = {
 
 const eur = (v?: number | null) => (v == null ? "-" : `${new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 }).format(v)} €/m²`);
 
-export default async function DistrictsPage() {
-  const rows: DistrictRow[] = await getDistricts();
+export default function DistrictsPage() {
+  const [rows, setRows] = useState<DistrictRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch(`${API_URL}/api/districts`, { cache: "no-store", headers: authHeaders() });
+        if (!res.ok) throw new Error(`districts_${res.status}`);
+        setRows(await res.json());
+      } catch {
+        setRows([]);
+        setError("Stadtteil-Statistiken konnten nicht geladen werden.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    void load();
+  }, []);
+
+  if (loading) return <StateCard title="Stadtteile werden geladen" body="Die District-Statistiken werden vorbereitet." tone="muted" />;
+  if (error) return <StateCard title="Districts nicht verfügbar" body={error} tone="error" />;
 
   return (
     <div className="space-y-4">
