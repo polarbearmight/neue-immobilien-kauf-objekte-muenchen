@@ -38,7 +38,9 @@ export function LoginModal({ open, onClose }: { open: boolean; onClose: () => vo
         return;
       }
       if (typeof window !== "undefined") {
-        const user = data?.user || null;
+        const meRes = await fetch("/api/auth/me", { cache: "no-store" }).catch(() => null);
+        const meData = meRes ? await meRes.json().catch(() => ({})) : null;
+        const user = meData?.user || data?.user || null;
         if (user) {
           window.localStorage.setItem("munich-dealfinder-role-cache", JSON.stringify(user));
           window.dispatchEvent(new CustomEvent("mdf-role-updated", { detail: user }));
