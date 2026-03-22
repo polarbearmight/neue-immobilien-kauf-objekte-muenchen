@@ -60,7 +60,7 @@ export default function DealsPage() {
       setLoading(true);
       setError(null);
       try {
-        const params = new URLSearchParams({ min_score: String(debouncedMinScore), sort: sortBy, limit: "160" });
+        const params = new URLSearchParams({ min_score: String(debouncedMinScore), sort: sortBy, limit: "1200" });
         if (debouncedPriceMin !== "") params.set("price_min", String(debouncedPriceMin));
         if (debouncedPriceMax !== "") params.set("price_max", String(debouncedPriceMax));
         const res = await fetch(`${API_URL}/api/listings?${params.toString()}`, { cache: "no-store", headers: authHeaders() });

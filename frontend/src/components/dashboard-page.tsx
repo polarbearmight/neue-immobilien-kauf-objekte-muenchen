@@ -127,7 +127,7 @@ export default function DashboardPage() {
       if (isInitialLoad) setLoading(true); else setIsFetching(true);
       setError(null);
       try {
-        const params = new URLSearchParams({ sort, limit: "500", min_score: String(minScore) });
+        const params = new URLSearchParams({ sort, limit: "1200", min_score: String(minScore) });
         if (source !== "all") params.set("source", source);
         if (selectedDay) params.set("first_seen_date", selectedDay);
         if (selectedDistricts.length) params.set("districts", selectedDistricts.join(","));
