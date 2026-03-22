@@ -89,7 +89,7 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
+  --primary: oklch(0.96 0 0);
   --primary-foreground: oklch(0.205 0 0);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
@@ -160,6 +160,11 @@
   .mobile-chip-row::-webkit-scrollbar-thumb {
     background: color-mix(in oklab, var(--border) 78%, transparent);
     border-radius: 999px;
+  }
+
+  .dark .sidebar-scroll::-webkit-scrollbar-thumb,
+  .dark .mobile-chip-row::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.14);
   }
 
   .mobile-chip-row {

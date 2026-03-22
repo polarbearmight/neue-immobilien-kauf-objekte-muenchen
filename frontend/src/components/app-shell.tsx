@@ -165,23 +165,23 @@ export function AppShell({ children, initialRoleInfo }: { children: ReactNode; i
         <aside className="sticky top-0 hidden h-screen w-[304px] shrink-0 md:block lg:w-[320px]">
           <div className="flex h-full flex-col px-2 py-5 lg:py-6">
             <div className="flex h-[calc(100vh-2.5rem)] min-h-0 flex-col gap-4 rounded-[2rem] border border-border/80 bg-sidebar/92 p-4 shadow-[0_24px_70px_rgba(15,23,42,0.08)] backdrop-blur lg:gap-5 lg:p-5 dark:border-amber-400/14 dark:bg-[linear-gradient(180deg,rgba(29,24,15,0.96),rgba(12,14,19,0.94))] dark:shadow-[0_28px_90px_rgba(0,0,0,0.36)]">
-              <div className="flex items-start justify-between gap-3 rounded-[1.6rem] border border-border/60 bg-background/45 p-3 dark:border-amber-400/10 dark:bg-white/[0.03]">
+              <div className="flex items-start justify-between gap-3 rounded-[1.6rem] border border-border/60 bg-background/45 p-3 dark:border-white/10 dark:bg-white/[0.03]">
                 <div>
-                  <div className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground dark:text-amber-100/70">Munich Deal Engine</div>
+                  <div className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground dark:text-zinc-400">Munich Deal Engine</div>
                   <div className="mt-2 text-xl font-semibold">Workspace</div>
                   <div className="mt-3">
                     <span className={cn(
                       "inline-flex min-h-10 items-center rounded-2xl border px-3 py-2 text-xs font-semibold uppercase tracking-[0.22em]",
                       effectiveRole === "ADMIN"
-                        ? "border-rose-300/60 bg-rose-500/10 text-rose-700 dark:border-amber-300/40 dark:bg-amber-300/16 dark:text-amber-100"
+                        ? "border-rose-300/60 bg-rose-500/10 text-rose-700 dark:border-rose-400/35 dark:bg-rose-400/12 dark:text-rose-100"
                         : effectiveRole === "PRO"
-                          ? "border-amber-300/60 bg-amber-500/10 text-amber-700 dark:border-amber-300/40 dark:bg-amber-300/16 dark:text-amber-100"
-                          : "border-border bg-background/80 text-muted-foreground dark:border-amber-400/15 dark:bg-amber-300/10 dark:text-amber-100"
+                          ? "border-sky-300/70 bg-sky-500/10 text-sky-700 dark:border-sky-400/35 dark:bg-sky-400/12 dark:text-sky-100"
+                          : "border-border bg-background/80 text-muted-foreground dark:border-white/12 dark:bg-white/[0.04] dark:text-zinc-200"
                     )}>{effectiveRole}</span>
                   </div>
                   <p className="mt-3 text-sm text-muted-foreground">Mehr Orientierung im Sidebar-Flow, Light als Standard und Dark weiter mit Goldakzenten.</p>
                 </div>
-                <button className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-background/80 dark:border-amber-400/15 dark:bg-amber-300/10 dark:text-amber-50" onClick={toggleTheme} aria-label="Theme wechseln">
+                <button className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-background/80 dark:border-white/12 dark:bg-white/[0.04] dark:text-zinc-100" onClick={toggleTheme} aria-label="Theme wechseln">
                   {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
                 </button>
               </div>
@@ -191,7 +191,7 @@ export function AppShell({ children, initialRoleInfo }: { children: ReactNode; i
                   const items = visibleNav.filter((item) => item.section === section.key);
                   return (
                     <div key={section.key} className="space-y-1.5">
-                      <div className="px-2 text-[11px] uppercase tracking-[0.22em] text-muted-foreground/80 dark:text-amber-100/55">{section.label}</div>
+                      <div className="px-2 text-[11px] uppercase tracking-[0.22em] text-muted-foreground/80 dark:text-zinc-500">{section.label}</div>
                       {items.map(({ label, href, icon: Icon }) => {
                         const active = isActivePath(pathname, href);
                         return (
@@ -201,8 +201,8 @@ export function AppShell({ children, initialRoleInfo }: { children: ReactNode; i
                             className={cn(
                               "group flex min-h-11 items-center gap-3 rounded-2xl border px-3.5 py-3 text-sm transition",
                               active
-                                ? "border-primary/15 bg-primary text-primary-foreground shadow-sm dark:border-amber-300/35 dark:bg-amber-300 dark:text-[#1a1408]"
-                                : "border-transparent text-muted-foreground hover:border-border/80 hover:bg-accent hover:text-accent-foreground dark:hover:border-amber-400/12 dark:hover:bg-amber-300/10 dark:hover:text-amber-50"
+                                ? "border-primary/15 bg-primary text-primary-foreground shadow-sm dark:border-white/10 dark:bg-white/[0.08] dark:text-white"
+                                : "border-transparent text-muted-foreground hover:border-border/80 hover:bg-accent hover:text-accent-foreground dark:text-zinc-300 dark:hover:border-white/10 dark:hover:bg-white/[0.05] dark:hover:text-white"
                             )}
                           >
                             <Icon className="h-4 w-4" />
@@ -215,12 +215,12 @@ export function AppShell({ children, initialRoleInfo }: { children: ReactNode; i
                 })}
               </nav>
 
-              <div className="mt-auto rounded-[1.8rem] border border-border/80 bg-card/94 p-4 shadow-[0_18px_50px_rgba(15,23,42,0.06)] lg:p-5 dark:border-amber-400/14 dark:bg-[rgba(11,13,18,0.88)]">
+              <div className="mt-auto rounded-[1.8rem] border border-border/80 bg-card/94 p-4 shadow-[0_18px_50px_rgba(15,23,42,0.06)] lg:p-5 dark:border-white/10 dark:bg-[rgba(11,13,18,0.88)]">
                 <div className="flex items-center gap-2 text-sm font-semibold"><Heart className="h-4 w-4 text-amber-500" /> Watchlist & Workflow</div>
-                <div className="mt-4 grid gap-3 text-sm text-muted-foreground">
-                  <Link href="/watchlist" className="rounded-2xl border border-border/80 bg-background/70 px-3 py-3 hover:bg-accent dark:border-amber-400/12 dark:bg-white/[0.03] dark:hover:bg-amber-300/10">★ Watchlist direkt öffnen</Link>
-                  <Link href="/dashboard" className="rounded-2xl border border-border/80 bg-background/70 px-3 py-3 hover:bg-accent dark:border-amber-400/12 dark:bg-white/[0.03] dark:hover:bg-amber-300/10">Gespeicherte Filter im Dashboard</Link>
-                  {permissions.canAccessSources ? <Link href="/sources" className="rounded-2xl border border-border/80 bg-background/70 px-3 py-3 hover:bg-accent dark:border-amber-400/12 dark:bg-white/[0.03] dark:hover:bg-amber-300/10">Quellenlage & Health prüfen</Link> : null}
+                <div className="mt-4 grid gap-3 text-sm text-muted-foreground dark:text-zinc-300">
+                  <Link href="/watchlist" className="rounded-2xl border border-border/80 bg-background/70 px-3 py-3 hover:bg-accent dark:border-white/10 dark:bg-white/[0.03] dark:hover:bg-white/[0.06]">★ Watchlist direkt öffnen</Link>
+                  <Link href="/dashboard" className="rounded-2xl border border-border/80 bg-background/70 px-3 py-3 hover:bg-accent dark:border-white/10 dark:bg-white/[0.03] dark:hover:bg-white/[0.06]">Gespeicherte Filter im Dashboard</Link>
+                  {permissions.canAccessSources ? <Link href="/sources" className="rounded-2xl border border-border/80 bg-background/70 px-3 py-3 hover:bg-accent dark:border-white/10 dark:bg-white/[0.03] dark:hover:bg-white/[0.06]">Quellenlage & Health prüfen</Link> : null}
                 </div>
               </div>
             </div>
@@ -232,7 +232,7 @@ export function AppShell({ children, initialRoleInfo }: { children: ReactNode; i
             <div className="rounded-[1.75rem] border border-border/80 bg-card/95 px-4 py-4 shadow-[0_16px_50px_rgba(15,23,42,0.06)] backdrop-blur dark:border-amber-400/16 dark:bg-[linear-gradient(180deg,rgba(31,25,15,0.94),rgba(10,12,16,0.94))] dark:shadow-[0_18px_60px_rgba(0,0,0,0.26)] md:px-5">
               <div className="flex flex-wrap items-start justify-between gap-3 sm:flex-nowrap sm:items-center">
                 <div className="min-w-0">
-                  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground dark:text-amber-100/70">DealFinder</p>
+                  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground dark:text-zinc-400">DealFinder</p>
                   <p className="truncate text-base font-semibold md:text-lg">{activeItem?.label || "Workspace"}</p>
                   <p className="mt-1 hidden text-xs text-muted-foreground md:block">{activeItem ? `Aktiv: ${activeItem.label}` : "Alle Marktansichten bleiben direkt erreichbar."}</p>
                 </div>
@@ -240,16 +240,16 @@ export function AppShell({ children, initialRoleInfo }: { children: ReactNode; i
                   <span className={cn(
                     "inline-flex min-h-11 items-center rounded-2xl border px-3 py-2 text-xs font-semibold uppercase tracking-[0.22em]",
                     effectiveRole === "ADMIN"
-                      ? "border-rose-300/60 bg-rose-500/10 text-rose-700 dark:border-amber-300/40 dark:bg-amber-300/16 dark:text-amber-100"
+                      ? "border-rose-300/60 bg-rose-500/10 text-rose-700 dark:border-rose-400/35 dark:bg-rose-400/12 dark:text-rose-100"
                       : effectiveRole === "PRO"
-                        ? "border-amber-300/60 bg-amber-500/10 text-amber-700 dark:border-amber-300/40 dark:bg-amber-300/16 dark:text-amber-100"
-                        : "border-border bg-background/80 text-muted-foreground dark:border-amber-400/15 dark:bg-amber-300/10 dark:text-amber-100"
+                        ? "border-sky-300/70 bg-sky-500/10 text-sky-700 dark:border-sky-400/35 dark:bg-sky-400/12 dark:text-sky-100"
+                        : "border-border bg-background/80 text-muted-foreground dark:border-white/12 dark:bg-white/[0.04] dark:text-zinc-200"
                   )}>{effectiveRole}</span>
-                  <button className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-background/80 dark:border-amber-400/15 dark:bg-amber-300/10 dark:text-amber-50" onClick={toggleTheme} aria-label="Theme wechseln">{dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}</button>
-                  <Link href="/account" className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-background/80 dark:border-amber-400/15 dark:bg-amber-300/10 dark:text-amber-50" aria-label="Account öffnen"><UserCircle2 className="h-4 w-4" /></Link>
-                  <button className="hidden min-h-11 rounded-2xl border border-border bg-background px-4 py-2 text-sm dark:border-amber-400/15 dark:bg-amber-300/10 dark:text-amber-50 md:inline-flex" onClick={() => location.reload()}>Refresh</button>
-                  <button className="hidden min-h-11 rounded-2xl border border-border bg-background px-4 py-2 text-sm dark:border-amber-400/15 dark:bg-amber-300/10 dark:text-amber-50 md:inline-flex" onClick={logout} disabled={loggingOut}>{loggingOut ? "Logout…" : "Logout"}</button>
-                  <button className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-background/80 dark:border-amber-400/15 dark:bg-amber-300/10 dark:text-amber-50 md:hidden" onClick={logout} disabled={loggingOut} aria-label="Logout"><LogOut className="h-4 w-4" /></button>
+                  <button className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-background/80 dark:border-white/12 dark:bg-white/[0.04] dark:text-zinc-100" onClick={toggleTheme} aria-label="Theme wechseln">{dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}</button>
+                  <Link href="/account" className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-background/80 dark:border-white/12 dark:bg-white/[0.04] dark:text-zinc-100" aria-label="Account öffnen"><UserCircle2 className="h-4 w-4" /></Link>
+                  <button className="hidden min-h-11 rounded-2xl border border-border bg-background px-4 py-2 text-sm dark:border-white/12 dark:bg-white/[0.04] dark:text-zinc-100 md:inline-flex" onClick={() => location.reload()}>Refresh</button>
+                  <button className="hidden min-h-11 rounded-2xl border border-border bg-background px-4 py-2 text-sm dark:border-white/12 dark:bg-white/[0.04] dark:text-zinc-100 md:inline-flex" onClick={logout} disabled={loggingOut}>{loggingOut ? "Logout…" : "Logout"}</button>
+                  <button className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-background/80 dark:border-white/12 dark:bg-white/[0.04] dark:text-zinc-100 md:hidden" onClick={logout} disabled={loggingOut} aria-label="Logout"><LogOut className="h-4 w-4" /></button>
                 </div>
               </div>
             </div>
@@ -264,8 +264,8 @@ export function AppShell({ children, initialRoleInfo }: { children: ReactNode; i
                     className={cn(
                       "inline-flex min-h-11 shrink-0 items-center gap-2 rounded-2xl border px-3 py-2.5 text-sm font-medium whitespace-nowrap transition",
                       active
-                        ? "border-primary bg-primary text-primary-foreground dark:border-amber-300/50 dark:bg-amber-300 dark:text-[#1a1408]"
-                        : "border-border bg-card/90 text-muted-foreground dark:border-amber-400/12 dark:bg-white/[0.03] dark:text-amber-100/78"
+                        ? "border-primary bg-primary text-primary-foreground dark:border-white/10 dark:bg-white/[0.08] dark:text-white"
+                        : "border-border bg-card/90 text-muted-foreground dark:border-white/10 dark:bg-white/[0.03] dark:text-zinc-300"
                     )}
                   >
                     <Icon className="h-4 w-4" />
