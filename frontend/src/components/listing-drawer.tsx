@@ -5,6 +5,7 @@ import { Listing, API_URL, authHeaders, parseBadges } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { MiniBarChart } from "@/components/mini-bar-chart";
 import { MetricTile, prettyJson, SectionCard } from "@/components/listing-detail-sections";
+import { useRolePermissions } from "@/hooks/use-role-permissions";
 
 const eur = (v?: number | null) => (v == null ? "-" : new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(v));
 const normalizeExternalUrl = (value?: string | null) => {
@@ -38,6 +39,7 @@ type ListingDetailPayload = {
 
 export function ListingDrawer({ listing, onClose }: { listing: Listing | null; onClose: () => void }) {
   const [detail, setDetail] = useState<ListingDetailPayload | null>(null);
+  const permissions = useRolePermissions();
 
   useEffect(() => {
     const controller = new AbortController();
@@ -143,26 +145,30 @@ export function ListingDrawer({ listing, onClose }: { listing: Listing | null; o
             </div>
           </SectionCard>
 
-          <SectionCard title="Investment" subtitle="Mietpotenzial und Rendite-Einschätzung">
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-              <MetricTile label="Rent €/m²" value={eur(l.estimated_rent_per_sqm)} />
-              <MetricTile label="Monthly Rent" value={eur(l.estimated_monthly_rent)} />
-              <MetricTile label="Gross Yield" value={l.gross_yield_percent != null ? `${l.gross_yield_percent.toFixed(2)}%` : "-"} emphasize />
-              <MetricTile label="Price-to-Rent" value={l.price_to_rent_ratio != null ? l.price_to_rent_ratio.toFixed(2) : "-"} />
-              <MetricTile label="Investment Score" value={l.investment_score != null ? Math.round(l.investment_score) : "-"} />
-            </div>
-            <pre className="mt-3 overflow-x-auto whitespace-pre-wrap rounded-2xl bg-slate-50 p-4 text-xs leading-6 text-slate-600 dark:bg-white/[0.04] dark:text-amber-100/76">{investmentExplainPretty || "Keine zusätzliche Investment-Erklärung verfügbar."}</pre>
-          </SectionCard>
+          {permissions.canAccessGeoHeatmap ? (
+            <SectionCard title="Investment" subtitle="Mietpotenzial und Rendite-Einschätzung">
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                <MetricTile label="Rent €/m²" value={eur(l.estimated_rent_per_sqm)} />
+                <MetricTile label="Monthly Rent" value={eur(l.estimated_monthly_rent)} />
+                <MetricTile label="Gross Yield" value={l.gross_yield_percent != null ? `${l.gross_yield_percent.toFixed(2)}%` : "-"} emphasize />
+                <MetricTile label="Price-to-Rent" value={l.price_to_rent_ratio != null ? l.price_to_rent_ratio.toFixed(2) : "-"} />
+                <MetricTile label="Investment Score" value={l.investment_score != null ? Math.round(l.investment_score) : "-"} />
+              </div>
+              <pre className="mt-3 overflow-x-auto whitespace-pre-wrap rounded-2xl bg-slate-50 p-4 text-xs leading-6 text-slate-600 dark:bg-white/[0.04] dark:text-amber-100/76">{investmentExplainPretty || "Keine zusätzliche Investment-Erklärung verfügbar."}</pre>
+            </SectionCard>
+          ) : null}
 
-          <SectionCard title="Off-Market" subtitle="Exklusivität und Sichtbarkeits-Signale">
-            <div className="grid gap-3 sm:grid-cols-3">
-              <MetricTile label="Off-market Score" value={l.off_market_score != null ? Math.round(l.off_market_score) : "-"} emphasize />
-              <MetricTile label="Exclusivity" value={l.exclusivity_score != null ? Math.round(l.exclusivity_score) : "-"} />
-              <MetricTile label="Source Popularity" value={l.source_popularity_score != null ? Math.round(l.source_popularity_score) : "-"} />
-            </div>
-            <div className="mt-3 flex flex-wrap gap-2">{parseBadges(l.off_market_flags).length ? parseBadges(l.off_market_flags).map((flag) => <span key={flag} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-700 dark:border-amber-400/16 dark:bg-white/[0.04] dark:text-amber-100/78">{flag}</span>) : <span className="text-xs text-slate-500 dark:text-amber-100/62">Keine Off-Market-Flags</span>}</div>
-            <pre className="mt-3 overflow-x-auto whitespace-pre-wrap rounded-2xl bg-slate-50 p-4 text-xs leading-6 text-slate-600 dark:bg-white/[0.04] dark:text-amber-100/76">{offMarketExplainPretty || "Keine zusätzliche Off-Market-Erklärung verfügbar."}</pre>
-          </SectionCard>
+          {permissions.canAccessOffMarket ? (
+            <SectionCard title="Off-Market" subtitle="Exklusivität und Sichtbarkeits-Signale">
+              <div className="grid gap-3 sm:grid-cols-3">
+                <MetricTile label="Off-market Score" value={l.off_market_score != null ? Math.round(l.off_market_score) : "-"} emphasize />
+                <MetricTile label="Exclusivity" value={l.exclusivity_score != null ? Math.round(l.exclusivity_score) : "-"} />
+                <MetricTile label="Source Popularity" value={l.source_popularity_score != null ? Math.round(l.source_popularity_score) : "-"} />
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">{parseBadges(l.off_market_flags).length ? parseBadges(l.off_market_flags).map((flag) => <span key={flag} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-700 dark:border-amber-400/16 dark:bg-white/[0.04] dark:text-amber-100/78">{flag}</span>) : <span className="text-xs text-slate-500 dark:text-amber-100/62">Keine Off-Market-Flags</span>}</div>
+              <pre className="mt-3 overflow-x-auto whitespace-pre-wrap rounded-2xl bg-slate-50 p-4 text-xs leading-6 text-slate-600 dark:bg-white/[0.04] dark:text-amber-100/76">{offMarketExplainPretty || "Keine zusätzliche Off-Market-Erklärung verfügbar."}</pre>
+            </SectionCard>
+          ) : null}
 
           {(detail?.cluster?.members || []).length > 1 ? (
             <SectionCard title="Seen on" subtitle="Weitere Quellen im gleichen Cluster">

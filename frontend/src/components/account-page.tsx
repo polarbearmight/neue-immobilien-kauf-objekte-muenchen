@@ -7,6 +7,10 @@ import { ContactSalesAdminCard } from "@/components/contact-sales-admin-card";
 type Me = { username: string; email: string; display_name?: string | null; company?: string | null; role?: string; effective_role?: string; license_until?: string | null };
 type AdminUser = { id: number; username: string; email: string; display_name?: string | null; company?: string | null; is_active: boolean; role: string; effective_role?: string; license_until?: string | null };
 
+function getDefaultProLicenseUntil() {
+  return new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString();
+}
+
 export function AccountPage() {
   const [me, setMe] = useState<Me | null>(null);
   const [displayName, setDisplayName] = useState("");
@@ -89,7 +93,7 @@ export function AccountPage() {
     const res = await fetch(`/api/admin/users/${userId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ role, license_until: role === "pro" ? new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString() : null }),
+      body: JSON.stringify({ role, license_until: role === "pro" ? getDefaultProLicenseUntil() : null }),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) return setError(data?.error || "User konnte nicht aktualisiert werden.");

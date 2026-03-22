@@ -17,7 +17,12 @@ export default function SourcesPage() {
     setSources(Array.isArray(rows) ? rows : []);
   };
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => {
+    const run = async () => {
+      await load();
+    };
+    void run();
+  }, []);
 
   const toggle = async (id: number, enabled: boolean) => {
     const r = await fetch(`${API_URL}/api/sources/${id}/enable?enabled=${String(enabled)}`, { method: "POST", headers: authHeaders() });

@@ -4,6 +4,7 @@ import { memo, useState } from "react";
 import { ArrowUpRight, Heart, MapPin, Radar, Ruler, Star, Wallet } from "lucide-react";
 import { API_URL, Listing, authHeaders } from "@/lib/api";
 import { badgeToneClass, listingHighlightBadges, listingHighlightRowClass } from "@/lib/deal-highlights";
+import { useRolePermissions } from "@/hooks/use-role-permissions";
 import { cn } from "@/lib/utils";
 
 const eur = (v?: number | null) => (v == null ? "-" : new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(v));
@@ -18,6 +19,7 @@ function scoreTone(score?: number | null) {
 
 function MobileListingCardsInner({ rows, onDetails }: { rows: Listing[]; onDetails: (l: Listing) => void }) {
   const [savedIds, setSavedIds] = useState<Record<number, boolean>>({});
+  const permissions = useRolePermissions();
 
   if (!rows.length) return null;
 
@@ -74,10 +76,12 @@ function MobileListingCardsInner({ rows, onDetails }: { rows: Listing[]; onDetai
               </div>
             </div>
 
-            <div className="mt-3 flex items-center justify-between rounded-[1.1rem] border border-border/70 bg-background/70 px-3 py-2 text-xs text-muted-foreground dark:border-amber-400/14 dark:bg-white/[0.03] dark:text-amber-100/70">
-              <span className="inline-flex items-center gap-1"><Ruler className="h-3.5 w-3.5" />Investment</span>
-              <span className="font-semibold dark:text-amber-50">{row.investment_score != null ? Math.round(row.investment_score) : "-"}</span>
-            </div>
+            {permissions.canAccessGeoHeatmap ? (
+              <div className="mt-3 flex items-center justify-between rounded-[1.1rem] border border-border/70 bg-background/70 px-3 py-2 text-xs text-muted-foreground dark:border-amber-400/14 dark:bg-white/[0.03] dark:text-amber-100/70">
+                <span className="inline-flex items-center gap-1"><Ruler className="h-3.5 w-3.5" />Investment</span>
+                <span className="font-semibold dark:text-amber-50">{row.investment_score != null ? Math.round(row.investment_score) : "-"}</span>
+              </div>
+            ) : null}
 
             <div className="mt-4 grid grid-cols-2 gap-2">
               <button className="min-h-11 rounded-2xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground dark:border dark:border-amber-300/35 dark:bg-amber-300 dark:text-[#1a1408]" onClick={() => onDetails(row)}>Details</button>
