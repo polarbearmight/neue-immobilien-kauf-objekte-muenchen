@@ -65,7 +65,7 @@ const THEME_KEY = "munich-dealfinder-theme";
 
 const isActivePath = (pathname: string, href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({ children, initialRoleInfo }: { children: ReactNode; initialRoleInfo?: { role?: string; effective_role?: string; license_until?: string | null } | null }) {
   const pathname = usePathname();
   const router = useRouter();
   const [dark, setDark] = useState(false);

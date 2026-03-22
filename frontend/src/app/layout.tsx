@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AppShell } from "@/components/app-shell";
+import { getCurrentUserServer } from "@/lib/server-auth";
 import "./leaflet.css";
 import "./globals.css";
 
@@ -12,11 +13,12 @@ export const metadata: Metadata = {
   description: "Local real estate deal dashboard",
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const initialRoleInfo = await getCurrentUserServer();
   return (
     <html lang="de">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <AppShell>{children}</AppShell>
+        <AppShell initialRoleInfo={initialRoleInfo}>{children}</AppShell>
       </body>
     </html>
   );
