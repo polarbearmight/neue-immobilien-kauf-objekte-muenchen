@@ -82,13 +82,6 @@ export function AppShell({ children, initialRoleInfo }: { children: ReactNode; i
   }, []);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const cached = window.localStorage.getItem(ROLE_CACHE_KEY);
-        if (cached) setRoleInfo(JSON.parse(cached));
-      } catch {}
-    }
-
     const onRoleUpdated = (event: Event) => {
       const detail = (event as CustomEvent).detail;
       setRoleInfo(detail || null);

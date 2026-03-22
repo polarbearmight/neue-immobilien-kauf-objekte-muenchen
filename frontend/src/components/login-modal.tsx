@@ -1,10 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 
 export function LoginModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -50,8 +48,9 @@ export function LoginModal({ open, onClose }: { open: boolean; onClose: () => vo
       const redirect = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("redirect") : null;
       setTimeout(() => {
         onClose();
-        router.replace(redirect || "/dashboard");
-        router.refresh();
+        if (typeof window !== "undefined") {
+          window.location.href = redirect || "/dashboard";
+        }
       }, 220);
     } catch {
       setError("Login fehlgeschlagen");
