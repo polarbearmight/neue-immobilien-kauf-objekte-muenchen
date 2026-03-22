@@ -350,7 +350,7 @@ export default function DashboardPage() {
       )}
 
       <Card className="rounded-2xl">
-        <CardHeader><CardTitle>Neue Listings · letzte 7 Tage</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Neue Listings · letzte 30 Tage</CardTitle></CardHeader>
         <CardContent>
           {stats?.series?.length ? <MiniBarChart data={stats.series.map((s) => ({ label: s.date, value: s.count }))} activeLabel={selectedDay} onBarClick={(point) => { setSelectedDay(point.label); const next = defaultFilters(); setDraftFilters(next); setAppliedFilters(next); setQuery(""); requestAnimationFrame(() => listingsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })); }} /> : <p className="text-sm text-muted-foreground">Keine Daten vorhanden.</p>}
         </CardContent>
