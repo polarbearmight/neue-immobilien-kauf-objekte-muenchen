@@ -171,7 +171,7 @@ export default function MapPage() {
   useEffect(() => {
     const activeDistrict = selectedDistrict || (district !== "all" ? district : null);
     if (!activeDistrict) return;
-    const q = new URLSearchParams({ window: windowRange, min_score: String(minScore), district: activeDistrict, limit: "200" });
+    const q = new URLSearchParams({ window: windowRange, min_score: String(minScore), district: activeDistrict, limit: "1200" });
     if (source !== "all") q.set("source", source);
     fetch(`${API_URL}/api/geo/listings?${q.toString()}`, { cache: "no-store", headers: authHeaders() })
       .then((r) => r.json())

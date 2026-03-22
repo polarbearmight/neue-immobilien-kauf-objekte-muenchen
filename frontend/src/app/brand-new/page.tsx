@@ -7,7 +7,7 @@ function ageLabel(firstSeen: string) {
 }
 
 export default async function BrandNewPage() {
-  const listings = await getListings("brand_new=true&sort=newest&limit=120");
+  const listings = await getListings("brand_new=true&sort=newest&limit=1200");
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold tracking-tight">Brand New</h1>
